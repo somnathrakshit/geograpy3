@@ -1,5 +1,6 @@
 from geograpy.extraction import Extractor
 import unittest
+import ssl
 
 class TestExtractor(unittest.TestCase):
     '''
@@ -69,6 +70,13 @@ class TestExtractor(unittest.TestCase):
         e6 = Extractor(text=text6)
         e6.find_entities()
         self.check(e6.places,['São Paulo'])
+        
+    def testStackoverflow43322567(self):
+        url='https://en.wikipedia.org/wiki/U.S._state'
+        e=Extractor(url=url)
+        places=e.find_geoEntities()
+        self.check(places,['Alabama','Virginia','New York'])
+        print(places)
         
     def testStackoverflow54712198(self):
         '''
