@@ -16,18 +16,28 @@ class PlaceContext(object):
     adds context information to a place name
     '''
 
-    def __init__(self, place_names, db_file=None):
+    def __init__(self, place_names, setAll=True,db_file=None):
         '''
         Constructor
         
         Args:
             place_names(string): the place names to check
+            setAll(boolean): true if all context information should immediately be set
             db_file(string): path to the database file to be used - if None the default "locs.db" will be used
         '''
         db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
         self.conn = sqlite3.connect(db_file)
         self.conn.text_factory = lambda x: str(x, 'utf-8', 'ignore')
         self.places = place_names
+        if setAll:
+            self.setAll()
+            
+    def __str__(self):
+        '''
+        return a string representation of me
+        '''
+        text= "countries=%s\nregions=%s\ncities=%s\nother=%s" % (self.countries,self.regions,self.cities,self.other)
+        return text
 
     def populate_db(self):
         cur = self.conn.cursor()
@@ -101,6 +111,15 @@ class PlaceContext(object):
 
         return [r.name for r in regions]
 
+    def setAll(self):
+        '''
+        set all context information
+        '''
+        self.set_countries()
+        self.set_regions()
+        self.set_cities()
+        self.set_other()
+        
     def set_countries(self):
         countries = [self.correct_country_mispelling(place)
                      for place in self.places if self.is_a_country(place)]
