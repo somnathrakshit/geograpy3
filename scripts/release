@@ -1,0 +1,18 @@
+#!/bin/bash
+# WF 2020-03-26
+# create a release see https://packaging.python.org/tutorials/packaging-projects/
+#
+# get the absolute filename
+#
+get_abs_filename() {
+  # $1 : relative filename
+  echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+}
+
+pwd=$(pwd)
+scriptPath=$(get_abs_filename $(dirname $0))
+cd $scriptPath/..
+rm -rf dist
+$scriptPath/doc
+python3 setup.py sdist bdist_wheel
+python3 -m twine upload -u __token__ --repository-url https://upload.pypi.org/legacy/ dist/*
