@@ -18,6 +18,6 @@ install:
 # command to run tests
 script:
 # command to install dependencies
-  - ./install
+  - scripts/install
 # command to run tests
-  - ./test
+  - scripts/test
