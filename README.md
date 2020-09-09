@@ -5,51 +5,60 @@
 
 
 geograpy3 is a fork of [Geograpy2](https://github.com/Corollarium/geograpy2), which is itself a fork of [geograpy](https://github.com/ushahidi/geograpy) and inherits
-most of it, but solves several problems (such as support for utf8, places names 
+most of it, but solves several problems (such as support for utf8, places names
 with multiple words, confusion over homonyms etc). Also, geograpy3 is compatible with Python 3, unlike Geography2.
 
-geograpy3
-=========
+What it is
+==========
 
-Extract place names from a URL or text, and add context to those names -- for 
-example distinguishing between a country, region or city. 
+geograpy extracts place names from a URL or text, and add context to those names -- for example distinguishing between a country, region or city.
 
 ## Install & Setup
 
 Grab the package using `pip` (this will take a few minutes)
+```bash
+pip install geograpy3
+```
 
-    pip install geograpy3
+geograpy3 uses [NLTK](http://www.nltk.org/) for entity recognition, so you'll also need
+to download the models we're using. Fortunately there's a command that'll take
+care of this for you.
+```bash
+geograpy-nltk
+```
 
-geograpy3 uses [NLTK](http://www.nltk.org/) for entity recognition, so you'll also need 
-to download the models we're using. Fortunately there's a command that'll take 
-care of this for you. 
-
-    geograpy-nltk
+## Getting the source code
+```bash
+git clone https://github.com/somnathrakshit/geograpy3
+cd geography3
+scripts/install
+```
 
 ## Basic Usage
 
 Import the module, give some text or a URL, and presto.
+```python
+import geograpy
+url = 'http://www.bbc.com/news/world-europe-26919928'
+places = geograpy.get_place_context(url=url)
+```
 
-    import geograpy
-    url = 'http://www.bbc.com/news/world-europe-26919928'
-    places = geograpy.get_place_context(url=url)
-
-Now you have access to information about all the places mentioned in the linked 
-article. 
+Now you have access to information about all the places mentioned in the linked
+article.
 
 * `places.countries` _contains a list of country names_
 * `places.regions` _contains a list of region names_
 * `places.cities` _contains a list of city names_
 * `places.other` _lists everything that wasn't clearly a country, region or city_
 
-Note that the `other` list might be useful for shorter texts, to pull out 
-information like street names, points of interest, etc, but at the moment is 
-a bit messy when scanning longer texts that contain possessive forms of proper 
+Note that the `other` list might be useful for shorter texts, to pull out
+information like street names, points of interest, etc, but at the moment is
+a bit messy when scanning longer texts that contain possessive forms of proper
 nouns (like "Russian" instead of "Russia").
 
 ## But Wait, There's More
 
-In addition to listing the names of discovered places, you'll also get some 
+In addition to listing the names of discovered places, you'll also get some
 information about the relationships between places.
 
 * `places.country_regions` _regions broken down by country_
@@ -58,14 +67,14 @@ information about the relationships between places.
 
 ## Last But Not Least
 
-While a text might mention many places, it's probably focused on one or two, so 
+While a text might mention many places, it's probably focused on one or two, so
 geograpy3 also breaks down countries, regions and cities by number of mentions.
 
 * `places.country_mentions`
 * `places.region_mentions`
 * `places.city_mentions`
 
-Each of these returns a list of tuples. The first item in the tuple is the place 
+Each of these returns a list of tuples. The first item in the tuple is the place
 name and the second item is the number of mentions. For example:
 
     [('Russian Federation', 14), (u'Ukraine', 11), (u'Lithuania', 1)]  
@@ -73,33 +82,36 @@ name and the second item is the number of mentions. For example:
 ## If You're Really Serious
 
 You can of course use each of Geograpy's modules on their own. For example:
+```python
+from geograpy import extraction
 
-    from geograpy import extraction
+e = extraction.Extractor(url='http://www.bbc.com/news/world-europe-26919928')
+e.find_entities()
 
-    e = extraction.Extractor(url='http://www.bbc.com/news/world-europe-26919928')
-    e.find_entities()
-
-    # You can now access all of the places found by the Extractor
-    print(e.places)
+# You can now access all of the places found by the Extractor
+print(e.places)
+```
 
 Place context is handled in the `places` module. For example:
 
-    from geograpy import places
+```python
+from geograpy import places
 
-    pc = places.PlaceContext(['Cleveland', 'Ohio', 'United States'])
-    
-    pc.set_countries()
-    print pc.countries #['United States']
+pc = places.PlaceContext(['Cleveland', 'Ohio', 'United States'])
 
-    pc.set_regions()
-    print(pc.regions #['Ohio'])
+pc.set_countries()
+print pc.countries #['United States']
 
-    pc.set_cities()
-    print(pc.cities #['Cleveland'])
+pc.set_regions()
+print(pc.regions #['Ohio'])
 
-    print(pc.address_strings #['Cleveland, Ohio, United States'])
+pc.set_cities()
+print(pc.cities #['Cleveland'])
 
-And of course all of the other information shown above (`country_regions` etc) 
+print(pc.address_strings #['Cleveland, Ohio, United States'])
+```
+
+And of course all of the other information shown above (`country_regions` etc)
 is available after the corresponding `set_` method is called.
 
 ## Stackoverflow
