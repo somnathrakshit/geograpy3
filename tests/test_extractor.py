@@ -69,6 +69,27 @@ class TestExtractor(unittest.TestCase):
         e6 = Extractor(text=text6)
         e6.find_entities()
         self.check(e6.places,['São Paulo'])
+        
+    def testStackoverflow54712198(self):
+        '''
+        see https://stackoverflow.com/questions/54712198/not-only-extracting-places-from-a-text-but-also-other-names-in-geograpypython
+        '''
+        text='''Opposition Leader Mahinda Rajapaksa says that the whole public administration has collapsed due to the constitution council’s arbitrary actions. The Opposition Leader said so in response to a query a journalised raised after a meeting held...'''
+        e=Extractor(text)
+        places=e.find_geoEntities()
+        if self.debug:
+            print(places)
+        
+        
+    def testStackoverflow54077973(self):
+        '''
+        see https://stackoverflow.com/questions/54077973/geograpy3-library-for-extracting-the-locations-in-the-text-gives-unicodedecodee
+        '''
+        address = 'Jersey City New Jersey 07306'
+        e=Extractor(text=address)
+        e.find_entities()
+        self.check(e.places,['Jersey','City'])
+     
 
     def testStackOverflow54721435(self):
         '''
