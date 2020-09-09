@@ -11,6 +11,21 @@ class TestPlaces(unittest.TestCase):
 
     def tearDown(self):
         pass
+    
+    def testStackoverflow55548116(self):
+        '''
+        see https://stackoverflow.com/questions/55548116/geograpy3-library-is-not-working-properly-and-give-traceback-error
+        '''
+        feedContent=['Las Vegas is a city in Nevada']
+        placesInFeed=[]
+        for content in feedContent:
+
+            if content != "":
+                place = PlaceContext(content)
+                placesInFeed.append(place.places)
+        
+            else:
+                placesInFeed.append("null")
 
     def testPlaces(self):
         '''
