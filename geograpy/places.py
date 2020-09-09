@@ -12,7 +12,11 @@ and relationships between places (city is inside region is inside country, etc)
 
 
 class PlaceContext(object):
+
     def __init__(self, place_names, db_file=None):
+        '''
+        Constructor
+        '''
         db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
         self.conn = sqlite3.connect(db_file)
         self.conn.text_factory = lambda x: str(x, 'utf-8', 'ignore')

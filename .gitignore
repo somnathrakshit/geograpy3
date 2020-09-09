@@ -134,3 +134,5 @@ dmypy.json
 docs
 # eclipse
 .settings
+# locs.db
+geograpy/locs.db
