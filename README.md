@@ -1,10 +1,14 @@
+#geograpy3
+[![GitHub issues](https://img.shields.io/github/issues/somnathrakshit/geograpy3.svg)](https://github.com/somnathrakshit/geograpy3/issues)
+[![GitHub issues](https://img.shields.io/github/issues-closed/somnathrakshit/geograpy3.svg)](https://github.com/somnathrakshit/geograpy3/issues/?q=is%3Aissue+is%3Aclosed)
+
 
 geograpy3 is a fork of [Geograpy2](https://github.com/Corollarium/geograpy2), which is itself a fork of [geograpy](https://github.com/ushahidi/geograpy) and inherits
 most of it, but solves several problems (such as support for utf8, places names 
 with multiple words, confusion over homonyms etc). Also, geograpy3 is compatible with Python 3, unlike Geography2.
 
 geograpy3
-========
+=========
 
 Extract place names from a URL or text, and add context to those names -- for 
 example distinguishing between a country, region or city. 
@@ -97,6 +101,8 @@ Place context is handled in the `places` module. For example:
 And of course all of the other information shown above (`country_regions` etc) 
 is available after the corresponding `set_` method is called.
 
+## Stackoverflow
+* [Questions tagged with 'geograpy'](https://stackoverflow.com/questions/tagged/geograpy)
 
 ## Credits
 

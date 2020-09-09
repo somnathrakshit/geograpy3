@@ -1,0 +1,5 @@
+# libaries needed by geograpy3
+# https://github.com/codelucas/newspaper
+# https://pypi.org/project/newspaper/
+# https://pypi.org/project/newspaper3k/
+newspaper3k

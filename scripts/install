@@ -1,0 +1,44 @@
+#!/bin/bash
+# WF 2020-03-25
+os=$(uname -a)
+useroption="--user"
+
+#
+# autoinstall the package for the given command
+#
+autoinstall() {
+  local l_cmd="$1"
+  local l_package="$2"
+  echo "checking whether $l_cmd is installed ..."
+  which $l_cmd
+  if [ $? -ne 0 ]
+  then
+    echo  "installing $l_cmd from package $l_package ..."
+    $install $l_package
+  fi
+}
+case $os in
+  Darwin*)
+   pip="pip3"
+   install="sudo port install"
+   ;;
+  *)
+   pip="pip3"
+   if [ "$USER" = "travis" ]
+   then
+     # https://stackoverflow.com/a/20621143/1497139
+     echo "environment is travis with python version $TRAVIS_PYTHON_VERSION"
+     pip="pip"
+     useroption=""
+   fi
+   install="sudo apt-get install"
+   ;;
+esac
+#$install python3-pip
+#autoinstall jq jq
+$pip --version
+echo "installing required python modules with useroption $useroption"
+$pip install $useroption -r requirements.txt
+
+# used fixed geography-nltk script
+geograpy/bin/geograpy-nltk
