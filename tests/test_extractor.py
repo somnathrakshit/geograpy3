@@ -79,6 +79,7 @@ class TestExtractor(unittest.TestCase):
         places=e.find_geoEntities()
         if self.debug:
             print(places)
+        self.assertEqual([],places)
         
         
     def testStackoverflow54077973(self):
