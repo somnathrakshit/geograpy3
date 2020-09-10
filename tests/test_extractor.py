@@ -1,10 +1,10 @@
 from geograpy.extraction import Extractor
+import geograpy
 import unittest
-import ssl
 
 class TestExtractor(unittest.TestCase):
     '''
-    test the extractor
+    test Extractor
     '''
 
     def setUp(self):
@@ -34,9 +34,20 @@ class TestExtractor(unittest.TestCase):
         '''
         test the extractor
         '''
-        e = Extractor(url='http://www.bbc.com/news/world-europe-26919928')
-        e.find_entities()
-        self.check(e.places,['Russia','Kiev'])
+        url='http://www.bbc.com/news/world-europe-26919928'
+        e = Extractor(url=url)
+        e.find_geoEntities()
+        self.check(e.places,['Russia','Kiev','Ukraine'])
+        
+    def testGetGeoPlace(self):
+        '''
+        test geo place handling
+        '''
+        url='http://www.bbc.com/news/world-europe-26919928'
+        places=geograpy.get_geoPlace_context(url=url)
+        if self.debug:
+            print(places)
+        self.assertEqual(['Moscow', 'Donetsk', 'Brussels', 'Kharkiv', 'Russia'],places.cities)
         
     def testExtractorFromText(self):
         '''

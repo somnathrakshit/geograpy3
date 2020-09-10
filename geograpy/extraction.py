@@ -1,5 +1,6 @@
 import nltk
 from newspaper import Article
+from geograpy.labels import Labels
 
 class Extractor(object):
     '''
@@ -21,6 +22,9 @@ class Extractor(object):
         self.places = []
 
     def set_text(self):
+        '''
+        setter for text
+        '''
         if not self.text and self.url:
             a = Article(self.url)
             a.download()
@@ -30,13 +34,20 @@ class Extractor(object):
     def find_geoEntities(self):
         '''
         find geographic entities
+        
+        Returns:
+            list: of places
         '''
-        self.find_entities(['GPE'])
+        self.find_entities(Labels.geo)
         return self.places
 
-    def find_entities(self,labels=['GPE','PERSON','ORGANIZATION']):
+    def find_entities(self,labels=Labels.default):
         '''
-        find entities with the given labels
+        find entities with the given labels set self.places and returns it
+        Args:
+            labels(Labels): the labels to filter
+        Returns:
+            list: of places
         '''
         self.set_text()
 

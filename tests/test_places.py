@@ -2,6 +2,9 @@ from geograpy.places import PlaceContext
 import unittest
 
 class TestPlaces(unittest.TestCase):
+    '''
+    test Places 
+    '''
 
 
     def setUp(self):
