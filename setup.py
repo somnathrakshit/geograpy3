@@ -9,7 +9,7 @@ except (IOError, ImportError):
     long_description = open('README.md').read()
 
 setup(name='geograpy3',
-      version='0.1.3',
+      version='0.1.4rc1',
       description='Extract countries, regions and cities from a URL or text',
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -17,7 +17,13 @@ setup(name='geograpy3',
       download_url='https://github.com/somnathrakshit/geograpy3',
       author='Somnath Rakshit',
       author_email='somnath52@gmail.com',
-      license='MIT',
+      license='Apache',
+      classifiers=[
+            'Programming Language :: Python :: 3.5',
+            'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8'
+      ],
       packages=['geograpy'],
       install_requires=[
           'numpy',
