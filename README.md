@@ -1,5 +1,5 @@
 # geograpy3
-[![pypi]([https://img.shields.io/pypi/pyversions/geograpy3)](https://pypi.org/project/geograpy3/)
+[![pypi](https://img.shields.io/pypi/pyversions/geograpy3)(https://pypi.org/project/geograpy3/)
 [![Github Actions Build](https://github.com/somnathrakshit/geograpy3/workflows/Build/badge.svg?branch=master)](https://github.com/somnathrakshit/geograpy3/actions?query=workflow%3ABuild+branch%3Amaster)
 [![GitHub issues](https://img.shields.io/github/issues/somnathrakshit/geograpy3.svg)](https://github.com/somnathrakshit/geograpy3/issues)
 [![GitHub closed issues](https://img.shields.io/github/issues-closed/somnathrakshit/geograpy3.svg)](https://github.com/somnathrakshit/geograpy3/issues/?q=is%3Aissue+is%3Aclosed)
