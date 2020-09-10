@@ -11,7 +11,7 @@ class Extractor(object):
         constructor
         Args:
             text(string): the text to analyze
-            url(sring): the url to read the text to analyze from
+            url(string): the url to read the text to analyze from
             
         '''
         if not text and not url:

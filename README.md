@@ -3,11 +3,12 @@
 [![Github Actions Build](https://github.com/somnathrakshit/geograpy3/workflows/Build/badge.svg?branch=master)](https://github.com/somnathrakshit/geograpy3/actions?query=workflow%3ABuild+branch%3Amaster)
 [![GitHub issues](https://img.shields.io/github/issues/somnathrakshit/geograpy3.svg)](https://github.com/somnathrakshit/geograpy3/issues)
 [![GitHub issues](https://img.shields.io/github/issues-closed/somnathrakshit/geograpy3.svg)](https://github.com/somnathrakshit/geograpy3/issues/?q=is%3Aissue+is%3Aclosed)
+[![GitHub](https://img.shields.io/github/license/somnathrakshit/geograpy3.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 
-geograpy3 is a fork of [Geograpy2](https://github.com/Corollarium/geograpy2), which is itself a fork of [geograpy](https://github.com/ushahidi/geograpy) and inherits
+geograpy3 is a fork of [geograpy2](https://github.com/Corollarium/geograpy2), which is itself a fork of [geograpy](https://github.com/ushahidi/geograpy) and inherits
 most of it, but solves several problems (such as support for utf8, places names
-with multiple words, confusion over homonyms etc). Also, geograpy3 is compatible with Python 3, unlike Geography2.
+with multiple words, confusion over homonyms etc). Also, geograpy3 is compatible with Python 3, unlike geograpy2.
 
 What it is
 ==========
@@ -41,7 +42,7 @@ Import the module, give some text or a URL, and presto.
 ```python
 import geograpy
 url = 'http://www.bbc.com/news/world-europe-26919928'
-places = geograpy.get_place_context(url=url)
+places = geograpy.get_geoPlace_context(url=url)
 ```
 
 Now you have access to information about all the places mentioned in the linked
@@ -87,7 +88,7 @@ You can of course use each of Geograpy's modules on their own. For example:
 from geograpy import extraction
 
 e = extraction.Extractor(url='http://www.bbc.com/news/world-europe-26919928')
-e.find_entities()
+e.find_geoEntities()
 
 # You can now access all of the places found by the Extractor
 print(e.places)
