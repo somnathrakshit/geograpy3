@@ -19,6 +19,7 @@ setup(name='geograpy3',
       author_email='somnath52@gmail.com',
       license='Apache',
       classifiers=[
+            'Programming Language :: Python',
             'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',

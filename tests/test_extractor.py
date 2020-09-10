@@ -39,6 +39,16 @@ class TestExtractor(unittest.TestCase):
         e.find_geoEntities()
         self.check(e.places,['Russia','Kiev','Ukraine'])
         
+    def testGeograpyIssue32(self):
+        '''
+        test https://github.com/ushahidi/geograpy/issues/32
+        '''
+        url = "https://www.politico.eu/article/italy-incurable-economy/" 
+        places = geograpy.get_geoPlace_context(url = url) 
+        print(places)
+        self.assertEquals(['Rome', 'Brussels', 'Italy'],places.cities)
+            
+        
     def testGetGeoPlace(self):
         '''
         test geo place handling
