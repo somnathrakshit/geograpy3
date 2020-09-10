@@ -32,7 +32,7 @@ geograpy-nltk
 ## Getting the source code
 ```bash
 git clone https://github.com/somnathrakshit/geograpy3
-cd geography3
+cd geograpy3
 scripts/install
 ```
 
