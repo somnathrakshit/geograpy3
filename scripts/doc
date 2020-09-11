@@ -74,6 +74,6 @@ checkinstalled  sphinx-apidoc
 sphinx-apidoc --full -f -o $src .
 cd $src
 
-fixconf 2018-2020 "Somnat Rakshit, Wolfgang Fahl"
+fixconf 2018-2020 "Somnath Rakshit, Wolfgang Fahl"
 make clean html
 open _build/html/index.html
