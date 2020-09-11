@@ -29,7 +29,7 @@ jobs:
     - name: Build docs
       run: |
         pdoc --html -o docs/ geograpy
-    - name: Deploy Site
+    - name: Deploy docs to Netlify
       uses: netlify/actions/cli@master
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
