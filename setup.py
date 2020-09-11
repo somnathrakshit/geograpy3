@@ -1,4 +1,5 @@
 from setuptools import setup
+from collections import OrderedDict
 
 try:
     long_description = ""
@@ -18,6 +19,13 @@ setup(name='geograpy3',
       author='Somnath Rakshit',
       author_email='somnath52@gmail.com',
       license='Apache',
+      project_urls=OrderedDict(
+        (
+            ("Documentation", "https://geograpy3.netlify.app"),
+            ("Code", "https://github.com/somnathrakshit/geograpy3"),
+            ("Issue tracker", "https://github.com/somnathrakshit/geograpy3/issues"),
+        )
+      ),
       classifiers=[
             'Programming Language :: Python',
             'Programming Language :: Python :: 3.5',
