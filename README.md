@@ -1,6 +1,8 @@
 # geograpy3
 [![pypi](https://img.shields.io/pypi/pyversions/geograpy3)](https://pypi.org/project/geograpy3/)
 [![Github Actions Build](https://github.com/somnathrakshit/geograpy3/workflows/Build/badge.svg?branch=master)](https://github.com/somnathrakshit/geograpy3/actions?query=workflow%3ABuild+branch%3Amaster)
+[![PyPI Status](https://badge.fury.io/py/geograpy3.svg)](https://badge.fury.io/py/geograpy3)
+[![PyPI Status](https://pepy.tech/badge/geograpy3)](https://pepy.tech/project/geograpy3)
 [![GitHub issues](https://img.shields.io/github/issues/somnathrakshit/geograpy3.svg)](https://github.com/somnathrakshit/geograpy3/issues)
 [![GitHub closed issues](https://img.shields.io/github/issues-closed/somnathrakshit/geograpy3.svg)](https://github.com/somnathrakshit/geograpy3/issues/?q=is%3Aissue+is%3Aclosed)
 [![License](https://img.shields.io/github/license/somnathrakshit/geograpy3.svg)](https://www.apache.org/licenses/LICENSE-2.0)
