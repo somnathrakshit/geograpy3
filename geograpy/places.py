@@ -13,7 +13,7 @@ and relationships between places (city is inside region is inside country, etc)
 
 class PlaceContext(object):
     '''
-    adds context information to a place name
+    Adds context information to a place name
     '''
 
     def __init__(self, place_names, setAll=True,db_file=None):
@@ -21,9 +21,12 @@ class PlaceContext(object):
         Constructor
         
         Args:
-            place_names(string): the place names to check
-            setAll(boolean): true if all context information should immediately be set
-            db_file(string): path to the database file to be used - if None the default "locs.db" will be used
+            place_names: 
+                string: The place names to check
+            setAll: 
+                boolean: True if all context information should immediately be set
+            db_file: 
+                    string: Path to the database file to be used - if None the default "locs.db" will be used
         '''
         db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
         self.conn = sqlite3.connect(db_file)
@@ -34,7 +37,7 @@ class PlaceContext(object):
             
     def __str__(self):
         '''
-        return a string representation of me
+        Return a string representation of me
         '''
         text= "countries=%s\nregions=%s\ncities=%s\nother=%s" % (self.countries,self.regions,self.cities,self.other)
         return text
@@ -113,7 +116,7 @@ class PlaceContext(object):
 
     def setAll(self):
         '''
-        set all context information
+        Set all context information
         '''
         self.set_countries()
         self.set_regions()

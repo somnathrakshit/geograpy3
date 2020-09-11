@@ -4,14 +4,16 @@ from geograpy.labels import Labels
 
 class Extractor(object):
     '''
-    extract geo context for text or from url
+    Extract geo context for text or from url
     '''
     def __init__(self, text=None, url=None):
         '''
-        constructor
+        Constructor
         Args:
-            text(string): the text to analyze
-            url(string): the url to read the text to analyze from
+            text: 
+                string: The text to analyze
+            url: 
+                string: The url to read the text to analyze from
             
         '''
         if not text and not url:
@@ -23,7 +25,7 @@ class Extractor(object):
 
     def set_text(self):
         '''
-        setter for text
+        Setter for text
         '''
         if not self.text and self.url:
             a = Article(self.url)
@@ -33,21 +35,24 @@ class Extractor(object):
             
     def find_geoEntities(self):
         '''
-        find geographic entities
+        Find geographic entities
         
         Returns:
-            list: of places
+            list: 
+                List of places
         '''
         self.find_entities(Labels.geo)
         return self.places
 
     def find_entities(self,labels=Labels.default):
         '''
-        find entities with the given labels set self.places and returns it
+        Find entities with the given labels set self.places and returns it
         Args:
-            labels(Labels): the labels to filter
+            labels: 
+                Labels: The labels to filter
         Returns:
-            list: of places
+            list: 
+                List of places
         '''
         self.set_text()
 
