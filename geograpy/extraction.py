@@ -6,17 +6,18 @@ class Extractor(object):
     '''
     extract geo context for text or from url
     '''
-    def __init__(self, text=None, url=None):
+    def __init__(self, text=None, url=None, debug=False):
         '''
         constructor
         Args:
             text(string): the text to analyze
             url(string): the url to read the text to analyze from
+            debug(boolean): if True show debug information
             
         '''
         if not text and not url:
             raise Exception('text or url is required')
-
+        self.debug=debug
         self.text = text
         self.url = url
         self.places = []
@@ -57,5 +58,8 @@ class Extractor(object):
         for ne in nes:
             if type(ne) is nltk.tree.Tree:
                 if (ne.label() in labels):
-                    self.places.append(u' '.join([i[0] for i in ne.leaves()]))
+                    leaves=ne.leaves()
+                    if self.debug:
+                        print(leaves)
+                    self.places.append(u' '.join([i[0] for i in leaves]))
         return self.places

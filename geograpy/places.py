@@ -75,10 +75,18 @@ class PlaceContext(object):
         return s
 
     def is_a_country(self, s):
+        '''
+        check if the given string s is a country
+        
+        Args:
+            s(string): the string to check
+        Returns:
+            True: if pycountry thinks the string is a country
+        '''
         s = self.correct_country_mispelling(s)
         try:
-            pycountry.countries.get(name=s)
-            return True
+            country=pycountry.countries.get(name=s)
+            return country is not None
         except KeyError as e:
             return False
 

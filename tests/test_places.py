@@ -27,7 +27,8 @@ class TestPlaces(unittest.TestCase):
         if self.debug:
             print (pc)
             
-        assert len(pc.countries) == 3
+        self.assertEqual(1,len(pc.countries))
+        self.assertEqual("Kenya",pc.countries[0])
         assert len(pc.cities) == 1
         # assert len(pc.other) == 1
         # assert 'Ngong' in pc.other

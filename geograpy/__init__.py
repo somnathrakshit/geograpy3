@@ -2,7 +2,7 @@ from geograpy.extraction import Extractor
 from geograpy.places import PlaceContext
 from geograpy.labels import Labels
 
-def get_geoPlace_context(url=None, text=None):
+def get_geoPlace_context(url=None, text=None,debug=False):
     '''
     get a place context for a given text with information
     about country, region, city and other
@@ -11,14 +11,15 @@ def get_geoPlace_context(url=None, text=None):
     Args:
         url(String): the url to read text from (if any)
         text(String): the text to analyze
+        debug(boolean): if True show debug information
     
     Returns:
         PlaceContext: the place context
     '''    
-    places=get_place_context(url, text, labels=Labels.geo)
+    places=get_place_context(url, text, labels=Labels.geo, debug=debug)
     return places
     
-def get_place_context(url=None, text=None,labels=Labels.default):
+def get_place_context(url=None, text=None,labels=Labels.default, debug=False):
     '''
     get a place context for a given text with information
     about country, region, city and other
@@ -27,11 +28,12 @@ def get_place_context(url=None, text=None,labels=Labels.default):
     Args:
         url(String): the url to read text from (if any)
         text(String): the text to analyze
+        debug(boolean): if True show debug information
     
     Returns:
         PlaceContext: the place context
     '''
-    e = Extractor(url=url, text=text)
+    e = Extractor(url=url, text=text,debug=debug)
     e.find_entities(labels=labels)
 
     pc = PlaceContext(e.places)

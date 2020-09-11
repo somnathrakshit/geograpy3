@@ -92,7 +92,19 @@ class TestExtractor(unittest.TestCase):
         e6.find_entities()
         self.check(e6.places,['São Paulo'])
         
+    def testStackoverflow62152428(self):
+        '''
+        see https://stackoverflow.com/questions/62152428/extracting-country-information-from-description-using-geograpy?noredirect=1#comment112899776_62152428
+        '''
+        examples={2: 'Socialist Republic of Alachua', 3: 'Hérault, France', 4: 'Gwalior, India', 5: 'Zaragoza,España', 6:'Zaragoza, Spain', 7: 'amsterdam ', 8: 'Evesham', 9: 'Rochdale'}  
+        for index,text in examples.items():
+            places=geograpy.get_geoPlace_context(text=text)
+            print("example %d: %s" % (index,places.countries))
+        
     def testStackoverflow43322567(self):
+        '''
+        see https://stackoverflow.com/questions/43322567
+        '''
         url='https://en.wikipedia.org/wiki/U.S._state'
         e=Extractor(url=url)
         places=e.find_geoEntities()
