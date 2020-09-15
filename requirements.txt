@@ -11,3 +11,4 @@ nltk
 jellyfish
 # https://pypi.org/project/numpy/
 numpy
+sphinx-rtd-theme

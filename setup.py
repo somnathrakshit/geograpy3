@@ -1,4 +1,5 @@
 from setuptools import setup
+import os 
 from collections import OrderedDict
 
 try:
@@ -7,7 +8,8 @@ try:
         long_description = f.read()
 
 except (IOError, ImportError):
-    long_description = open('README.md').read()
+    print('Curr dir:', os.getcwd())
+    long_description = open('../../README.md').read()
 
 setup(name='geograpy3',
       version='0.1.6',
