@@ -10,16 +10,21 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+#https://stackoverflow.com/a/44980548/1497139
 import os
 import sys
-sys.path.insert(0, '../..')
+import sphinx_rtd_theme
+basepath=os.path.abspath('../..')
+print('adding basepath %s' % (basepath))
+sys.path.insert(0, basepath)
+print('sys.path is now: %s' % (sys.path))
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'geograpy3'
-copyright = '2020, Author'
-author = 'Author'
+copyright = '2018-2020, Somnath Rakshit, Wolfgang Fahl'
+author = 'Somnath Rakshit, Wolfgang Fahl'
 
 
 # -- General configuration ---------------------------------------------------
@@ -28,6 +33,8 @@ author = 'Author'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+	'sphinx_rtd_theme',
+	'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',

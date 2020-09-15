@@ -7,7 +7,7 @@ try:
     with open('README.md', encoding='utf-8') as f:
         long_description = f.read()
 
-except (IOError, ImportError):
+except:
     print('Curr dir:', os.getcwd())
     long_description = open('../../README.md').read()
 
