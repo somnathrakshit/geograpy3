@@ -1,4 +1,5 @@
 # geograpy3
+[![Join the chat at https://gitter.im/geograpy3/community](https://badges.gitter.im/geograpy3/community.svg)](https://gitter.im/geograpy3/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![pypi](https://img.shields.io/pypi/pyversions/geograpy3)](https://pypi.org/project/geograpy3/)
 [![Github Actions Build](https://github.com/somnathrakshit/geograpy3/workflows/Build/badge.svg?branch=master)](https://github.com/somnathrakshit/geograpy3/actions?query=workflow%3ABuild+branch%3Amaster)
 [![PyPI Status](https://img.shields.io/pypi/v/geograpy3.svg)](https://pypi.python.org/pypi/geograpy3/)
