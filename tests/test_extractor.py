@@ -94,6 +94,7 @@ class TestExtractor(unittest.TestCase):
         e6.find_entities()
         self.check(e6.places,['São Paulo'])
         
+
     def testIssue7(self):
         '''
         test https://github.com/somnathrakshit/geograpy3/issues/7
