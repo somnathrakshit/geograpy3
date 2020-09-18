@@ -92,6 +92,18 @@ class TestExtractor(unittest.TestCase):
         e6.find_entities()
         self.check(e6.places,['São Paulo'])
         
+    def testIssue9(self):
+        '''
+        test https://github.com/somnathrakshit/geograpy3/issues/9
+        [BUG]AttributeError: 'NoneType' object has no attribute 'name' on "Pristina, Kosovo"
+        '''    
+        locality="Pristina, Kosovo"
+        gp=geograpy.get_geoPlace_context(text=locality)
+        if self.debug:
+            print("  %s" % gp.countries)
+            print("  %s" % gp.regions)
+            print("  %s" % gp.cities)
+    
     def testStackoverflow62152428(self):
         '''
         see https://stackoverflow.com/questions/62152428/extracting-country-information-from-description-using-geograpy?noredirect=1#comment112899776_62152428
