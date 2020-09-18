@@ -1,5 +1,6 @@
 from geograpy.extraction import Extractor
 from geograpy.places import PlaceContext
+from geograpy.location import Location
 from geograpy.labels import Labels
 
 def get_geoPlace_context(url=None, text=None,debug=False):
@@ -42,3 +43,18 @@ def get_place_context(url=None, text=None,labels=Labels.default, debug=False):
     pc = PlaceContext(e.places)
     pc.setAll()
     return pc
+
+def locate(location,debug=False):
+    '''
+    locate the given location string
+    Args:
+        location(string): the description of the location
+    Returns:
+        Location: the location
+    '''
+    e = Extractor(text=location,debug=debug)
+    e.find_entities(labels=Labels.geo)
+    loc=Location(debug=debug)
+    loc.locate(e.places)
+    return loc
+    

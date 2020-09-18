@@ -60,7 +60,8 @@ class Extractor(object):
 
         for ne in nes:
             if type(ne) is nltk.tree.Tree:
-                if (ne.label() in labels):
+                nelabel=ne.label()
+                if (nelabel in labels):
                     leaves=ne.leaves()
                     if self.debug:
                         print(leaves)

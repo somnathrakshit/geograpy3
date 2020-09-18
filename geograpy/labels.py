@@ -8,5 +8,5 @@ class Labels(object):
     '''
     NLTK labels
     '''
-    default=['GPE','PERSON','ORGANIZATION']
-    geo=['GPE']
+    default=['GPE','GSP','PERSON','ORGANIZATION']
+    geo=['GPE','GSP']

@@ -1,4 +1,5 @@
 from geograpy.extraction import Extractor
+from geograpy.labels import Labels
 import geograpy
 import unittest
 
@@ -45,8 +46,9 @@ class TestExtractor(unittest.TestCase):
         '''
         url = "https://www.politico.eu/article/italy-incurable-economy/" 
         places = geograpy.get_geoPlace_context(url = url) 
-        print(places)
-        self.assertEquals(['Rome', 'Brussels', 'Italy'],places.cities)
+        if self.debug:
+            print(places)
+        self.assertEqual(['Rome', 'Brussels', 'Italy'],places.cities)
             
         
     def testGetGeoPlace(self):
@@ -92,6 +94,63 @@ class TestExtractor(unittest.TestCase):
         e6.find_entities()
         self.check(e6.places,['São Paulo'])
         
+    def testIssue7(self):
+        '''
+        test https://github.com/somnathrakshit/geograpy3/issues/7
+        disambiguating countries
+        '''
+        localities=['Zaragoza, Spain','Vienna, Austria'
+                    #,'Vienna, IL'
+                    ]
+        expected=[
+            {'iso': 'ES'},
+            {'iso': 'AT'},
+            {'iso': 'US'}
+        ]
+        index=0
+        for locality in localities:
+            loc=geograpy.locate(locality,debug=False)
+            if self.debug:
+                print("  %s" % loc.country)
+                print("  %s" % str(loc.city))
+            self.assertEqual(expected[index]['iso'],loc.country.alpha_2)
+            index+=1
+       
+    def testIssue10(self):
+        '''
+        test https://github.com/somnathrakshit/geograpy3/issues/10
+        Add ISO country code
+        ''' 
+        localities=[
+            'Singapore',
+            'Beijing, China',
+            'Paris, France',
+            'Barcelona, Spain',
+            'Rome, Italy',
+            'Hong Kong',
+            'Bangkok, Thailand',
+            'Vienna, Austria',
+            'Athens, Greece',
+            'Shanghai, China']
+        for locality in localities:
+            loc=geograpy.locate(locality)
+            if self.debug:
+                print("  %s" % loc.country)
+                print("  %s" % str(loc.city))
+            
+        
+    def testIssue9(self):
+        '''
+        test https://github.com/somnathrakshit/geograpy3/issues/9
+        [BUG]AttributeError: 'NoneType' object has no attribute 'name' on "Pristina, Kosovo"
+        '''    
+        locality="Pristina, Kosovo"
+        gp=geograpy.get_geoPlace_context(text=locality)
+        if self.debug:
+            print("  %s" % gp.countries)
+            print("  %s" % gp.regions)
+            print("  %s" % gp.cities)
+    
     def testStackoverflow62152428(self):
         '''
         see https://stackoverflow.com/questions/62152428/extracting-country-information-from-description-using-geograpy?noredirect=1#comment112899776_62152428

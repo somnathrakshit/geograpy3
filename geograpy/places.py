@@ -1,22 +1,20 @@
-import os
-import csv
+
 import pycountry
-import sqlite3
 from .utils import remove_non_ascii, fuzzy_match
 from collections import Counter
+from geograpy.location import Location
 
 """
 Takes a list of place names and works place designation (country, region, etc) 
 and relationships between places (city is inside region is inside country, etc)
 """
 
-
-class PlaceContext(object):
+class PlaceContext(Location):
     '''
     Adds context information to a place name
     '''
 
-    def __init__(self, place_names, setAll=True,db_file=None):
+    def __init__(self, place_names, setAll=True):
         '''
         Constructor
         
@@ -28,9 +26,7 @@ class PlaceContext(object):
             db_file: 
                     string: Path to the database file to be used - if None the default "locs.db" will be used
         '''
-        db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
-        self.conn = sqlite3.connect(db_file)
-        self.conn.text_factory = lambda x: str(x, 'utf-8', 'ignore')
+        super().__init__()
         self.places = place_names
         if setAll:
             self.setAll()
@@ -42,78 +38,8 @@ class PlaceContext(object):
         text= "countries=%s\nregions=%s\ncities=%s\nother=%s" % (self.countries,self.regions,self.cities,self.other)
         return text
 
-    def populate_db(self):
-        cur = self.conn.cursor()
-        cur.execute("DROP TABLE IF EXISTS cities")
-
-        cur.execute(
-            "CREATE TABLE cities(geoname_id INTEGER, continent_code TEXT, continent_name TEXT, country_iso_code TEXT, country_name TEXT, subdivision_iso_code TEXT, subdivision_name TEXT, city_name TEXT, metro_code TEXT, time_zone TEXT)")
-        cur_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(cur_dir + "/data/GeoLite2-City-Locations.csv") as info:
-            reader = csv.reader(info)
-            for row in reader:
-                cur.execute("INSERT INTO cities VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", row)
-
-            self.conn.commit()
-
-    def db_has_data(self):
-        cur = self.conn.cursor()
-
-        cur.execute("SELECT Count(*) FROM sqlite_master WHERE name='cities';")
-        data = cur.fetchone()[0]
-
-        if data > 0:
-            cur.execute("SELECT Count(*) FROM cities")
-            data = cur.fetchone()[0]
-            return data > 0
-        return False
-
-    def correct_country_mispelling(self, s):
-        cur_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(cur_dir + "/data/ISO3166ErrorDictionary.csv") as info:
-            reader = csv.reader(info)
-            for row in reader:
-                if s in remove_non_ascii(row[0]):
-                    return row[2]
-        return s
-
-    def is_a_country(self, s):
-        '''
-        check if the given string s is a country
-        
-        Args:
-            s(string): the string to check
-        Returns:
-            True: if pycountry thinks the string is a country
-        '''
-        s = self.correct_country_mispelling(s)
-        try:
-            country=pycountry.countries.get(name=s)
-            return country is not None
-        except KeyError as e:
-            return False
-
-    def places_by_name(self, place_name, column_name):
-        if not self.db_has_data():
-            self.populate_db()
-
-        cur = self.conn.cursor()
-        cur.execute('SELECT * FROM cities WHERE ' + column_name + ' = "' + place_name + '"')
-        rows = cur.fetchall()
-
-        if len(rows) > 0:
-            return rows
-
-        return None
-
-    def cities_for_name(self, city_name):
-        return self.places_by_name(city_name, 'city_name')
-
-    def regions_for_name(self, region_name):
-        return self.places_by_name(region_name, 'subdivision_name')
-
     def get_region_names(self, country_name):
-        country_name = self.correct_country_mispelling(country_name)
+        country_name = self.correct_country_misspelling(country_name)
         try:
             obj = pycountry.countries.get(name=country_name)
             regions = pycountry.subdivisions.get(country_code=obj.alpha2)
@@ -132,11 +58,18 @@ class PlaceContext(object):
         self.set_other()
         
     def set_countries(self):
-        countries = [self.correct_country_mispelling(place)
-                     for place in self.places if self.is_a_country(place)]
+        '''
+        get the country information from my places
+        '''
+        countries = []
+        for place in self.places:
+            country=self.getCountry(place)
+            if country is not None:
+                countries.append(country.name)
 
         self.country_mentions = Counter(countries).most_common()
         self.countries = list(set(countries))
+        pass
 
     def set_regions(self):
         regions = []
@@ -178,7 +111,8 @@ class PlaceContext(object):
             self.populate_db()
 
         cur = self.conn.cursor()
-        cur.execute("SELECT * FROM cities WHERE city_name IN (" + ",".join("?" * len(self.places)) + ")", self.places)
+        query="SELECT * FROM cities WHERE city_name IN (" + ",".join("?" * len(self.places)) + ")"
+        cur.execute(query, self.places)
         rows = cur.fetchall()
 
         for row in rows:
@@ -186,8 +120,11 @@ class PlaceContext(object):
 
             try:
                 country = pycountry.countries.get(alpha_2=row[3])
-                country_name = country.name
-            except KeyError as e:
+                if country is not None:
+                    country_name = country.name
+                else:
+                    country_name = row[4]
+            except KeyError:
                 country_name = row[4]
 
             city_name = row[7]
@@ -201,7 +138,7 @@ class PlaceContext(object):
                 self.country_mentions.append((country_name, 1))
 
             if country_name not in self.country_cities:
-                self.country_cities[country.name] = []
+                self.country_cities[country_name] = []
 
             if city_name not in self.country_cities[country_name]:
                 self.country_cities[country_name].append(city_name)
@@ -218,6 +155,6 @@ class PlaceContext(object):
 
         def unused(place_name):
             places = [self.countries, self.cities, self.regions]
-            return all(self.correct_country_mispelling(place_name) not in l for l in places)
+            return all(self.correct_country_misspelling(place_name) not in l for l in places)
 
         self.other = [p for p in self.places if unused(p)]
