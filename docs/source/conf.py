@@ -10,21 +10,16 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-#https://stackoverflow.com/a/44980548/1497139
-import os
-import sys
-import sphinx_rtd_theme
-basepath=os.path.abspath('../..')
-print('adding basepath %s' % (basepath))
-sys.path.insert(0, basepath)
-print('sys.path is now: %s' % (sys.path))
+# import os
+# import sys
+# sys.path.insert(0, 'C:\\Code\\geograpy3')
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'geograpy3'
-copyright = '2018-2020, Somnath Rakshit, Wolfgang Fahl'
-author = 'Somnath Rakshit, Wolfgang Fahl'
+copyright = '2020, Author'
+author = 'Author'
 
 
 # -- General configuration ---------------------------------------------------
@@ -33,8 +28,6 @@ author = 'Somnath Rakshit, Wolfgang Fahl'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-	'sphinx_rtd_theme',
-	'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
@@ -61,7 +54,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'alabaster'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
