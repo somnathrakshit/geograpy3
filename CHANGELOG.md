@@ -2,6 +2,11 @@
 
 <!-- do not remove -->
 
+## 0.1.9
+
+Fix version number
+
+
 ## 0.1.8
 
 ### New Features
