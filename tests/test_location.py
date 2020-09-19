@@ -4,12 +4,14 @@ Created on 2020-09-19
 @author: wf
 '''
 import unittest
-from geograpy.location import Location
+from geograpy.location import Locator
+from collections import Counter
 import os
+import re
 
 class TestLocation(unittest.TestCase):
     '''
-    test the Location class from the location module
+    test the Locator class from the location module
     '''
     def setUp(self):
         self.debug=True
@@ -22,7 +24,7 @@ class TestLocation(unittest.TestCase):
         '''
         test the locs.db cache for cities
         '''
-        loc=Location()
+        loc=Locator()
         cities=loc.getGeolite2Cities()
         if self.debug:
             print("Found %d cities " % len(cities)) 
@@ -33,14 +35,30 @@ class TestLocation(unittest.TestCase):
         '''
         check has data and populate functionality
         '''
-        loc=Location()
+        loc=Locator()
         if os.path.isfile(loc.db_file):
             os.remove(loc.db_file)
         # reinit sqlDB
-        loc=Location()
+        loc=Locator()
         self.assertFalse(loc.db_has_data())
         loc.populate_db()
         self.assertTrue(loc.db_has_data())
+        
+    def testWordCount(self):
+        '''
+        test the word count 
+        '''
+        loc=Locator.getInstance()
+        query="SELECT city_name AS name from CITIES"
+        nameRecords=loc.sqlDB.query(query)
+        print ("found %d names" % len(nameRecords))
+        wc=Counter()
+        for nameRecord in nameRecords:
+            name=nameRecord['name']
+            words=re.split(r"\W+",name)
+            wc[len(words)]+=1
+        print (wc.most_common(20))
+            
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

@@ -1,6 +1,6 @@
 from geograpy.extraction import Extractor
 from geograpy.places import PlaceContext
-from geograpy.location import Location
+from geograpy.location import Locator
 from geograpy.labels import Labels
 
 def get_geoPlace_context(url=None, text=None,debug=False):
@@ -50,11 +50,11 @@ def locate(location,debug=False):
     Args:
         location(string): the description of the location
     Returns:
-        Location: the location
+        Locator: the location
     '''
     e = Extractor(text=location,debug=debug)
-    e.find_entities(labels=Labels.geo)
-    loc=Location(debug=debug)
-    loc.locate(e.places)
-    return loc
+    e.split()
+    loc=Locator.getInstance(debug=debug)
+    city=loc.locate(e.places)
+    return city
     

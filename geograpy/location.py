@@ -9,10 +9,93 @@ import pycountry
 from lodstorage.sql import SQLDB
 from .utils import remove_non_ascii
 
-class Location(object):
+class City(object):
+    '''
+    a single city as an object
+    '''
+    def __init__(self):
+        pass
+    
+    def __str__(self):
+        text="%s (%s - %s)" % (self.name,self.region,self.country)
+        return text
+    
+    @staticmethod
+    def fromGeoLite2(record):
+        city=City()
+        city.name=record['city_name']
+        city.region=Region.fromGeoLite2(record)
+        city.country=Country.fromGeoLite2(record)
+        return city
+    
+class Region(object):
+    '''
+    a Region (Subdivision)
+    '''
+    def __init__(self):
+        pass
+    
+    def __str__(self):
+        text="%s(%s)" % (self.iso,self.name)
+        return text
+    
+    @staticmethod
+    def fromGeoLite2(record):
+        '''
+        create  a region from a Geolite2 record
+        
+        Args:
+            record(dict): the records as returned from a Query
+            
+        Returns:
+            Region: the corresponding region information
+        '''
+        region=Region()
+        region.name=record['subdivision_1_name']
+        region.iso=record['subdivision_1_iso_code'] 
+        return region   
+    
+class Country(object):
+    '''
+    a country
+    '''
+    def __init__(self):
+        pass
+    
+    def __str__(self):
+        text="%s(%s)" % (self.iso,self.name)
+        return text
+    
+    @staticmethod 
+    def fromGeoLite2(record):
+        '''
+        create a country from a geolite2 record
+        '''
+        country=Country()
+        country.name=record['country_name']
+        country.iso=record['country_iso_code']
+        return country
+    
+    @staticmethod
+    def fromPyCountry(pcountry):
+        '''
+        Args:
+            pcountry(PyCountry): a country as gotten from pycountry
+        Returns: 
+            Country: the country 
+        '''
+        country=Country()
+        country.name=pcountry.name
+        country.iso=pcountry.alpha_2
+        return country
+
+class Locator(object):
     '''
     location handling
     '''
+    
+    # singleton instance
+    locator=None
 
     def __init__(self, db_file=None,debug=False):
         '''
@@ -21,9 +104,12 @@ class Location(object):
         self.debug=debug
         self.db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
         self.sqlDB=SQLDB(self.db_file,errorDebug=True)
-        self.country=None
-        self.city=None
-        self.region=None
+    
+    @staticmethod
+    def getInstance(debug=False):
+        if Locator.locator is None:
+            Locator.locator=Locator(debug=debug)
+        return Locator.locator
         
     def locate(self,places):
         '''
@@ -33,7 +119,7 @@ class Location(object):
             places(list): a list of place tokens e.g. "Vienna, Austria"
         
         Returns:
-            Location: a complete location with potentially country, region and city
+            City: a city with country and region details
         '''
         # city candidates - may be from multiple countries
         country=None
@@ -44,32 +130,48 @@ class Location(object):
             if foundCountry is not None:
                 country=foundCountry
             foundCities=self.cities_for_name(place)
-            if foundCities is not None:
-                cities.extend(foundCities)
+            cities.extend(foundCities)
             foundRegions=self.regions_for_name(place)
-            if foundRegions is not None:
-                regions.extend(foundRegions)
-        self.disambiguate(country, regions, cities)
+            regions.extend(foundRegions)
+        foundCity=self.disambiguate(country, regions, cities)
+        return foundCity
        
     def disambiguate(self,country,regions,cities): 
         '''
         try determining country, regions and city from the potential choices
+        
+        Args:
+            country(Country): a matching country found
+            regions(list): a list of matching Regions found
+            cities(list): a list of matching cities found
+            
+        Return:
+            City: the found city or None
         '''
         if self.debug:
             print("countries: %s " % country)
             print("regions: %s" % regions)
             print("cities: %s" % cities)
-        self.country=country
+        foundCity=None
         # is the city information unique?
         if len(cities)==1:
-            self.city=cities[0]
-        elif len(cities)>1 and self.country is not None:
+            foundCity=cities[0]
+        elif len(cities)>1 and country is not None:
             for city in cities:
-                cityCountry=city['city_name']
                 if self.debug:
-                    print("city country %s (%s): " %(cityCountry,city))
-                if cityCountry==self.country.alpha_2:
-                    self.city=city
+                    print("city %s: " %(city))
+                if city.country.iso==country.iso:
+                    foundCity=city
+                    break
+        elif len(cities)>1 and len(regions)>0:
+            for region in regions:
+                for city in cities:
+                    if city.region.iso==region.iso and not city.region.name==city.name:
+                        foundCity=city
+                        break;
+                if foundCity is not None:
+                    break
+        return foundCity    
     
     def cities_for_name(self, city_name):
         '''
@@ -81,10 +183,28 @@ class Location(object):
         Returns:
             a list of city records
         '''
-        return self.places_by_name(city_name, 'city_name')
+        cities=[]
+        cityRecords=self.places_by_name(city_name, 'city_name')
+        for cityRecord in cityRecords:
+            cities.append(City.fromGeoLite2(cityRecord))
+        return cities
 
     def regions_for_name(self, region_name):
-        return self.places_by_name(region_name, 'subdivision_1_name')
+        '''
+        get the regions for the given region_name
+        
+        Args:
+            region_name(string): region name
+            
+        Returns:
+            list: the list of cities for this region
+        '''
+        regions=[]
+        regionRecords=self.places_by_name(region_name, 'subdivision_1_name')
+        regionRecords.extend(self.places_by_name(region_name,'subdivision_1_iso_code'))
+        for regionRecord in regionRecords:
+            regions.append(Region.fromGeoLite2(regionRecord))
+        return regions                     
     
     def correct_country_misspelling(self, name):
         '''
@@ -126,7 +246,10 @@ class Location(object):
         '''
         if correctMisspelling:
             name = self.correct_country_misspelling(name)
-        country=pycountry.countries.get(name=name)
+        pcountry=pycountry.countries.get(name=name)
+        country=None
+        if pcountry is not None:
+            country=Country.fromPyCountry(pcountry)
         return country
  
     def places_by_name(self, place_name, column_name):
@@ -141,17 +264,14 @@ class Location(object):
         query='SELECT * FROM cities WHERE ' + column_name + ' = (?)'
         params=(place_name,)
         cities=self.sqlDB.query(query,params)
-        if len(cities) > 0:
-            return cities
-
-        return None
+        return cities
     
     def getGeolite2Cities(self):
         '''
         get the Geolite2 City-Locations as a list of Dicts
         
         Returns:
-            list: a list of Geolite2 City-Location dicts
+            list: a list of Geolite2 City-Locator dicts
         '''
         cities=[]
         cur_dir = os.path.dirname(os.path.realpath(__file__))

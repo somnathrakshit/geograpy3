@@ -34,9 +34,8 @@ class TestPlaces(unittest.TestCase):
         countries=['Kenya','United States','Netherlands']
         for index,cityName in enumerate(cityNames):
             cities=pc.cities_for_name(cityName)
-            country=cities[0]['country_name']
-            self.assertEqual(countries[index],country)
-        
+            country=cities[0].country
+            self.assertEqual(countries[index],country.name)
     
         pc = PlaceContext(['Mumbai'])
         if self.debug:

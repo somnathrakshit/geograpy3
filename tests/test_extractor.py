@@ -92,29 +92,25 @@ class TestExtractor(unittest.TestCase):
         e6 = Extractor(text=text6)
         e6.find_entities()
         self.check(e6.places,['São Paulo'])
-        
 
     def testIssue7(self):
         '''
         test https://github.com/somnathrakshit/geograpy3/issues/7
         disambiguating countries
         '''
-        localities=['Zaragoza, Spain','Vienna, Austria'
-                    #,'Vienna, IL'
+        localities=['Zaragoza, Spain','Vienna, Austria',
+                    'Vienna, IL'
                     ]
         expected=[
             {'iso': 'ES'},
             {'iso': 'AT'},
             {'iso': 'US'}
         ]
-        index=0
-        for locality in localities:
-            loc=geograpy.locate(locality,debug=False)
+        for index,locality in enumerate(localities):
+            city=geograpy.locate(locality,debug=False)
             if self.debug:
-                print("  %s" % loc.country)
-                print("  %s" % str(loc.city))
-            self.assertEqual(expected[index]['iso'],loc.country.alpha_2)
-            index+=1
+                print("  %s" % city)
+            self.assertEqual(expected[index]['iso'],city.country.iso)
        
     def testIssue10(self):
         '''
@@ -132,11 +128,11 @@ class TestExtractor(unittest.TestCase):
             'Vienna, Austria',
             'Athens, Greece',
             'Shanghai, China']
+        expected=[]
         for locality in localities:
-            loc=geograpy.locate(locality)
+            city=geograpy.locate(locality)
             if self.debug:
-                print("  %s" % loc.country)
-                print("  %s" % str(loc.city))
+                print("  %s" % city)
             
         
     def testIssue9(self):

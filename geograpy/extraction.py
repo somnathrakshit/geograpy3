@@ -1,4 +1,5 @@
 import nltk
+import re
 from newspaper import Article
 from geograpy.labels import Labels
 
@@ -32,6 +33,15 @@ class Extractor(object):
             a.parse()
             self.text = a.text
             
+    def split(self):
+        '''
+        simpler regular expression splitter with not entity check
+        
+        hat tip: https://stackoverflow.com/a/1059601/1497139
+        '''
+        self.set_text()
+        self.places=re.split(r"\W+",self.text)
+            
     def find_geoEntities(self):
         '''
         Find geographic entities
@@ -42,7 +52,7 @@ class Extractor(object):
         '''
         self.find_entities(Labels.geo)
         return self.places
-
+        
     def find_entities(self,labels=Labels.default):
         '''
         Find entities with the given labels set self.places and returns it

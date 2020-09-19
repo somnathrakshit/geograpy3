@@ -2,14 +2,14 @@
 import pycountry
 from .utils import remove_non_ascii, fuzzy_match
 from collections import Counter
-from geograpy.location import Location
+from geograpy.location import Locator
 
 """
 Takes a list of place names and works place designation (country, region, etc) 
 and relationships between places (city is inside region is inside country, etc)
 """
 
-class PlaceContext(Location):
+class PlaceContext(Locator):
     '''
     Adds context information to a place name
     '''
