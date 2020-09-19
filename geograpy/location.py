@@ -5,8 +5,8 @@ Created on 2020-09-18
 '''
 import os
 import csv
-import sqlite3
 import pycountry
+from lodstorage.sql import SQLDB
 from .utils import remove_non_ascii
 
 class Location(object):
@@ -19,9 +19,8 @@ class Location(object):
         Constructor
         '''
         self.debug=debug
-        db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
-        self.conn = sqlite3.connect(db_file)
-        self.conn.text_factory = lambda x: str(x, 'utf-8', 'ignore')
+        self.db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
+        self.sqlDB=SQLDB(self.db_file,errorDebug=True)
         self.country=None
         self.city=None
         self.region=None
@@ -66,7 +65,7 @@ class Location(object):
             self.city=cities[0]
         elif len(cities)>1 and self.country is not None:
             for city in cities:
-                cityCountry=city[3]
+                cityCountry=city['city_name']
                 if self.debug:
                     print("city country %s (%s): " %(cityCountry,city))
                 if cityCountry==self.country.alpha_2:
@@ -85,7 +84,7 @@ class Location(object):
         return self.places_by_name(city_name, 'city_name')
 
     def regions_for_name(self, region_name):
-        return self.places_by_name(region_name, 'subdivision_name')
+        return self.places_by_name(region_name, 'subdivision_1_name')
     
     def correct_country_misspelling(self, name):
         '''
@@ -139,32 +138,41 @@ class Location(object):
         '''
         if not self.db_has_data():
             self.populate_db()
-
-        cur = self.conn.cursor()
-        cur.execute('SELECT * FROM cities WHERE ' + column_name + ' = "' + place_name + '"')
-        rows = cur.fetchall()
-
-        if len(rows) > 0:
-            return rows
+        query='SELECT * FROM cities WHERE ' + column_name + ' = (?)'
+        params=(place_name,)
+        cities=self.sqlDB.query(query,params)
+        if len(cities) > 0:
+            return cities
 
         return None
+    
+    def getGeolite2Cities(self):
+        '''
+        get the Geolite2 City-Locations as a list of Dicts
+        
+        Returns:
+            list: a list of Geolite2 City-Location dicts
+        '''
+        cities=[]
+        cur_dir = os.path.dirname(os.path.realpath(__file__))
+        csvfile=cur_dir + "/data/GeoLite2-City-Locations-en.csv"
+        with open(csvfile) as info:
+            reader = csv.DictReader(info)
+            for row in reader:
+                cities.append(row)
+        return cities
+                
         
     def populate_db(self):
         '''
         populate the cities SQL database which caches the information from the GeoLite2-City-Locations.csv file
         '''
-        cur = self.conn.cursor()
-        cur.execute("DROP TABLE IF EXISTS cities")
-
-        cur.execute(
-            "CREATE TABLE cities(geoname_id INTEGER, continent_code TEXT, continent_name TEXT, country_iso_code TEXT, country_name TEXT, subdivision_iso_code TEXT, subdivision_name TEXT, city_name TEXT, metro_code TEXT, time_zone TEXT)")
-        cur_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(cur_dir + "/data/GeoLite2-City-Locations.csv") as info:
-            reader = csv.reader(info)
-            for row in reader:
-                cur.execute("INSERT INTO cities VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", row)
-            self.conn.commit()
-
+        cities=self.getGeolite2Cities()
+        entityName="cities"
+        primaryKey="geoname_id"
+        entityInfo=self.sqlDB.createTable(cities[:100],entityName,primaryKey)
+        self.sqlDB.store(cities,entityInfo,executeMany=False)
+     
     def db_has_data(self):
         '''
         check whether the database has data / is populated
@@ -172,14 +180,13 @@ class Location(object):
         Returns:
             boolean: True if the cities table exists and has more than one record
         '''
-        cur = self.conn.cursor()
-
-        cur.execute("SELECT Count(*) FROM sqlite_master WHERE name='cities';")
-        data = cur.fetchone()[0]
-
-        if data > 0:
-            cur.execute("SELECT Count(*) FROM cities")
-            data = cur.fetchone()[0]
-            return data > 0
+        query1="SELECT Count(*) AS count FROM sqlite_master WHERE name='cities';"
+        tableResult=self.sqlDB.query(query1)
+        count=tableResult[0]['count']
+        if count>0:
+            query2="SELECT Count(*) AS count FROM cities"
+            countResult=self.sqlDB.query(query2)
+            count=countResult[0]['count']
+            return count > 10000
         return False    
         

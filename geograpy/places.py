@@ -97,6 +97,9 @@ class PlaceContext(Location):
         self.regions = list(set(regions))
 
     def set_cities(self):
+        '''
+        set the cities information
+        '''
         self.cities = []
         self.country_cities = {}
         self.address_strings = []
@@ -109,26 +112,21 @@ class PlaceContext(Location):
 
         if not self.db_has_data():
             self.populate_db()
+        params=",".join("?" * len(self.places))
+        query="SELECT * FROM cities WHERE city_name IN (" + params + ")"
+        cities=self.sqlDB.query(query,self.places)
 
-        cur = self.conn.cursor()
-        query="SELECT * FROM cities WHERE city_name IN (" + ",".join("?" * len(self.places)) + ")"
-        cur.execute(query, self.places)
-        rows = cur.fetchall()
-
-        for row in rows:
+        for city in cities:
             country = None
-
-            try:
-                country = pycountry.countries.get(alpha_2=row[3])
-                if country is not None:
-                    country_name = country.name
-                else:
-                    country_name = row[4]
-            except KeyError:
-                country_name = row[4]
-
-            city_name = row[7]
-            region_name = row[6]
+            alpha_2=city['country_iso_code']
+            country = pycountry.countries.get(alpha_2=alpha_2)
+            if country is not None:
+                country_name = country.name
+            else:
+                country_name = city['country_name']
+     
+            city_name = city['city_name']
+            region_name = city['subdivision_1_name']
 
             if city_name not in self.cities:
                 self.cities.append(city_name)

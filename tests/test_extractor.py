@@ -1,5 +1,4 @@
 from geograpy.extraction import Extractor
-from geograpy.labels import Labels
 import geograpy
 import unittest
 
@@ -59,7 +58,7 @@ class TestExtractor(unittest.TestCase):
         places=geograpy.get_geoPlace_context(url=url)
         if self.debug:
             print(places)
-        self.assertEqual(['Moscow', 'Donetsk', 'Brussels', 'Kharkiv', 'Russia'],places.cities)
+        self.assertEqual(['Moscow', 'Donetsk', 'Luhansk', 'Kharkiv', 'Brussels', 'Russia'],places.cities)
         
     def testExtractorFromText(self):
         '''

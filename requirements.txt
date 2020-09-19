@@ -11,4 +11,8 @@ nltk
 jellyfish
 # https://pypi.org/project/numpy/
 numpy
+# SQL storage
+# https://pypi.org/project/pylodstorage/
+pylodstorage
+# Documentation Read the docs Theme
 sphinx-rtd-theme

@@ -29,12 +29,14 @@ class TestPlaces(unittest.TestCase):
             
         self.assertEqual(1,len(pc.countries))
         self.assertEqual("Kenya",pc.countries[0])
-        assert len(pc.cities) == 1
-        # assert len(pc.other) == 1
-        # assert 'Ngong' in pc.other
-    
-        assert pc.cities_for_name('Nairobi')[0][4] == 'Kenya'
-        assert pc.regions_for_name('Ohio')[0][4] == 'United States'
+        self.assertEqual(2,len(pc.cities))
+        cityNames=['Nairobi','Ohio','Amsterdam']
+        countries=['Kenya','United States','Netherlands']
+        for index,cityName in enumerate(cityNames):
+            cities=pc.cities_for_name(cityName)
+            country=cities[0]['country_name']
+            self.assertEqual(countries[index],country)
+        
     
         pc = PlaceContext(['Mumbai'])
         if self.debug:
