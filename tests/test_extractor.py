@@ -1,7 +1,6 @@
 from geograpy.extraction import Extractor
 import geograpy
 import unittest
-from ometa.runtime import expected
 
 class TestExtractor(unittest.TestCase):
     '''
