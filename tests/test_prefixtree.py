@@ -5,7 +5,8 @@ Created on 2020-09-20
 '''
 import unittest
 from geograpy.locator import Locator
-from geograpy.prefixtree import PrefixTree
+from lodstorage.sql import SQLDB
+
 class TestPrefixTree(unittest.TestCase):
     '''
     test prefix tree algorithm
@@ -23,22 +24,21 @@ class TestPrefixTree(unittest.TestCase):
         test the prefix Tree
         '''
         loc=Locator.getInstance()
-        query="SELECT city_name AS name from CITIES"
-        nameRecords=loc.sqlDB.query(query)
-        trie=PrefixTree()   
-        for nameRecord in nameRecords:
-            name=nameRecord['name']
-            trie.add(name)
+        sqlDB=SQLDB()
+        loc.populate_Cities(sqlDB)
+        trie=loc.populate_PrefixTree(sqlDB)
         if self.debug:
-            print("found %d city names" % trie.count)
+            print("found %d city names" % trie.getCount())
        
         prefixes=['New','Las','San','Hong']
         expected=[172,62,310,0]
         for index,prefix in enumerate(prefixes):
-            count=trie.startsWith(prefix)
+            count=trie.countStartsWith(prefix)
             if self.debug:
                 print ("there are %3d cities with prefix %s" % (count,prefix))
             self.assertEqual(expected[index],count)
+        ambig=loc. populate_PrefixAmbiguities(sqlDB)
+        self.assertEqual(247,len(ambig))
         pass
 
 

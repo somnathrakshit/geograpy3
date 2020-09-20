@@ -123,7 +123,7 @@ class TestExtractor(unittest.TestCase):
             'Paris, France',
             'Barcelona, Spain',
             'Rome, Italy',
-            'Hong Kong',
+            'San Francisco, US',
             'Bangkok, Thailand',
             'Vienna, Austria',
             'Athens, Greece',

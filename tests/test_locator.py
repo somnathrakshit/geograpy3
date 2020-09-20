@@ -44,6 +44,28 @@ class TestLocator(unittest.TestCase):
         loc.populate_db()
         self.assertTrue(loc.db_has_data())
         
+    def testIsoRegexp(self):
+        '''
+        test regular expression for iso codes
+        '''
+        loc=Locator.getInstance()
+        self.assertFalse(loc.isISO('Singapore'))   
+         
+        query="""
+        select distinct country_iso_code as isocode from cities 
+union
+select distinct subdivision_1_iso_code as isocode from cities 
+union 
+select distinct subdivision_1_iso_code as isocode from cities
+"""     
+        loc.populate_db()
+        isocodeRecords=loc.sqlDB.query(query)
+        for isocodeRecord in isocodeRecords:
+            isocode=isocodeRecord['isocode']
+            if isocode:
+                self.assertTrue(loc.isISO(isocode))
+        
+        
     def testWordCount(self):
         '''
         test the word count 
