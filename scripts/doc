@@ -77,7 +77,7 @@ cd $src
 
 fixconf 2018-2020 "Somnath Rakshit, Wolfgang Fahl"
 make clean html
-if [ "$GHACTIONS" != "ACTIVE" ]
-then
-  open _build/html/index.html
-fi
+# if [ "$GHACTIONS" != "ACTIVE" ]
+# then
+#   open _build/html/index.html
+# fi
