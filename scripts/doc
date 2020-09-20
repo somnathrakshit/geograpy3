@@ -42,6 +42,7 @@ fixconf() {
     /html_theme = / {
       # html_theme = 'alabaster'
       printf "html_theme = %ssphinx_rtd_theme%s\n",squote,squote
+      printf "master_doc = %sindex%s\n",squote,squote
       next
     }
     # add sphinx_rtd extension

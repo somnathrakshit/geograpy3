@@ -20,10 +20,26 @@ geograpy.labels module
    :undoc-members:
    :show-inheritance:
 
+geograpy.locator module
+-----------------------
+
+.. automodule:: geograpy.locator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 geograpy.places module
 ----------------------
 
 .. automodule:: geograpy.places
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+geograpy.prefixtree module
+--------------------------
+
+.. automodule:: geograpy.prefixtree
    :members:
    :undoc-members:
    :show-inheritance:
