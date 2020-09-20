@@ -1,6 +1,6 @@
 from geograpy.extraction import Extractor
 from geograpy.places import PlaceContext
-from geograpy.location import Locator
+from geograpy.locator import Locator
 from geograpy.labels import Labels
 
 def get_geoPlace_context(url=None, text=None,debug=False):

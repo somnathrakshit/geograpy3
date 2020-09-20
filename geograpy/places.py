@@ -2,7 +2,7 @@
 import pycountry
 from .utils import remove_non_ascii, fuzzy_match
 from collections import Counter
-from geograpy.location import Locator
+from geograpy.locator import Locator
 
 """
 Takes a list of place names and works place designation (country, region, etc) 

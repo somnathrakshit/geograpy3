@@ -14,5 +14,8 @@ numpy
 # SQL storage
 # https://pypi.org/project/pylodstorage/
 pylodstorage
+# PrefixTree
+# https://github.com/pytries/marisa-trie
+marisa-trie
 # Documentation Read the docs Theme
 sphinx-rtd-theme

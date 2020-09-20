@@ -4,12 +4,12 @@ Created on 2020-09-19
 @author: wf
 '''
 import unittest
-from geograpy.location import Locator
+from geograpy.locator import Locator
 from collections import Counter
 import os
 import re
 
-class TestLocation(unittest.TestCase):
+class TestLocator(unittest.TestCase):
     '''
     test the Locator class from the location module
     '''
