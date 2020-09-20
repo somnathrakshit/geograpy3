@@ -123,7 +123,8 @@ class Locator(object):
         Returns:
             City: a city with country and region details
         '''
-        # city candidates - may be from multiple countries
+        # make sure the database is populated
+        self.populate_db()
         country=None
         cities=[]
         regions=[]
