@@ -1,6 +1,7 @@
 from geograpy.extraction import Extractor
 import geograpy
 import unittest
+from ometa.runtime import expected
 
 class TestExtractor(unittest.TestCase):
     '''
@@ -128,12 +129,12 @@ class TestExtractor(unittest.TestCase):
             'Vienna, Austria',
             'Athens, Greece',
             'Shanghai, China']
-        expected=[]
-        for locality in localities:
+        expectedCountry=['SG','CN','FR','ES','IT','US','TH','AT','GR','CN']
+        for index,locality in enumerate(localities):
             city=geograpy.locate(locality)
             if self.debug:
                 print("  %s" % city)
-            
+            self.assertEqual(expectedCountry[index],city.country.iso)
         
     def testIssue9(self):
         '''
