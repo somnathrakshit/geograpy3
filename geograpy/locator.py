@@ -5,9 +5,23 @@ location string.
 
 Examples for location strings are:
 
+    Amsterdam, Netherlands
     Vienna, Austria
     Vienna, IL
+    Paris - Texas
+    Paris TX
     
+the locator will lookup the cities and try to disambiguate the result based on the country or region information found.
+
+The results in string representationa are:
+    
+    Amsterdam (NH(North Holland) - NL(Netherlands))
+    Vienna (9(Vienna) - AT(Austria))
+    Vienna (IL(Illinois) - US(United States))
+    Paris (TX(Texas) - US(United States)) 
+    Paris (TX(Texas) - US(United States))
+    
+Each city returned has a city.region and city.country attribute with the details of the city.
     
 
 Created on 2020-09-18

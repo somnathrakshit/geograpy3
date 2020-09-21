@@ -86,11 +86,13 @@ select distinct subdivision_1_iso_code as isocode from cities
         '''
         test examples
         '''
-        examples=['Amsterdam, Netherlands']
-        for example in examples:
-            city=geograpy.locate(example,correctMisspelling=True)
+        examples=['Amsterdam, Netherlands', 'Vienna, Austria','Vienna IL','Paris - Texas', 'Paris TX']
+        countries=['NL','AT','US','US','US']
+        for index,example in enumerate(examples):
+            city=geograpy.locate(example)
             if self.debug:
                 print(city)
+            self.assertEquals(countries[index],city.country.iso)
             
 
 if __name__ == "__main__":
