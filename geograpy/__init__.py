@@ -44,7 +44,7 @@ def get_place_context(url=None, text=None,labels=Labels.default, debug=False):
     pc.setAll()
     return pc
 
-def locate(location,debug=False):
+def locate(location,correctMisspelling=False,debug=False):
     '''
     locate the given location string
     Args:
@@ -54,7 +54,7 @@ def locate(location,debug=False):
     '''
     e = Extractor(text=location,debug=debug)
     e.split()
-    loc=Locator.getInstance(debug=debug)
+    loc=Locator.getInstance(correctMisspelling=correctMisspelling,debug=debug)
     city=loc.locate(e.places)
     return city
     

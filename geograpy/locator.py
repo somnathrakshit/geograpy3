@@ -1,4 +1,15 @@
 '''
+The locator module allows to get detailed city 
+information including the region and country of a city from a 
+location string.
+
+Examples for location strings are:
+
+    Vienna, Austria
+    Vienna, IL
+    
+    
+
 Created on 2020-09-18
 
 @author: wf
@@ -99,18 +110,32 @@ class Locator(object):
     # singleton instance
     locator=None
 
-    def __init__(self, db_file=None,debug=False):
+    def __init__(self, db_file=None,correctMisspelling=False,debug=False):
         '''
         Constructor
+        
+        Args:
+            db_file(str): the path to the database file
+            correctMispelling(bool): if True correct typical misspellings
+            debug(bool): if True show debug information
         '''
         self.debug=debug
+        self.correctMisspelling=correctMisspelling
         self.db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
         self.sqlDB=SQLDB(self.db_file,errorDebug=True)
     
     @staticmethod
-    def getInstance(debug=False):
+    def getInstance(correctMisspelling=False,debug=False):
+        '''
+        get the singleton instance of the Locator. If parameters are changed on further calls
+        the initial parameters will still be in effect since the original instance will be returned!
+        
+        Args:
+            correctMispelling(bool): if True correct typical misspellings
+            debug(bool): if True show debug information
+        '''
         if Locator.locator is None:
-            Locator.locator=Locator(debug=debug)
+            Locator.locator=Locator(correctMisspelling=correctMisspelling,debug=debug)
         return Locator.locator
         
     def locate(self,places):
@@ -285,7 +310,7 @@ class Locator(object):
                     return row[2]
         return name
 
-    def is_a_country(self, name,correctMisspelling=True):
+    def is_a_country(self, name):
         '''
         check if the given string name is a country
         
@@ -294,25 +319,24 @@ class Locator(object):
         Returns:
             True: if pycountry thinks the string is a country
         '''
-        country=self.getCountry(name,correctMisspelling)
+        country=self.getCountry(name)
         result=country is not None
         return result
        
-    def getCountry(self,name,correctMisspelling=True):
+    def getCountry(self,name):
         '''
         get the country for the given name    
         Args:
             name(string): the name of the country to lookup
-            correctMispelling(boolean): if True correct typical misspellings
         Returns:     
             country: the country if one was found or None if not
         '''
         if self.isISO(name):
             pcountry=pycountry.countries.get(alpha_2=name)
         else:
-            if correctMisspelling:
+            if self.correctMisspelling:
                 name = self.correct_country_misspelling(name)
-                pcountry=pycountry.countries.get(name=name)
+            pcountry=pycountry.countries.get(name=name)
         country=None
         if pcountry is not None:
             country=Country.fromPyCountry(pcountry)

@@ -4,6 +4,7 @@ Created on 2020-09-19
 @author: wf
 '''
 import unittest
+import geograpy
 from geograpy.locator import Locator
 from collections import Counter
 import os
@@ -80,6 +81,16 @@ select distinct subdivision_1_iso_code as isocode from cities
             words=re.split(r"\W+",name)
             wc[len(words)]+=1
         print (wc.most_common(20))
+        
+    def testExamples(self):
+        '''
+        test examples
+        '''
+        examples=['Amsterdam, Netherlands']
+        for example in examples:
+            city=geograpy.locate(example,correctMisspelling=True)
+            if self.debug:
+                print(city)
             
 
 if __name__ == "__main__":
