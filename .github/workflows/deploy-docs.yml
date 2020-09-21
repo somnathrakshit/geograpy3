@@ -24,7 +24,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Build docs
       run: |
-        cd docs/source && make clean html
+        scripts/doc
     - name: Deploy docs to Netlify
       uses: netlify/actions/cli@master
       env:
