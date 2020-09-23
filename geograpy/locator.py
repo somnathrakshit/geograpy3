@@ -139,6 +139,10 @@ class Locator(object):
         self.correctMisspelling=correctMisspelling
         self.db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
         self.sqlDB=SQLDB(self.db_file,errorDebug=True)
+        
+    @staticmethod
+    def resetInstance():
+        Locator.locator=None    
     
     @staticmethod
     def getInstance(correctMisspelling=False,debug=False):

@@ -19,18 +19,19 @@ class TestWikidata(unittest.TestCase):
 
     def tearDown(self):
         pass
-    
+
     def testLocatorWithWikiData(self):
         '''
         test Locator in useWikiData mode
         '''
         Locator.useWikiData=True
+        Locator.resetInstance()
         loc=Locator.getInstance()
         loc.populate_db()
         tableList=loc.sqlDB.getTableList()
         self.assertTrue(loc.db_recordCount(tableList,"countries")>=190)
         self.assertTrue(loc.db_recordCount(tableList,"regions")>=3000)
-    
+
     def testWikidataCountries(self):
         '''
         test getting country information from wikidata
@@ -38,7 +39,7 @@ class TestWikidata(unittest.TestCase):
         wikidata=Wikidata()
         wikidata.getCountries()
         self.assertTrue(len(wikidata.countryList)>=190)
-    
+
 
     def testWikidataCities(self):
         '''

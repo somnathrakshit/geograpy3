@@ -93,7 +93,7 @@ select distinct subdivision_1_iso_code as isocode from cities
             city=geograpy.locate(example)
             if self.debug:
                 print("%22s->%s" % (example,city))
-            self.assertEquals(countries[index],city.country.iso)
+            self.assertEqual(countries[index],city.country.iso)
             
 
 if __name__ == "__main__":
