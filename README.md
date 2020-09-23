@@ -138,3 +138,4 @@ geograpy3 uses the following data sources:
 * [ISO3166ErrorDictionary](https://github.com/bodacea/countryname/blob/master/countryname/databases/ISO3166ErrorDictionary.csv) for common country mispellings _via [Sara-Jayne Terp](https://github.com/bodacea)_
 
 Hat tip to [Chris Albon](https://github.com/chrisalbon) for the name.
+
