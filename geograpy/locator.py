@@ -522,7 +522,7 @@ order by city_name"""
         if Locator.useWikiData:
             hasCountries=self.db_recordCount(tableList,"countries")>100
             hasRegions=self.db_recordCount(tableList,"regions")>1000
-            hasWikidataCities=self.db_recordCount(tableList,'city_wikidata')>100000
+            hasWikidataCities=self.db_recordCount(tableList,'City_wikidata')>100000
             ok=hasCities and hasWikidataCities and hasRegions and hasCountries
         return ok
         
