@@ -398,16 +398,28 @@ class Locator(object):
             self.populate_PrefixAmbiguities(self.sqlDB)
             if Locator.useWikiData:
                 self.populate_Countries(self.sqlDB)
+                self.populate_Regions(self.sqlDB)
         
     def populate_Countries(self,sqlDB):
         '''
         populate database with countries from wikiData
         '''
+        print("retrieving Country data from wikidata ... (this might take a few seconds)")
         wikidata=Wikidata()
         wikidata.getCountries()
         entityInfo=sqlDB.createTable(wikidata.countryList[:100],"countries","countryIsoCode",withDrop=True)
         sqlDB.store(wikidata.countryList,entityInfo)
-    
+
+    def populate_Regions(self,sqlDB):
+        '''
+        populate database with regions from wikiData
+        '''
+        print("retrieving Region data from wikidata ... (this might take a minute)")
+        wikidata=Wikidata()
+        wikidata.getRegions()
+        entityInfo=sqlDB.createTable(wikidata.regionList[:100],"regions",primaryKey=None,withDrop=True)
+        sqlDB.store(wikidata.regionList,entityInfo,fixNone=True)
+   
     def populate_Cities(self,sqlDB):
         '''
         populate the given sqlDB with the Geolite2 Cities
@@ -490,7 +502,8 @@ order by city_name"""
         ok=hasCities
         if Locator.useWikiData:
             hasCountries=self.db_recordCount(tableList,"countries")>100
-            ok=hasCities and hasCountries
+            hasRegions=self.db_recordCount(tableList,"regions")>1000
+            ok=hasCities and hasRegions and hasCountries
         return ok
         
         

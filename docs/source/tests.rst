@@ -36,6 +36,14 @@ tests.test\_prefixtree module
    :undoc-members:
    :show-inheritance:
 
+tests.test\_wikidata module
+---------------------------
+
+.. automodule:: tests.test_wikidata
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

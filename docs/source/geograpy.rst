@@ -52,6 +52,14 @@ geograpy.utils module
    :undoc-members:
    :show-inheritance:
 
+geograpy.wikidata module
+------------------------
+
+.. automodule:: geograpy.wikidata
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

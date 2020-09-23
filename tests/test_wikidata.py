@@ -29,6 +29,7 @@ class TestWikidata(unittest.TestCase):
         loc.populate_db()
         tableList=loc.sqlDB.getTableList()
         self.assertTrue(loc.db_recordCount(tableList,"countries")>=190)
+        self.assertTrue(loc.db_recordCount(tableList,"regions")>=3000)
     
     def testWikidataCountries(self):
         '''
