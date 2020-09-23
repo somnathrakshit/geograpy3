@@ -455,19 +455,27 @@ order by city_name"""
         trie.store(sqlDB)   
         return trie     
     
-    def db_recordCount(self,tableName):
+    def db_recordCount(self,tableList,tableName):
         '''
         count the number of records for the given tableName
         
         Args:
+            tableList(list): the list of table to check
             tableName(str): the name of the table to check
             
         Returns
             int: the number of records found for the table 
         '''
-        query="SELECT Count(*) AS count FROM %s" % tableName
-        countResult=self.sqlDB.query(query)
-        count=countResult[0]['count']
+        tableFound=False
+        for table in tableList:
+            if table['name']==tableName:
+                tableFound=True
+                break
+        count=0
+        if tableFound:    
+            query="SELECT Count(*) AS count FROM %s" % tableName
+            countResult=self.sqlDB.query(query)
+            count=countResult[0]['count']
         return count
      
     def db_has_data(self):
@@ -478,12 +486,10 @@ order by city_name"""
             boolean: True if the cities table exists and has more than one record
         '''
         tableList=self.sqlDB.getTableList()
-        
-        
-        hasCities="cities" in tableList and self.db_recordCount("cities")>10000
+        hasCities=self.db_recordCount(tableList,"cities")>10000
         ok=hasCities
         if Locator.useWikiData:
-            hasCountries="countries" in tableList and self.db_recordCount("countries")>100
+            hasCountries=self.db_recordCount(tableList,"countries")>100
             ok=hasCities and hasCountries
         return ok
         

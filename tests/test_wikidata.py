@@ -12,7 +12,6 @@ class TestWikidata(unittest.TestCase):
     test the wikidata access for cities
     '''
 
-
     def setUp(self):
         self.debug=True
         pass
@@ -28,6 +27,8 @@ class TestWikidata(unittest.TestCase):
         Locator.useWikiData=True
         loc=Locator.getInstance()
         loc.populate_db()
+        tableList=loc.sqlDB.getTableList()
+        self.assertTrue(loc.db_recordCount(tableList,"countries")>=190)
     
     def testWikidataCountries(self):
         '''
