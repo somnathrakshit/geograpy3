@@ -13,7 +13,7 @@ jellyfish
 numpy
 # SQL storage
 # https://pypi.org/project/pylodstorage/
-pylodstorage
+pylodstorage>=0.0.15
 # PrefixTree
 # https://github.com/pytries/marisa-trie
 marisa-trie

@@ -33,6 +33,7 @@ import re
 import csv
 import pycountry
 from geograpy.prefixtree import PrefixTree
+from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
 from .utils import remove_non_ascii
 
@@ -123,6 +124,7 @@ class Locator(object):
     
     # singleton instance
     locator=None
+    useWikiData=False
 
     def __init__(self, db_file=None,correctMisspelling=False,debug=False):
         '''
@@ -394,6 +396,17 @@ class Locator(object):
             self.populate_Cities(self.sqlDB)
             self.populate_PrefixTree(self.sqlDB)
             self.populate_PrefixAmbiguities(self.sqlDB)
+            if Locator.useWikiData:
+                self.populate_Countries(self.sqlDB)
+        
+    def populate_Countries(self,sqlDB):
+        '''
+        populate database with countries from wikiData
+        '''
+        wikidata=Wikidata()
+        wikidata.getCountries()
+        entityInfo=sqlDB.createTable(wikidata.countryList[:100],"countries","countryIsoCode",withDrop=True)
+        sqlDB.store(wikidata.countryList,entityInfo)
     
     def populate_Cities(self,sqlDB):
         '''
@@ -405,7 +418,7 @@ class Locator(object):
         cities=self.getGeolite2Cities()
         entityName="cities"
         primaryKey="geoname_id"
-        entityInfo=sqlDB.createTable(cities[:100],entityName,primaryKey)
+        entityInfo=sqlDB.createTable(cities[:100],entityName,primaryKey,withDrop=True)
         sqlDB.store(cities,entityInfo,executeMany=False)
         
     def populate_PrefixAmbiguities(self,sqlDB):
@@ -441,6 +454,21 @@ order by city_name"""
             trie.add(name)
         trie.store(sqlDB)   
         return trie     
+    
+    def db_recordCount(self,tableName):
+        '''
+        count the number of records for the given tableName
+        
+        Args:
+            tableName(str): the name of the table to check
+            
+        Returns
+            int: the number of records found for the table 
+        '''
+        query="SELECT Count(*) AS count FROM %s" % tableName
+        countResult=self.sqlDB.query(query)
+        count=countResult[0]['count']
+        return count
      
     def db_has_data(self):
         '''
@@ -449,13 +477,14 @@ order by city_name"""
         Returns:
             boolean: True if the cities table exists and has more than one record
         '''
-        query1="SELECT Count(*) AS count FROM sqlite_master WHERE name='cities';"
-        tableResult=self.sqlDB.query(query1)
-        count=tableResult[0]['count']
-        if count>0:
-            query2="SELECT Count(*) AS count FROM cities"
-            countResult=self.sqlDB.query(query2)
-            count=countResult[0]['count']
-            return count > 10000
-        return False    
+        tableList=self.sqlDB.getTableList()
+        
+        
+        hasCities="cities" in tableList and self.db_recordCount("cities")>10000
+        ok=hasCities
+        if Locator.useWikiData:
+            hasCountries="countries" in tableList and self.db_recordCount("countries")>100
+            ok=hasCities and hasCountries
+        return ok
+        
         
