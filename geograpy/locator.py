@@ -29,6 +29,7 @@ Created on 2020-09-18
 @author: wf
 '''
 import os
+import urllib
 import re
 import csv
 import pycountry
@@ -137,7 +138,8 @@ class Locator(object):
         '''
         self.debug=debug
         self.correctMisspelling=correctMisspelling
-        self.db_file = db_file or os.path.dirname(os.path.realpath(__file__)) + "/locs.db"
+        self.db_path=os.path.dirname(os.path.realpath(__file__)) 
+        self.db_file = db_file or self.db_path+"/locs.db"
         self.sqlDB=SQLDB(self.db_file,errorDebug=True)
         
     @staticmethod
@@ -403,7 +405,8 @@ class Locator(object):
             if Locator.useWikiData:
                 self.populate_Countries(self.sqlDB)
                 self.populate_Regions(self.sqlDB)
-        
+                self.populate_Cities_FromWikidata(self.sqlDB)
+           
     def populate_Countries(self,sqlDB):
         '''
         populate database with countries from wikiData
@@ -424,6 +427,18 @@ class Locator(object):
         entityInfo=sqlDB.createTable(wikidata.regionList[:100],"regions",primaryKey=None,withDrop=True)
         sqlDB.store(wikidata.regionList,entityInfo,fixNone=True)
    
+    def populate_Cities_FromWikidata(self,sqlDB):
+        '''
+        populate the given sqlDB with the Wikidata Cities
+        '''
+        dbFile=self.db_path+"/City_wikidata.db"
+        if not os.path.exists(dbFile):
+            print("Downloading %s ... this might take a few seconds" % dbFile)
+            dbUrl="http://wiki.bitplan.com/images/confident/City_wikidata.db"
+            urllib.request.urlretrieve(dbUrl,dbFile)
+        wikiCitiesDB=SQLDB(dbFile)
+        wikiCitiesDB.copyTo(sqlDB)
+     
     def populate_Cities(self,sqlDB):
         '''
         populate the given sqlDB with the Geolite2 Cities
@@ -507,7 +522,8 @@ order by city_name"""
         if Locator.useWikiData:
             hasCountries=self.db_recordCount(tableList,"countries")>100
             hasRegions=self.db_recordCount(tableList,"regions")>1000
-            ok=hasCities and hasRegions and hasCountries
+            hasWikidataCities=self.db_recordCount(tableList,'city_wikidata')>100000
+            ok=hasCities and hasWikidataCities and hasRegions and hasCountries
         return ok
         
         

@@ -73,6 +73,7 @@ SELECT DISTINCT ?country ?countryLabel ?countryIsoCode ?countryPopulation ?count
         wd=SPARQL(self.endpoint)
         results=wd.query(queryString)
         self.cityList=wd.asListOfDicts(results)
+                
         
     def getCountries(self):
         '''
