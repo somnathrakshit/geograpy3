@@ -47,7 +47,7 @@ class TestWikidata(unittest.TestCase):
         wikidata.getCities()
         if self.debug:
             print(wikidata.cityList)
-        self.assertEquals(1,len(wikidata.cityList))
+        self.assertEqual(1,len(wikidata.cityList))
         pass
 
 
