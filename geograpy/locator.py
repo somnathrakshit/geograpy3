@@ -49,10 +49,28 @@ class City(object):
         text="%s (%s - %s)" % (self.name,self.region,self.country)
         return text
     
+    
+    def setValue(self,name,record):
+        '''
+        set a field value with the given name  to
+        the given record dicts corresponding entry or none
+        
+        Args:
+            name(string): the name of the field
+            record(dict): the dict to get the value from
+        '''
+        if name in record:
+            value=record[name]
+        else:
+            value=None
+        self.__dict__[name]=value
+            
     @staticmethod
     def fromGeoLite2(record):
         city=City()
-        city.name=record['city_name']
+        city.name=record['name']
+        city.setValue('population',record)
+        city.setValue('gdp',record)
         city.region=Region.fromGeoLite2(record)
         city.country=Country.fromGeoLite2(record)
         return city
@@ -80,8 +98,8 @@ class Region(object):
             Region: the corresponding region information
         '''
         region=Region()
-        region.name=record['subdivision_1_name']
-        region.iso=record['subdivision_1_iso_code'] 
+        region.name=record['regionName']
+        region.iso=record['regionIsoCode'] 
         return region   
     
 class Country(object):
@@ -101,8 +119,8 @@ class Country(object):
         create a country from a geolite2 record
         '''
         country=Country()
-        country.name=record['country_name']
-        country.iso=record['country_iso_code']
+        country.name=record['countryName']
+        country.iso=record['countryIsoCode']
         return country
     
     @staticmethod
@@ -281,18 +299,18 @@ class Locator(object):
                         break
         return foundCity    
     
-    def cities_for_name(self, city_name):
+    def cities_for_name(self, cityName):
         '''
-        find cities with the given city_name
+        find cities with the given cityName
         
         Args:
-            city_name(string): the potential name of a city
+            cityName(string): the potential name of a city
         
         Returns:
             a list of city records
         '''
         cities=[]
-        cityRecords=self.places_by_name(city_name, 'city_name')
+        cityRecords=self.places_by_name(cityName, 'name')
         for cityRecord in cityRecords:
             cities.append(City.fromGeoLite2(cityRecord))
         return cities
@@ -309,9 +327,9 @@ class Locator(object):
         '''
         regions=[]
         if self.isISO(region_name):
-            regionRecords=self.places_by_name(region_name,'subdivision_1_iso_code')
+            regionRecords=self.places_by_name(region_name,'regionIsoCode')
         else:
-            regionRecords=self.places_by_name(region_name, 'subdivision_1_name')
+            regionRecords=self.places_by_name(region_name, 'regionName')
         for regionRecord in regionRecords:
             regions.append(Region.fromGeoLite2(regionRecord))
         return regions                     
@@ -363,18 +381,32 @@ class Locator(object):
         if pcountry is not None:
             country=Country.fromPyCountry(pcountry)
         return country
+    
+    def getView(self):
+        '''
+        get the view to be used
+        
+        Returns:
+            str: the SQL view to be use for CityLookups e.g. GeoLite2CityLookup or WikidataCityLookup
+        '''
+        if Locator.useWikiData:
+            view="WikidataCityLookup"
+        else:
+            view="GeoLite2CityLookup"
+        return view
  
-    def places_by_name(self, place_name, column_name):
+    def places_by_name(self, placeName, columnName):
         '''
         get places by name and column
         Args:
-            place_name(string): the name of the place
-            column_name(string): the column to look at
+            placeName(string): the name of the place
+            columnName(string): the column to look at
         '''
         if not self.db_has_data():
             self.populate_db()
-        query='SELECT * FROM cities WHERE ' + column_name + ' = (?)'
-        params=(place_name,)
+        view=self.getView()
+        query='SELECT * FROM %s WHERE %s = (?)' % (view,columnName)
+        params=(placeName,)
         cities=self.sqlDB.query(query,params)
         return cities
     
@@ -400,12 +432,31 @@ class Locator(object):
         '''
         if not self.db_has_data() or force:
             self.populate_Cities(self.sqlDB)
-            self.populate_PrefixTree(self.sqlDB)
-            self.populate_PrefixAmbiguities(self.sqlDB)
             if Locator.useWikiData:
                 self.populate_Countries(self.sqlDB)
                 self.populate_Regions(self.sqlDB)
                 self.populate_Cities_FromWikidata(self.sqlDB)
+                viewDDLs=["DROP VIEW IF EXISTS WikidataCityLookup","""
+CREATE VIEW WikidataCityLookup AS
+SELECT 
+  name AS name,
+  regionLabel as regionName,
+  regionIsoCode as regionIsoCode,
+  countryLabel as countryName,
+  countryIsoCode as countryIsoCode,
+  cityPopulation as population,
+  countryGDP_perCapita as gdp
+FROM City_wikidata
+"""]
+#                  subdivision_1_name AS regionName,
+#  subdivision_1_iso_code as regionIsoCode,
+#  country_name AS countryName,
+#  country_iso_code as countryIsoCode
+
+                for viewDDL in viewDDLs:
+                    self.sqlDB.execute(viewDDL)
+            self.populate_PrefixTree(self.sqlDB)
+            self.populate_PrefixAmbiguities(self.sqlDB)
            
     def populate_Countries(self,sqlDB):
         '''
@@ -451,6 +502,18 @@ class Locator(object):
         primaryKey="geoname_id"
         entityInfo=sqlDB.createTable(cities[:100],entityName,primaryKey,withDrop=True)
         sqlDB.store(cities,entityInfo,executeMany=False)
+        viewDDLs=["DROP VIEW IF EXISTS GeoLite2CityLookup","""
+CREATE VIEW GeoLite2CityLookup AS
+SELECT 
+  city_name AS name,
+  subdivision_1_name AS regionName,
+  subdivision_1_iso_code as regionIsoCode,
+  country_name AS countryName,
+  country_iso_code as countryIsoCode
+FROM Cities
+"""]
+        for viewDDL in viewDDLs:
+            sqlDB.execute(viewDDL)
         
     def populate_PrefixAmbiguities(self,sqlDB):
         '''
@@ -459,9 +522,9 @@ class Locator(object):
         Args:
             sqlDB(SQLDB): the SQL database to use
         '''
-        query="""select distinct city_name as name 
-from cities c join prefixes p on c.city_name=p.prefix
-order by city_name"""
+        query="""SELECT distinct name 
+from %s c join prefixes p on c.name=p.prefix
+order by name""" % self.getView()
         ambigousPrefixes=sqlDB.query(query)
         entityInfo=sqlDB.createTable(ambigousPrefixes, "ambiguous","name",withDrop=True)
         sqlDB.store(ambigousPrefixes,entityInfo)
@@ -477,7 +540,7 @@ order by city_name"""
         Returns:
             PrefixTree: the prefix tree
         '''
-        query="SELECT city_name AS name from CITIES"
+        query="SELECT  name from %s" % self.getView()
         nameRecords=sqlDB.query(query)
         trie=PrefixTree()   
         for nameRecord in nameRecords:

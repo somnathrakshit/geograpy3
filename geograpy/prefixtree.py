@@ -4,16 +4,13 @@ Created on 2020-09-20
 @author: wf
 '''
 import re
-#import marisa_trie
-# wraps marisa-trie
-# see https://marisa-trie.readthedocs.io/en/latest/tutorial.html#tutorial
-
 
 class PrefixTree(object):
     '''
     prefix analysis and search
 
-    see http://p-nand-q.com/python/data-types/general/tries.html
+    see http://p-nand-q.com/python/data-types/general/tries.html for the general data structure
+    this class is more specific and creats 
     '''
 
     def __init__(self):
@@ -21,7 +18,6 @@ class PrefixTree(object):
         Constructor
 
         '''
-        # self.trie=marisa_trie.Trie(keys)
         self.lookup = {'count': 0, 'words': {}}
 
     def getCount(self):

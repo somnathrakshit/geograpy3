@@ -13,6 +13,6 @@ jellyfish
 numpy
 # SQL storage
 # https://pypi.org/project/pylodstorage/
-pylodstorage>=0.0.17
+pylodstorage>=0.0.18
 # Documentation Read the docs Theme
 sphinx-rtd-theme

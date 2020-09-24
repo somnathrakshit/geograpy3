@@ -41,7 +41,6 @@ class TestWikidata(unittest.TestCase):
         wikidata.getCountries()
         self.assertTrue(len(wikidata.countryList)>=190)
 
-
     def testWikidataCities(self):
         '''
         test getting city information from wikidata
