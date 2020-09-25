@@ -6,6 +6,8 @@ Created on 2020-09-23
 import unittest
 from geograpy.wikidata import Wikidata
 from geograpy.locator import Locator
+from lodstorage.sparql import SPARQL
+from lodstorage.sql import SQLDB
 import getpass
 import time
 
@@ -84,7 +86,39 @@ class TestWikidata(unittest.TestCase):
                 print(cityList[:10])
             #self.assertEqual(region['cities'],len(cityList))
             pass
+        
+    def test_WikiDataCityListViaBlazegraph(self):
+        queryString="""
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+SELECT ?city ?cityLabel ?cityPop ?geoNameId
+WHERE {
+  # geoName Identifier
+  ?city wdt:P1566 ?geoNameId.
+  # instance of human settlement https://www.wikidata.org/wiki/Q486972
+  ?city wdt:P31/wdt:P279* wd:Q486972 .
+  # population of city
+  OPTIONAL { ?city wdt:P1082 ?cityPop.}
 
+  # label of the City
+  ?city rdfs:label ?cityLabel filter (lang(?cityLabel) = "en").
+}"""
+        if getpass.getuser()=="wf":
+            wikidata=Wikidata()
+            # use 2018 wikidata copy
+            wikidata.endpoint="http://blazegraph.bitplan.com/sparql"
+            print("getting city population getonames crossref")
+            starttime=time.time()
+            wd=SPARQL(wikidata.endpoint)
+            results=wd.query(queryString)
+            cityList=wd.asListOfDicts(results)
+            print("Found %d cities  in %5.1f s" % (len(cityList),time.time()-starttime))
+            loc=Locator.getInstance()
+            dbFile=loc.db_path+"/city_wikidata_population.db"
+            sqlDB=SQLDB(dbFile)
+            entityInfo=sqlDB.createTable(cityList[:100],"cities",primaryKey=None,withDrop=True)
+            sqlDB.store(cityList,entityInfo,fixNone=True)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
