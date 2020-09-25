@@ -86,6 +86,7 @@ select distinct subdivision_1_iso_code as isocode from cities
         '''
         test examples
         '''
+        Locator.useWikiData=True
         examples=['Amsterdam, Netherlands', 'Vienna, Austria','Vienna IL','Paris - Texas', 'Paris TX',
                   'Austin, TX','Austin Texas','Auckland, New Zealand']
         countries=['NL','AT','US','US','US','US','US','NZ']

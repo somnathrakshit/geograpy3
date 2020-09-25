@@ -16,63 +16,63 @@ class Wikidata(object):
         '''
         self.endpoint=endpoint
         
-    def getCities(self):
+    def getCities(self,region=None, country=None):
         '''
         get the cities from Wikidata
         '''
-        queryString="""# get a list of cities
+        if region is not None:
+            values="VALUES ?region { wd:%s }" % region
+        if country is not None:
+            values="VALUES ?country { wd:%s}" % country
+        queryString="""# get a list of cities for the given region
 # for geograpy3 library
 # see https://github.com/somnathrakshit/geograpy3/issues/15
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-PREFIX p: <http://www.wikidata.org/prop/>
-PREFIX ps: <http://www.wikidata.org/prop/statement/>
-PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
-# get City details with Country
-SELECT DISTINCT ?country ?countryLabel ?countryIsoCode ?countryPopulation ?countryGDP_perCapita ?region ?regionLabel ?regionIsoCode ?city ?cityLabel ?coord ?cityPopulation ?date ?ratio WHERE {
-  # run for Paris as example only
-  # if you uncomment this line this query might run for some 3 hours on a local wikidata copy using Apache Jena
-  VALUES ?city {wd:Q90}.
-  # instance of City Q515
-  # instance of human settlement https://www.wikidata.org/wiki/Q486972
-  ?city wdt:P31/wdt:P279* wd:Q486972 .
-  # label of the City
-  ?city rdfs:label ?cityLabel filter (lang(?cityLabel) = "en").
-  # get the coordinates
-  ?city wdt:P625 ?coord.
-  # region this country belongs to
-  # https://www.wikidata.org/wiki/Property:P361
-  OPTIONAL {
-    # part of
-    # https://www.wikidata.org/wiki/Property:P361
-    ?city wdt:P131 ?region.
-    # first order region
-    ?region wdt:P31/wdt:P279* wd:Q10864048.
-    ?region rdfs:label ?regionLabel filter (lang(?regionLabel) = "en").
-    ?region wdt:P300 ?regionIsoCode
-  }
-  # country this city belongs to
-  ?city wdt:P17 ?country .
+PREFIX wd: <http://www.wikidata.org/entity/>
+SELECT DISTINCT ?city ?cityLabel ?geoNameId ?cityPop ?cityCoord ?region ?regionLabel ?regionIsoCode ?country ?countryLabel ?countryIsoCode ?countryPopulation ?countryGdpPerCapita
+WHERE {  
+  # administrative unit of first order
+  # example DE-NW Q1198
+  %s
+  #?region wdt:P31/wdt:P279* wd:Q10864048.
+  ?region rdfs:label ?regionLabel filter (lang(?regionLabel) = "en").
+  # isocode state/province
+  OPTIONAL { ?region wdt:P300 ?regionIsoCode. }
+  # country this region belongs to
+  ?region wdt:P17 ?country .
   # label for the country
   ?country rdfs:label ?countryLabel filter (lang(?countryLabel) = "en").
   # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
   ?country wdt:P297 ?countryIsoCode.
   # population of country
   ?country wdt:P1082 ?countryPopulation.
-  # https://www.wikidata.org/wiki/Property:P2132
-  # nonminal GDP per capita
-  ?country wdt:P2132 ?countryGDP_perCapita.
+  OPTIONAL {
+     ?country wdt:P2132 ?countryGdpPerCapita.
+  }
+  # located in administrative territory
+  # https://www.wikidata.org/wiki/Property:P131
+  ?city wdt:P131* ?region.
+  # label of the City
+  ?city rdfs:label ?cityLabel filter (lang(?cityLabel) = "en").
+  # instance of human settlement https://www.wikidata.org/wiki/Q486972
+  ?city wdt:P31/wdt:P279* wd:Q486972 .
+  # geoName Identifier
+  ?city wdt:P1566 ?geoNameId.
   # population of city
-  ?city p:P1082 ?populationStatement .
-  ?populationStatement ps:P1082 ?cityPopulation.
-  ?populationStatement pq:P585 ?date
-  FILTER NOT EXISTS { ?city p:P1082/pq:P585 ?date_ . FILTER (?date_ > ?date) }
-  BIND ( concat(str(round(10000*?cityPopulation/?countryPopulation)/100), '%') AS ?ratio)
-}"""
+  OPTIONAL { ?city wdt:P1082 ?cityPop.}
+   # get the coordinates
+  OPTIONAL { 
+    select (max(?coord) as ?cityCoord) where {
+      ?city wdt:P625 ?coord.
+    }
+  } 
+} 
+ORDER BY ?cityLabel""" % values
         wd=SPARQL(self.endpoint)
         results=wd.query(queryString)
-        self.cityList=wd.asListOfDicts(results)
+        cityList=wd.asListOfDicts(results)
+        return cityList
                 
         
     def getCountries(self):

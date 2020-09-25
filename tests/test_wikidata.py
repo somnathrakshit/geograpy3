@@ -6,6 +6,8 @@ Created on 2020-09-23
 import unittest
 from geograpy.wikidata import Wikidata
 from geograpy.locator import Locator
+import getpass
+import time
 
 class TestWikidata(unittest.TestCase):
     '''
@@ -44,13 +46,40 @@ class TestWikidata(unittest.TestCase):
     def testWikidataCities(self):
         '''
         test getting city information from wikidata
+        
+1372    Singapore
+749    Beijing, China
+704    Paris, France
+649    Barcelona, Spain
+625    Rome, Italy
+616    Hong Kong
+575    Bangkok, Thailand
+502    Vienna, Austria
+497    Athens, Greece
+483    Shanghai, China
         '''
+        regions=[
+            {"name": "Singapore", "country": "Q334", "region": None, "cities":46},
+            {"name": "Beijing", "country": None, "region": "Q956", "cities":25},
+            {"name": "Paris","country": None, "region": "Q13917", "cities":1242},
+            {"name": "Barcelona","country": None, "region": "Q5705", "cities":1242},
+            {"name": "Rome","country": None, "region": "Q1282", "cities":1242}
+        ]
         wikidata=Wikidata()
-        wikidata.getCities()
-        if self.debug:
-            print(wikidata.cityList)
-        self.assertEqual(1,len(wikidata.cityList))
-        pass
+        if getpass.getuser()=="wf":
+            # use 2018 wikidata copy
+            wikidata.endpoint="http://blazegraph.bitplan.com/sparql"
+            # use 2020 wikidata copy
+            #wikidata.endpoint="http://jena.zeus.bitplan.com/wikidata"
+        for region in regions:
+            starttime=time.time()
+            print("searching cities for %s" % region["name"])
+            cityList=wikidata.getCities(country=region["country"], region=region["region"])
+            print("Found %d cities for %s in %5.1f s" % (len(cityList),region["name"],time.time()-starttime))
+            if self.debug:
+                print(cityList[:10])
+            #self.assertEqual(region['cities'],len(cityList))
+            pass
 
 
 if __name__ == "__main__":
