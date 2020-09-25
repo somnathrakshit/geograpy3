@@ -1,4 +1,5 @@
 from geograpy.places import PlaceContext
+from geograpy.locator import Locator
 import unittest
 
 class TestPlaces(unittest.TestCase):
@@ -9,6 +10,7 @@ class TestPlaces(unittest.TestCase):
 
     def setUp(self):
         self.debug=True
+        Locator.resetInstance()
         pass
 
 

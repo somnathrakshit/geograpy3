@@ -23,6 +23,7 @@ class TestPrefixTree(unittest.TestCase):
         '''
         test the prefix Tree
         '''
+        Locator.resetInstance()
         loc=Locator.getInstance()
         sqlDB=SQLDB()
         loc.populate_Cities(sqlDB)
