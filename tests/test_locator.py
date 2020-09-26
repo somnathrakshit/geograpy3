@@ -76,13 +76,15 @@ select distinct subdivision_1_iso_code as isocode from cities
         loc=Locator.getInstance()
         query="SELECT city_name AS name from CITIES"
         nameRecords=loc.sqlDB.query(query)
-        print ("found %d names" % len(nameRecords))
+        if self.debug:
+            print ("testWordCount: found %d names" % len(nameRecords))
         wc=Counter()
         for nameRecord in nameRecords:
             name=nameRecord['name']
             words=re.split(r"\W+",name)
             wc[len(words)]+=1
-        print (wc.most_common(20))
+        if self.debug:
+            print ("most common 20: %s" % wc.most_common(20))
         
     def testPopulation(self):
         '''
@@ -92,11 +94,14 @@ select distinct subdivision_1_iso_code as isocode from cities
         loc=Locator.getInstance()  
         loc.populate_db()
         endpoint=None
+        user=getpass.getuser()
+        if self.debug:
+            print ("current user is %s" % user)
         # uncomment to refresh using wikidata
         # please note https://github.com/RDFLib/sparqlwrapper/issues/163 hits as of 2020-09
         # endpoint='https://query.wikidata.org/sparql'
         # uncomment to use your own wikidata copy as an endpoint
-        # if getpass.getuser()=="wf":
+        # if user=="wf":
             # use 2020 Apache Jena based wikidata copy
             #endpoint="http://jena.zeus.bitplan.com/wikidata"
             # use 2018 Blazegraph based wikidata copy

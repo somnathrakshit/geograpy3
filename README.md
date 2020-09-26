@@ -133,12 +133,13 @@ geograpy3 uses the following excellent libraries:
 * [NLTK](http://www.nltk.org/) for entity recognition
 * [newspaper](https://github.com/codelucas/newspaper) for text extraction from HTML
 * [jellyfish](https://github.com/sunlightlabs/jellyfish) for fuzzy text match
-* [pycountry](https://pypi.python.org/pypi/pycountry) for country/region lookups
+* [pylodstorage](https://pypi.org/project/pylodstorage/) for storage and retrieval of tabular data from SQL and SPARQL sources
 
 geograpy3 uses the following data sources:
-
 * [GeoLite2](http://dev.maxmind.com/geoip/geoip2/geolite2/) by MaxMind for city lookups
 * [ISO3166ErrorDictionary](https://github.com/bodacea/countryname/blob/master/countryname/databases/ISO3166ErrorDictionary.csv) for common country mispellings _via [Sara-Jayne Terp](https://github.com/bodacea)_
+* [pycountry](https://pypi.python.org/pypi/pycountry) for country/region lookups
+* [Wikidata](https://www.wikidata.org) for country/region/city information with disambiguation details like population/gdpPerCapita
 
 Hat tip to [Chris Albon](https://github.com/chrisalbon) for the name.
 
