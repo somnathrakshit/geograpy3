@@ -283,8 +283,8 @@ class Locator(object):
         '''
         if self.debug:
             print("countries: %s " % country)
-            print("regions: %s" % regions)
-            print("cities: %s" % cities)
+            print("regions: %s" % ",".join(str(r) for r in regions))
+            print("cities: %s" % ",".join(str(c) for c in cities))
         foundCity=None
         # is the city information unique?
         if len(cities)==1:
