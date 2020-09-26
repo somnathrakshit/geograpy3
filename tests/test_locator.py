@@ -17,7 +17,7 @@ class TestLocator(unittest.TestCase):
     test the Locator class from the location module
     '''
     def setUp(self):
-        self.debug=True
+        self.debug=False
         pass
 
     def tearDown(self):
@@ -92,11 +92,14 @@ select distinct subdivision_1_iso_code as isocode from cities
         loc=Locator.getInstance()  
         loc.populate_db()
         endpoint=None
+        # uncomment to refresh using wikidata
+        # please note https://github.com/RDFLib/sparqlwrapper/issues/163 hits as of 2020-09
         # endpoint='https://query.wikidata.org/sparql'
-        #if getpass.getuser()=="wf":
-            # use 2020 wikidata copy
+        # uncomment to use your own wikidata copy as an endpoint
+        # if getpass.getuser()=="wf":
+            # use 2020 Apache Jena based wikidata copy
             #endpoint="http://jena.zeus.bitplan.com/wikidata"
-            # use 2018 wikidata copy
+            # use 2018 Blazegraph based wikidata copy
             #endpoint="http://blazegraph.bitplan.com/sparql"
         loc.getWikidataCityPopulation(loc.sqlDB,endpoint)
         tableList=loc.sqlDB.getTableList()
@@ -105,7 +108,8 @@ select distinct subdivision_1_iso_code as isocode from cities
 2020-09-26
 [[https://github.com/somnathrakshit/geograpy3 © 2020 geograpy3 project]]"""
         plantUml=uml.tableListToPlantUml(tableList,title=title, packageName="geograpy3")
-        print (plantUml)
+        if self.debug:
+            print (plantUml)
         
         
         
