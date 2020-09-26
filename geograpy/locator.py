@@ -37,6 +37,7 @@ from geograpy.prefixtree import PrefixTree
 from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
 from .utils import remove_non_ascii
+from geograpy import wikidata
 
 class City(object):
     '''
@@ -481,6 +482,9 @@ FROM City_wikidata
     def populate_Cities_FromWikidata(self,sqlDB):
         '''
         populate the given sqlDB with the Wikidata Cities
+        
+        Args:
+            sqlDB(SQLDB): target SQL database
         '''
         dbFile=self.db_path+"/City_wikidata.db"
         if not os.path.exists(dbFile):
@@ -489,6 +493,50 @@ FROM City_wikidata
             urllib.request.urlretrieve(dbUrl,dbFile)
         wikiCitiesDB=SQLDB(dbFile)
         wikiCitiesDB.copyTo(sqlDB)
+        
+    def getWikidataCityPopulation(self,sqlDB,endpoint=None):
+        '''
+        Args:
+            sqlDB(SQLDB): target SQL database
+            endpoint(str): url of the wikidata endpoint or None if default should be used
+        '''
+        dbFile=self.db_path+"/city_wikidata_population.db"
+        rawTableName="cityPops"
+        if not os.path.exists(dbFile):
+            if endpoint is not None:
+                wikidata=Wikidata()
+                wikidata.endpoint=endpoint
+                cityList=wikidata.getCityPopulations()
+                wikiCitiesDB=SQLDB(dbFile) 
+                entityInfo=wikiCitiesDB.createTable(cityList[:300],rawTableName,primaryKey=None,withDrop=True)
+                wikiCitiesDB.store(cityList,entityInfo,fixNone=True)
+            else:
+                print("Downloading %s ... this might take a few seconds" % dbFile)
+                dbUrl="http://wiki.bitplan.com/images/confident/city_wikidata_population.db"
+                urllib.request.urlretrieve(dbUrl,dbFile)
+        wikiCitiesDB=SQLDB(dbFile) 
+          
+        tableList=sqlDB.getTableList()        
+        tableName="citiesWithPopulation"     
+      
+        if self.db_recordCount(tableList, tableName)<10000:
+            # makes sure both tables are in sqlDB
+            wikiCitiesDB.copyTo(sqlDB)
+            # create joined table
+            sqlQuery="""
+            select c.*,city as wikidataurl,cityPop 
+            from cities c 
+            join cityPops cp 
+            on c.geoname_id=cp.geoNameId 
+            group by geoNameId
+            """
+            cityList=sqlDB.query(sqlQuery)    
+            entityInfo=sqlDB.createTable(cityList[:200],tableName,primaryKey=None,withDrop=True)
+            sqlDB.store(cityList,entityInfo,fixNone=True)
+            # remove raw Table
+            #sqlCmd="DROP TABLE %s " %rawTableName
+            #sqlDB.execute(sqlCmd)
+            
      
     def populate_Cities(self,sqlDB):
         '''

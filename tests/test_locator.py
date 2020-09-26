@@ -5,6 +5,7 @@ Created on 2020-09-19
 '''
 import unittest
 import geograpy
+import getpass
 from geograpy.locator import Locator
 from collections import Counter
 import os
@@ -81,6 +82,22 @@ select distinct subdivision_1_iso_code as isocode from cities
             words=re.split(r"\W+",name)
             wc[len(words)]+=1
         print (wc.most_common(20))
+        
+    def testPopulation(self):
+        '''
+        test adding population data from wikidata to GeoLite2 information
+        '''
+        loc=Locator.getInstance()  
+        loc.populate_db()
+        endpoint=None
+        # endpoint='https://query.wikidata.org/sparql'
+        if getpass.getuser()=="wf":
+            # use 2020 wikidata copy
+            #endpoint="http://jena.zeus.bitplan.com/wikidata"
+            # use 2018 wikidata copy
+            endpoint="http://blazegraph.bitplan.com/sparql"
+        loc.getWikidataCityPopulation(loc.sqlDB,endpoint)
+        
         
     def testExamples(self):
         '''

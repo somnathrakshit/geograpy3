@@ -3,8 +3,8 @@ Created on 2020-09-23
 
 @author: wf
 '''
+import time
 from lodstorage.sparql import SPARQL
-
 class Wikidata(object):
     '''
     Wikidata access
@@ -15,6 +15,54 @@ class Wikidata(object):
         Constructor
         '''
         self.endpoint=endpoint
+        
+    def getCityPopulations(self, profile=True):
+        '''
+        get the city populations from Wikidata
+        
+        Args:
+            profile(bool): if True show profiling information
+        '''  
+        queryString="""
+# get a list of human settlements having a geoName identifier
+# to add to geograpy3 library
+# see https://github.com/somnathrakshit/geograpy3/issues/15        
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+SELECT ?city ?cityLabel ?cityPop ?geoNameId ?country ?countryLabel ?countryIsoCode ?countryPopulation
+WHERE {
+  # geoName Identifier
+  ?city wdt:P1566 ?geoNameId.
+  # instance of human settlement https://www.wikidata.org/wiki/Q486972
+  ?city wdt:P31/wdt:P279* wd:Q486972 .
+  # population of city
+  OPTIONAL { ?city wdt:P1082 ?cityPop.}
+
+  # label of the City
+  ?city rdfs:label ?cityLabel filter (lang(?cityLabel) = "en").
+  # country this city belongs to
+  ?city wdt:P17 ?country .
+  # label for the country
+  ?country rdfs:label ?countryLabel filter (lang(?countryLabel) = "en").
+  # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
+  ?country wdt:P297 ?countryIsoCode.
+  # population of country
+  ?country wdt:P1082 ?countryPopulation.
+  OPTIONAL {
+     ?country wdt:P2132 ?countryGdpPerCapita.
+  }
+}"""      
+        if profile:
+            print("getting cities with population and geoNamesId from wikidata endpoint %s" %self.endpoint)
+        starttime=time.time()
+        wd=SPARQL(self.endpoint)
+        results=wd.query(queryString)
+        cityList=wd.asListOfDicts(results)
+        if profile:
+            print("Found %d cities  in %5.1f s" % (len(cityList),time.time()-starttime))
+        return cityList
+         
         
     def getCities(self,region=None, country=None):
         '''
