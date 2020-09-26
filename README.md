@@ -19,6 +19,9 @@ What it is
 
 geograpy extracts place names from a URL or text, and add context to those names -- for example distinguishing between a country, region or city.
 
+## Examples/Tutorial
+* [see Examples/Tutorial Wiki](http://wiki.bitplan.com/index.php/Geograpy#Examples)
+
 ## Install & Setup
 
 Grab the package using `pip` (this will take a few minutes)

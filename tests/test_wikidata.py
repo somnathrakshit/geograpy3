@@ -6,8 +6,7 @@ Created on 2020-09-23
 import unittest
 from geograpy.wikidata import Wikidata
 from geograpy.locator import Locator
-from lodstorage.sparql import SPARQL
-from lodstorage.sql import SQLDB
+
 import getpass
 import time
 
