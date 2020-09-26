@@ -116,6 +116,20 @@ select distinct subdivision_1_iso_code as isocode from cities
         if self.debug:
             print (plantUml)
             
+    def checkExamples(self,examples,countries):
+        '''
+        
+        check that the given example give results in the given countries
+        Args:
+            examples(list): a list of example location strings
+            countries(list): a list of expected country iso codes
+        '''
+        for index,example in enumerate(examples):
+            city=geograpy.locate(example,debug=False)
+            if self.debug:
+                print("%3d: %22s->%s" % (index,example,city))
+            self.assertEqual(countries[index],city.country.iso) 
+            
     def testIssue15(self):
         '''
         https://github.com/somnathrakshit/geograpy3/issues/15
@@ -123,12 +137,21 @@ select distinct subdivision_1_iso_code as isocode from cities
         '''
         examples=['Paris','Vienna']
         countries=['FR','AT']
-        for index,example in enumerate(examples):
-            city=geograpy.locate(example,debug=False)
-            if self.debug:
-                print("%3d: %22s->%s" % (index,example,city))
-            self.assertEqual(countries[index],city.country.iso)    
+        self.checkExamples(examples, countries)
         pass
+    
+    def testIssue17(self):
+        '''
+        test issue 17:
+        
+        https://github.com/somnathrakshit/geograpy3/issues/17
+        
+        [BUG] San Francisco, USA and Auckland, New Zealand should be locatable #17
+        '''
+        examples=['San Francisco, USA','Auckland, New Zealand']
+        countries=['US','NZ']
+        self.checkExamples(examples, countries)
+        
         
     def testExamples(self):
         '''
@@ -136,17 +159,9 @@ select distinct subdivision_1_iso_code as isocode from cities
         '''
         examples=['Amsterdam, Netherlands', 'Vienna, Austria','Vienna IL','Paris - Texas', 'Paris TX',
                   'Austin, TX','Austin Texas',
-                  #'Auckland, New Zealand'
                   ]
-        countries=['NL','AT','US','US','US','US','US',
-                   #'NZ'
-                   ]
-        for index,example in enumerate(examples):
-            city=geograpy.locate(example)
-            if self.debug:
-                print("%22s->%s" % (example,city))
-            self.assertEqual(countries[index],city.country.iso)
-            
+        countries=['NL','AT','US','US','US','US','US']
+        self.checkExamples(examples, countries)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

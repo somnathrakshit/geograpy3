@@ -29,19 +29,20 @@ class TestPrefixTree(unittest.TestCase):
         sqlDB=SQLDB()
         loc.populate_Cities(sqlDB)
         loc.getWikidataCityPopulation(sqlDB)
+        loc.createViews(sqlDB)
         trie=loc.populate_PrefixTree(sqlDB,loc.getView())
         if self.debug:
             print("found %d city names" % trie.getCount())
        
         prefixes=['New','Las','San','Hong']
-        expected=[151,40,201,0]
+        expected=[224,71,378,0]
         for index,prefix in enumerate(prefixes):
             count=trie.countStartsWith(prefix)
             if self.debug:
                 print ("there are %3d cities with prefix %s" % (count,prefix))
             #self.assertEqual(expected[index],count)
         ambig=loc. populate_PrefixAmbiguities(sqlDB,loc.getView())
-        self.assertEqual(115,len(ambig))
+        self.assertEqual(325,len(ambig))
         pass
 
 

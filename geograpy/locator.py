@@ -456,8 +456,10 @@ class Locator(object):
             self.populate_Cities(self.sqlDB)
             self.populateFromWikidata(self.sqlDB)
             self.getWikidataCityPopulation(self.sqlDB)
+            self.createViews(self.sqlDB)
             self.populate_PrefixTree(self.sqlDB,self.getView())
             self.populate_PrefixAmbiguities(self.sqlDB,self.getView())
+    
         elif not hasData:
             url="http://wiki.bitplan.com/images/confident/locs.db.gz"
             zipped=self.db_file+".gz"
@@ -506,7 +508,7 @@ FROM City_wikidata
         print("retrieving Country data from wikidata ... (this might take a few seconds)")
         wikidata=Wikidata()
         wikidata.getCountries()
-        entityInfo=sqlDB.createTable(wikidata.countryList[:100],"countries","countryIsoCode",withDrop=True)
+        entityInfo=sqlDB.createTable(wikidata.countryList[:5000],"countries","countryIsoCode",withDrop=True)
         sqlDB.store(wikidata.countryList,entityInfo)
 
     def populate_Regions(self,sqlDB):
@@ -516,7 +518,7 @@ FROM City_wikidata
         print("retrieving Region data from wikidata ... (this might take a minute)")
         wikidata=Wikidata()
         wikidata.getRegions()
-        entityInfo=sqlDB.createTable(wikidata.regionList[:100],"regions",primaryKey=None,withDrop=True)
+        entityInfo=sqlDB.createTable(wikidata.regionList[:5000],"regions",primaryKey=None,withDrop=True)
         sqlDB.store(wikidata.regionList,entityInfo,fixNone=True)
    
     def populate_Cities_FromWikidata(self,sqlDB):
@@ -572,15 +574,37 @@ FROM City_wikidata
             wikiCitiesDB.copyTo(sqlDB)
             # create joined table
             sqlQuery="""
-            select c.*,cp.cityLabel,city as wikidataurl,cityPop 
-            from cities c 
-            join cityPops cp 
-            on c.geoname_id=cp.geoNameId 
-            group by geoNameId
-            order by cityPop desc
+              select 
+    geoname_id,
+    city_name,
+    cp.cityLabel,
+    country_iso_code,
+    country_name,
+    subdivision_1_iso_code,
+    subdivision_1_name,
+    cp.city as wikidataurl,
+    cp.cityPop 
+  from cities c 
+  join cityPops cp 
+  on c.geoname_id=cp.geoNameId 
+union  
+  select 
+    geoNameId as geoname_id,
+    null as city_name,
+    cityLabel,
+    countryIsoCode as country_iso_code,
+    countryLabel as country_name,
+    null as subdivision_1_iso_code,
+    null as subdivision_1_name,
+    city as wikidataurl,
+    cityPop 
+  from cityPops 
+  where cityPop is not Null
+group by geoNameId
+order by cityPop desc
             """
-            cityList=sqlDB.query(sqlQuery)    
-            entityInfo=sqlDB.createTable(cityList[:10],tableName,primaryKey=None,withDrop=True)
+            cityList=sqlDB.query(sqlQuery) 
+            entityInfo=sqlDB.createTable(cityList,tableName,primaryKey=None,withDrop=True,sampleRecordCount=500)
             sqlDB.store(cityList,entityInfo,fixNone=True)
             # remove raw Table
             #sqlCmd="DROP TABLE %s " %rawTableName
@@ -599,6 +623,8 @@ FROM City_wikidata
         primaryKey="geoname_id"
         entityInfo=sqlDB.createTable(cities[:100],entityName,primaryKey,withDrop=True)
         sqlDB.store(cities,entityInfo,executeMany=False)
+        
+    def createViews(self,sqlDB):
         viewDDLs=["DROP VIEW IF EXISTS GeoLite2CityLookup","""
 CREATE VIEW GeoLite2CityLookup AS
 SELECT 
@@ -643,7 +669,12 @@ order by name""" % view
         Returns:
             PrefixTree: the prefix tree
         '''
-        query="SELECT  name from %s" % view
+        query="""select 
+  distinct name from GeoLite2CityLookup 
+  where not name=""
+union 
+  select distinct wikidataName as name 
+  from GeoLite2CityLookup %s""" % view
         nameRecords=sqlDB.query(query)
         trie=PrefixTree()   
         for nameRecord in nameRecords:
