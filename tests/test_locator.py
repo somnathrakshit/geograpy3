@@ -88,6 +88,7 @@ select distinct subdivision_1_iso_code as isocode from cities
         '''
         test adding population data from wikidata to GeoLite2 information
         '''
+        Locator.resetInstance()
         loc=Locator.getInstance()  
         loc.populate_db()
         endpoint=None
