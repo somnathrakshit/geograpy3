@@ -502,7 +502,9 @@ FROM City_wikidata
         '''
         dbFile=self.db_path+"/city_wikidata_population.db"
         rawTableName="cityPops"
+        # is the wikidata population database available?
         if not os.path.exists(dbFile):
+            # shall we created it from a wikidata query?
             if endpoint is not None:
                 wikidata=Wikidata()
                 wikidata.endpoint=endpoint
@@ -511,16 +513,22 @@ FROM City_wikidata
                 entityInfo=wikiCitiesDB.createTable(cityList[:300],rawTableName,primaryKey=None,withDrop=True)
                 wikiCitiesDB.store(cityList,entityInfo,fixNone=True)
             else:
+                # just download a copy 
                 print("Downloading %s ... this might take a few seconds" % dbFile)
                 dbUrl="http://wiki.bitplan.com/images/confident/city_wikidata_population.db"
                 urllib.request.urlretrieve(dbUrl,dbFile)
+        # (re) open the database
         wikiCitiesDB=SQLDB(dbFile) 
           
+        # check whether the table is populated
         tableList=sqlDB.getTableList()        
         tableName="citiesWithPopulation"     
       
         if self.db_recordCount(tableList, tableName)<10000:
-            # makes sure both tables are in sqlDB
+            # check that database is writable
+            # https://stackoverflow.com/a/44707371/1497139
+            sqlDB.execute("pragma user_version=0")
+            # makes sure both tables are in target sqlDB
             wikiCitiesDB.copyTo(sqlDB)
             # create joined table
             sqlQuery="""

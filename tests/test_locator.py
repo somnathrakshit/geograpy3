@@ -8,6 +8,7 @@ import geograpy
 import getpass
 from geograpy.locator import Locator
 from collections import Counter
+from lodstorage.uml import UML
 import os
 import re
 
@@ -97,6 +98,14 @@ select distinct subdivision_1_iso_code as isocode from cities
             # use 2018 wikidata copy
             #endpoint="http://blazegraph.bitplan.com/sparql"
         loc.getWikidataCityPopulation(loc.sqlDB,endpoint)
+        tableList=loc.sqlDB.getTableList()
+        uml=UML()
+        title="""geograpy Tables
+2020-09-26
+[[https://github.com/somnathrakshit/geograpy3 © 2020 geograpy3 project]]"""
+        plantUml=uml.tableListToPlantUml(tableList,title=title, packageName="geograpy3")
+        print (plantUml)
+        
         
         
     def testExamples(self):
