@@ -529,9 +529,10 @@ FROM City_wikidata
             join cityPops cp 
             on c.geoname_id=cp.geoNameId 
             group by geoNameId
+            order by cityPop desc
             """
             cityList=sqlDB.query(sqlQuery)    
-            entityInfo=sqlDB.createTable(cityList[:200],tableName,primaryKey=None,withDrop=True)
+            entityInfo=sqlDB.createTable(cityList[:10],tableName,primaryKey=None,withDrop=True)
             sqlDB.store(cityList,entityInfo,fixNone=True)
             # remove raw Table
             #sqlCmd="DROP TABLE %s " %rawTableName

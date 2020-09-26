@@ -91,11 +91,11 @@ select distinct subdivision_1_iso_code as isocode from cities
         loc.populate_db()
         endpoint=None
         # endpoint='https://query.wikidata.org/sparql'
-        if getpass.getuser()=="wf":
+        #if getpass.getuser()=="wf":
             # use 2020 wikidata copy
             #endpoint="http://jena.zeus.bitplan.com/wikidata"
             # use 2018 wikidata copy
-            endpoint="http://blazegraph.bitplan.com/sparql"
+            #endpoint="http://blazegraph.bitplan.com/sparql"
         loc.getWikidataCityPopulation(loc.sqlDB,endpoint)
         
         
