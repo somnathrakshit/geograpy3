@@ -25,16 +25,15 @@ class TestWikidata(unittest.TestCase):
 
     def testLocatorWithWikiData(self):
         '''
-        test Locator in useWikiData mode
+        test Locator 
         '''
-        Locator.useWikiData=True
         Locator.resetInstance()
         loc=Locator.getInstance()
         loc.populate_db()
         tableList=loc.sqlDB.getTableList()
         self.assertTrue(loc.db_recordCount(tableList,"countries")>=190)
         self.assertTrue(loc.db_recordCount(tableList,"regions")>=3000)
-        self.assertTrue(loc.db_recordCount(tableList,"City_wikidata")>=100000)
+        #self.assertTrue(loc.db_recordCount(tableList,"City_wikidata")>=100000)
 
     def testWikidataCountries(self):
         '''

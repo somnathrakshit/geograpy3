@@ -138,3 +138,5 @@ dmypy.json
 .settings
 # databases 
 geograpy/*.db
+geograpy/*.db.gz
+

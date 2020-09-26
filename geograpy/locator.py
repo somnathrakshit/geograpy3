@@ -33,11 +33,16 @@ import urllib
 import re
 import csv
 import pycountry
+import sys
+import gzip
+import shutil
 from geograpy.prefixtree import PrefixTree
 from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
-from .utils import remove_non_ascii
+from geograpy.utils import remove_non_ascii
 from geograpy import wikidata
+from argparse import ArgumentParser
+from argparse import RawDescriptionHelpFormatter
 
 class City(object):
     '''
@@ -70,6 +75,8 @@ class City(object):
     def fromGeoLite2(record):
         city=City()
         city.name=record['name']
+        if not city.name:
+            city.name=record['wikidataName']
         city.setValue('population',record)
         city.setValue('gdp',record)
         city.region=Region.fromGeoLite2(record)
@@ -144,7 +151,6 @@ class Locator(object):
     
     # singleton instance
     locator=None
-    useWikiData=False
 
     def __init__(self, db_file=None,correctMisspelling=False,debug=False):
         '''
@@ -159,6 +165,7 @@ class Locator(object):
         self.correctMisspelling=correctMisspelling
         self.db_path=os.path.dirname(os.path.realpath(__file__)) 
         self.db_file = db_file or self.db_path+"/locs.db"
+        self.view="GeoLite2CityLookup"
         self.sqlDB=SQLDB(self.db_file,errorDebug=True)
         
     @staticmethod
@@ -311,9 +318,10 @@ class Locator(object):
             a list of city records
         '''
         cities=[]
-        cityRecords=self.places_by_name(cityName, 'name')
-        for cityRecord in cityRecords:
-            cities.append(City.fromGeoLite2(cityRecord))
+        for column in ['name','wikidataName']:
+            cityRecords=self.places_by_name(cityName, column)
+            for cityRecord in cityRecords:
+                cities.append(City.fromGeoLite2(cityRecord))
         return cities
 
     def regions_for_name(self, region_name):
@@ -388,12 +396,9 @@ class Locator(object):
         get the view to be used
         
         Returns:
-            str: the SQL view to be use for CityLookups e.g. GeoLite2CityLookup or WikidataCityLookup
+            str: the SQL view to be used for CityLookups e.g. GeoLite2CityLookup
         '''
-        if Locator.useWikiData:
-            view="WikidataCityLookup"
-        else:
-            view="GeoLite2CityLookup"
+        view=self.view
         return view
  
     def places_by_name(self, placeName, columnName):
@@ -426,18 +431,51 @@ class Locator(object):
             for row in reader:
                 cities.append(row)
         return cities
+    
+    def recreateDatabase(self):
+        '''
+        recreate my lookup database
+        '''
+        print("recreating database ... %s" % self.db_file)
+        self.populate_db(force=True)
                 
     def populate_db(self,force=False):
         '''
         populate the cities SQL database which caches the information from the GeoLite2-City-Locations.csv file
+        
+        Args:
+            force(bool): if True force a recreation of the database
         '''
-        if not self.db_has_data() or force:
+        hasData=self.db_has_data()
+        if force:
             self.populate_Cities(self.sqlDB)
-            if Locator.useWikiData:
-                self.populate_Countries(self.sqlDB)
-                self.populate_Regions(self.sqlDB)
-                self.populate_Cities_FromWikidata(self.sqlDB)
-                viewDDLs=["DROP VIEW IF EXISTS WikidataCityLookup","""
+            self.populateFromWikidata(self.sqlDB)
+            self.getWikidataCityPopulation(self.sqlDB)
+            self.populate_PrefixTree(self.sqlDB,self.getView())
+            self.populate_PrefixAmbiguities(self.sqlDB,self.getView())
+        elif not hasData:
+            url="http://wiki.bitplan.com/images/confident/locs.db.gz"
+            zipped=self.db_file+".gz"
+            print("Downloading %s from %s ... this might take a few seconds" % (zipped,url))
+            urllib.request.urlretrieve(url,zipped)
+            print("unzipping %s from %s" % (self.db_file,zipped))
+            with gzip.open(zipped, 'rb') as gzipped:
+                with open(self.db_file, 'wb') as unzipped:
+                    shutil.copyfileobj(gzipped, unzipped)
+        if not os.path.isfile(self.db_file):
+            raise("could not create lookup database %s" % self.db_file)
+            
+            
+    def populateFromWikidata(self,sqlDB):
+        '''
+        populate countries and regions from Wikidata
+        '''
+        self.populate_Countries(sqlDB)
+        self.populate_Regions(sqlDB)
+        return
+        # ignore the following code as of 2020-09-26
+        self.populate_Cities_FromWikidata(sqlDB)
+        viewDDLs=["DROP VIEW IF EXISTS WikidataCityLookup","""
 CREATE VIEW WikidataCityLookup AS
 SELECT 
   name AS name,
@@ -453,11 +491,8 @@ FROM City_wikidata
 #  subdivision_1_iso_code as regionIsoCode,
 #  country_name AS countryName,
 #  country_iso_code as countryIsoCode
-
-                for viewDDL in viewDDLs:
-                    self.sqlDB.execute(viewDDL)
-            self.populate_PrefixTree(self.sqlDB)
-            self.populate_PrefixAmbiguities(self.sqlDB)
+        for viewDDL in viewDDLs:
+            self.sqlDB.execute(viewDDL)
            
     def populate_Countries(self,sqlDB):
         '''
@@ -532,7 +567,7 @@ FROM City_wikidata
             wikiCitiesDB.copyTo(sqlDB)
             # create joined table
             sqlQuery="""
-            select c.*,city as wikidataurl,cityPop 
+            select c.*,cp.cityLabel,city as wikidataurl,cityPop 
             from cities c 
             join cityPops cp 
             on c.geoname_id=cp.geoNameId 
@@ -563,41 +598,47 @@ FROM City_wikidata
 CREATE VIEW GeoLite2CityLookup AS
 SELECT 
   city_name AS name,
+  cityLabel AS wikidataName,
+  wikidataurl,
+  cityPop,
   subdivision_1_name AS regionName,
   subdivision_1_iso_code as regionIsoCode,
   country_name AS countryName,
   country_iso_code as countryIsoCode
-FROM Cities
+
+FROM citiesWithPopulation
 """]
         for viewDDL in viewDDLs:
             sqlDB.execute(viewDDL)
         
-    def populate_PrefixAmbiguities(self,sqlDB):
+    def populate_PrefixAmbiguities(self,sqlDB,view):
         '''
         create a table with ambiguous prefixes
         
         Args:
             sqlDB(SQLDB): the SQL database to use
+            view(str): the view to use
         '''
         query="""SELECT distinct name 
 from %s c join prefixes p on c.name=p.prefix
-order by name""" % self.getView()
+order by name""" % view
         ambigousPrefixes=sqlDB.query(query)
         entityInfo=sqlDB.createTable(ambigousPrefixes, "ambiguous","name",withDrop=True)
         sqlDB.store(ambigousPrefixes,entityInfo)
         return ambigousPrefixes
         
-    def populate_PrefixTree(self,sqlDB):
+    def populate_PrefixTree(self,sqlDB,view):
         '''
         calculate the PrefixTree info
         
         Args:
-            sqlDb: the SQL Database to use
+            sqlDb(SQLDB): the SQL Database to use
+            view(string): the view to use
         
         Returns:
             PrefixTree: the prefix tree
         '''
-        query="SELECT  name from %s" % self.getView()
+        query="SELECT  name from %s" % view
         nameRecords=sqlDB.query(query)
         trie=PrefixTree()   
         for nameRecord in nameRecords:
@@ -637,13 +678,76 @@ order by name""" % self.getView()
             boolean: True if the cities table exists and has more than one record
         '''
         tableList=self.sqlDB.getTableList()
-        hasCities=self.db_recordCount(tableList,"cities")>10000
-        ok=hasCities
-        if Locator.useWikiData:
-            hasCountries=self.db_recordCount(tableList,"countries")>100
-            hasRegions=self.db_recordCount(tableList,"regions")>1000
-            hasWikidataCities=self.db_recordCount(tableList,'City_wikidata')>100000
-            ok=hasCities and hasWikidataCities and hasRegions and hasCountries
+        hasCities=self.db_recordCount(tableList,"citiesWithPopulation")>10000
+        hasCountries=self.db_recordCount(tableList,"countries")>100
+        hasRegions=self.db_recordCount(tableList,"regions")>1000
+        #hasWikidataCities=self.db_recordCount(tableList,'City_wikidata')>100000
+        ok=hasCities and hasRegions and hasCountries
         return ok
+    
+__version__ = '0.1.15'
+__date__ = '2020-09-26'
+__updated__ = '2020-09-26'    
+
+DEBUG = 1
+
+    
+def main(argv=None): # IGNORE:C0111
+    '''main program.'''
+
+    if argv is None:
+        argv = sys.argv
+    else:
+        sys.argv.extend(argv)    
         
+    program_name = os.path.basename(sys.argv[0])
+    program_version = "v%s" % __version__
+    program_build_date = str(__updated__)
+    program_version_message = '%%(prog)s %s (%s)' % (program_version, program_build_date)
+    program_shortdesc = __import__('__main__').__doc__.split("\n")[1]
+    user_name="Wolfgang Fahl"
+    program_license = '''%s
+
+  Created by %s on %s.
+  Copyright 2020 Wolfgang Fahl. All rights reserved.
+
+  Licensed under the Apache License 2.0
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Distributed on an "AS IS" basis without warranties
+  or conditions of any kind, either express or implied.
+
+USAGE
+''' % (program_shortdesc,user_name, str(__date__))
+
+    try:
+        # Setup argument parser
+        parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
+        parser.add_argument("-d", "--debug", dest="debug", action="store_true", help="if True show debug information")
+        parser.add_argument("-cm", "--correctSpelling", dest="correctMisspelling", action="store_true", help="if True correct typical misspellings")
+        parser.add_argument("-db", "--recreateDatabase", dest='recreateDatabase',action="store_true", help="recreate the database")
+        parser.add_argument('-V', '--version', action='version', version=program_version_message)
+
+        # Process arguments
+        args = parser.parse_args()
+        loc=Locator.getInstance(correctMisspelling=args.correctMisspelling,debug=args.debug)
+        if args.recreateDatabase:
+            loc.recreateDatabase()
+        else:
+            print ("no other functionality yet ...")
         
+    except KeyboardInterrupt:
+        ### handle keyboard interrupt ###
+        return 1
+    except Exception as e:
+        if DEBUG:
+            raise(e)
+        indent = len(program_name) * " "
+        sys.stderr.write(program_name + ": " + repr(e) + "\n")
+        sys.stderr.write(indent + "  for help use --help")
+        return 2     
+        
+if __name__ == "__main__":
+    if DEBUG:
+        sys.argv.append("-d")
+    sys.exit(main())        
