@@ -116,7 +116,7 @@ select distinct subdivision_1_iso_code as isocode from cities
         if self.debug:
             print (plantUml)
             
-    def checkExamples(self,examples,countries):
+    def checkExamples(self,examples,countries,debug=False,check=True):
         '''
         
         check that the given example give results in the given countries
@@ -125,10 +125,11 @@ select distinct subdivision_1_iso_code as isocode from cities
             countries(list): a list of expected country iso codes
         '''
         for index,example in enumerate(examples):
-            city=geograpy.locate(example,debug=False)
+            city=geograpy.locate(example,debug=debug)
             if self.debug:
                 print("%3d: %22s->%s" % (index,example,city))
-            self.assertEqual(countries[index],city.country.iso) 
+            if check:
+                self.assertEqual(countries[index],city.country.iso) 
             
     def testIssue15(self):
         '''
@@ -151,6 +152,14 @@ select distinct subdivision_1_iso_code as isocode from cities
         examples=['San Francisco, USA','Auckland, New Zealand']
         countries=['US','NZ']
         self.checkExamples(examples, countries)
+        
+    def testIssue19(self):
+        '''
+        test issue 19
+        '''
+        examples=['Puebla, Mexico','Newcastle, UK','San Juan, Puerto Rico']
+        countries=['MX','UK','PR']
+        self.checkExamples(examples, countries,debug=True,check=False)
         
         
     def testExamples(self):
