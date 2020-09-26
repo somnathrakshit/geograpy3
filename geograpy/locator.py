@@ -269,7 +269,7 @@ class Locator(object):
         result=len(prefixResult)>0
         return result
                
-    def disambiguate(self,country,regions,cities): 
+    def disambiguate(self,country,regions,cities,byPopulation=True): 
         '''
         try determining country, regions and city from the potential choices
         
@@ -290,21 +290,26 @@ class Locator(object):
         if len(cities)==1:
             foundCity=cities[0]
         else: 
-            if len(cities)>1 and country is not None:
-                for city in cities:
-                    if self.debug:
-                        print("city %s: " %(city))
-                    if city.country.iso==country.iso:
-                        foundCity=city
-                        break
-            if len(cities)>1 and len(regions)>0:
-                for region in regions:
+            if len(cities)>1:
+                if country is not None:
                     for city in cities:
-                        if city.region.iso==region.iso and not city.region.name==city.name:
+                        if self.debug:
+                            print("city %s: " %(city))
+                        if city.country.iso==country.iso:
                             foundCity=city
-                            break;
-                    if foundCity is not None:
-                        break
+                            break
+                if foundCity is None and len(regions)>0:
+                    for region in regions:
+                        for city in cities:
+                            if city.region.iso==region.iso and not city.region.name==city.name:
+                                foundCity=city
+                                break;
+                        if foundCity is not None:
+                            break
+                if foundCity is None and byPopulation:
+                    foundCity=max(cities,key=lambda city:0 if city.population is None else city.population)
+                    pass
+                    
         return foundCity    
     
     def cities_for_name(self, cityName):

@@ -115,14 +115,25 @@ select distinct subdivision_1_iso_code as isocode from cities
         plantUml=uml.tableListToPlantUml(tableList,title=title, packageName="geograpy3")
         if self.debug:
             print (plantUml)
+            
+    def testIssue15(self):
+        '''
+        https://github.com/somnathrakshit/geograpy3/issues/15
+        test Issue 15 Disambiguate via population, gdp data
+        '''
+        examples=['Paris','Vienna']
+        countries=['FR','AT']
+        for index,example in enumerate(examples):
+            city=geograpy.locate(example,debug=False)
+            if self.debug:
+                print("%3d: %22s->%s" % (index,example,city))
+            self.assertEqual(countries[index],city.country.iso)    
+        pass
         
     def testExamples(self):
         '''
         test examples
         '''
-        Locator.resetInstance()
-        loc=Locator.getInstance()
-        loc.populate_db()
         examples=['Amsterdam, Netherlands', 'Vienna, Austria','Vienna IL','Paris - Texas', 'Paris TX',
                   'Austin, TX','Austin Texas',
                   #'Auckland, New Zealand'
