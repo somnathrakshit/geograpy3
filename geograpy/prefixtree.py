@@ -10,7 +10,7 @@ class PrefixTree(object):
     prefix analysis and search
 
     see http://p-nand-q.com/python/data-types/general/tries.html for the general data structure
-    this class is more specific and creats 
+    this class is more specific and creates an SQL Table for lookup of prefixes
     '''
 
     def __init__(self):
@@ -109,3 +109,21 @@ class PrefixTree(object):
         entityInfo = sqlDB.createTable(
             prefixTable[:100], entityName, primaryKey, withDrop=True)
         sqlDB.store(prefixTable, entityInfo, executeMany=False)
+       
+    @staticmethod    
+    def isPrefix(sqlDB,name,level):
+        '''
+        check if the given name is a prefix at the given level
+        
+        Args:
+            name(string): the name to check
+            level(int): the level on which to check (number of words)
+            
+        Returns:
+            bool: True if this is a known prefix e.g. of multiple cities e.g. "San", "New", "Los"
+        '''
+        query="SELECT count from prefixes where prefix=? and level=?"
+        params=(name,level)
+        prefixResult=sqlDB.query(query,params)
+        result=len(prefixResult)>0
+        return result

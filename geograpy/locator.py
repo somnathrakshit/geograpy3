@@ -205,7 +205,7 @@ class Locator(object):
         level=1
         prefix=''
         for place in places:
-            isPrefix=self.isPrefix(prefix+place,level)
+            isPrefix=PrefixTree.isPrefix(self.sqlDB,prefix+place,level)
             isAmbigous=False
             if not isPrefix:
                 prefix=''
@@ -251,23 +251,6 @@ class Locator(object):
         '''
         m=re.search(r"^[0-9A-Z]{1,3}$",s)
         result=m is not None
-        return result
-
-    def isPrefix(self,name,level):
-        '''
-        check if the given name is a city prefix at the given level
-        
-        Args:
-            name(string): the city name to check
-            level(int): the level on which to check (number of words)
-            
-        Returns:
-            bool: True if this is a known prefix of multiple cities e.g. "San", "New", "Los"
-        '''
-        query="SELECT count from prefixes where prefix=? and level=?"
-        params=(name,level)
-        prefixResult=self.sqlDB.query(query,params)
-        result=len(prefixResult)>0
         return result
                
     def disambiguate(self,country,regions,cities,byPopulation=True): 
