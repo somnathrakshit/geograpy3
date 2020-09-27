@@ -98,13 +98,14 @@ class TestExtractor(unittest.TestCase):
         test https://github.com/somnathrakshit/geograpy3/issues/7
         disambiguating countries
         '''
-        localities=['Zaragoza, Spain','Vienna, Austria',
-                    'Vienna, IL'
+        localities=['Vienna, Illinois,','Paris, Texas','Zaragoza, Spain','Vienna, Austria',
+                    
                     ]
         expected=[
+            {'iso': 'US'},
+            {'iso': 'US'},
             {'iso': 'ES'},
             {'iso': 'AT'},
-            {'iso': 'US'}
         ]
         for index,locality in enumerate(localities):
             city=geograpy.locateCity(locality,debug=False)

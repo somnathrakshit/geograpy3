@@ -61,13 +61,20 @@ union
 select distinct subdivision_1_iso_code as isocode from cities 
 union 
 select distinct subdivision_1_iso_code as isocode from cities
+union 
+select distinct countryIsoCode as isocode from countries
+union 
+select distinct regionIsoCode as isocode from regions
 """     
         loc.populate_db()
         isocodeRecords=loc.sqlDB.query(query)
         for isocodeRecord in isocodeRecords:
             isocode=isocodeRecord['isocode']
             if isocode:
-                self.assertTrue(loc.isISO(isocode))
+                isIso=loc.isISO(isocode)
+                if not isIso and self.debug:
+                    print(isocode)
+                self.assertTrue(isIso)
         
         
     def testWordCount(self):
@@ -158,9 +165,9 @@ select distinct subdivision_1_iso_code as isocode from cities
         '''
         test issue 19
         '''
-        examples=['Puebla, Mexico','Newcastle, UK','San Juan, Puerto Rico']
-        countries=['MX','UK','PR']
-        self.checkExamples(examples, countries,debug=True,check=False)
+        examples=['Puebla City, Mexico','Newcastle, UK','San Juan, Puerto Rico']
+        countries=['MX','GB','PR']
+        self.checkExamples(examples, countries)
         
     def testDelimiters(self):
         '''
@@ -194,10 +201,10 @@ select distinct subdivision_1_iso_code as isocode from cities
         '''
         test examples
         '''
-        examples=['Amsterdam, Netherlands', 'Vienna, Austria','Vienna, IL','Paris, Texas', 'Paris, TX',
+        examples=['Paris, US-TX','Amsterdam, Netherlands', 'Vienna, Austria','Vienna, Illinois, US','Paris, Texas', 
                   'Austin, TX','Austin, Texas',
                   ]
-        countries=['NL','AT','US','US','US','US','US']
+        countries=['US','NL','AT','US','US','US','US']
         self.checkExamples(examples, countries,debug=False)
 
 if __name__ == "__main__":

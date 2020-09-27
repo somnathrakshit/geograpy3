@@ -106,6 +106,22 @@ class Region(object):
         '''
         region=Region()
         region.name=record['regionName']
+        region.iso="%s-%s" % (record['countryIsoCode'],record['regionIsoCode']) 
+        return region   
+    
+    @staticmethod
+    def fromWikidata(record):
+        '''
+        create  a region from a Wikidata record
+        
+        Args:
+            record(dict): the records as returned from a Query
+            
+        Returns:
+            Region: the corresponding region information
+        '''
+        region=Region()
+        region.name=record['regionLabel']
         region.iso=record['regionIsoCode'] 
         return region   
     
@@ -166,6 +182,7 @@ class Locator(object):
         self.db_file = db_file or self.db_path+"/locs.db"
         self.view="GeoLite2CityLookup"
         self.sqlDB=SQLDB(self.db_file,errorDebug=True)
+        self.getAliases()
         self.dbVersion="2020-09-27 16:48:09"
         
     @staticmethod
@@ -205,6 +222,8 @@ class Locator(object):
         # loop over all word elements
         for place in places:
             place=place.strip()
+            if place in self.aliases:
+                place=self.aliases[place]
             foundCountry=self.getCountry(place)
             if foundCountry is not None:
                 country=foundCountry
@@ -222,7 +241,7 @@ class Locator(object):
         Returns:
             bool: True if the string is an ISO Code
         '''
-        m=re.search(r"^[0-9A-Z]{1,3}$",s)
+        m=re.search(r"^([A-Z]{1,2}\-)?[0-9A-Z]{1,3}$",s)
         result=m is not None
         return result
                
@@ -296,13 +315,16 @@ class Locator(object):
         Returns:
             list: the list of cities for this region
         '''
-        regions=[]
+        regions=[]    
         if self.isISO(region_name):
-            regionRecords=self.places_by_name(region_name,'regionIsoCode')
+            columnName="regionIsoCode"
         else:
-            regionRecords=self.places_by_name(region_name, 'regionName')
+            columnName='regionLabel'
+        query="SELECT * from regions WHERE %s = (?)" % (columnName)
+        params=(region_name,)
+        regionRecords=self.sqlDB.query(query,params)
         for regionRecord in regionRecords:
-            regions.append(Region.fromGeoLite2(regionRecord))
+            regions.append(Region.fromWikidata(regionRecord))
         return regions                     
     
     def correct_country_misspelling(self, name):
@@ -391,15 +413,19 @@ class Locator(object):
         Returns:
             list: a list of Geolite2 City-Locator dicts
         '''
-        cities=[]
+        cities=self.readCSV("GeoLite2-City-Locations-en.csv")
+        return cities
+    
+    def readCSV(self,fileName):
+        records=[]
         cur_dir = os.path.dirname(os.path.realpath(__file__))
-        csvfile=cur_dir + "/data/GeoLite2-City-Locations-en.csv"
+        csvfile="%s/data/%s" % (cur_dir,fileName)
         with open(csvfile) as info:
             reader = csv.DictReader(info)
             for row in reader:
-                cities.append(row)
-        return cities
-    
+                records.append(row)
+        return records
+     
     def recreateDatabase(self):
         '''
         recreate my lookup database
@@ -434,7 +460,6 @@ class Locator(object):
         if not os.path.isfile(self.db_file):
             raise("could not create lookup database %s" % self.db_file)
             
-            
     def populate_Version(self,sqlDB):
         '''
         populate the version table
@@ -445,6 +470,15 @@ class Locator(object):
         versionList=[{"version":self.dbVersion}]
         entityInfo=sqlDB.createTable(versionList,"Version","version",withDrop=True)
         sqlDB.store(versionList,entityInfo)
+        
+    def getAliases(self):
+        '''
+        get the aliases hashTable
+        '''
+        aliases=self.readCSV("aliases.csv")
+        self.aliases={}
+        for alias in aliases:
+            self.aliases[alias['name']]=alias['alias']
         
     def populateFromWikidata(self,sqlDB):
         '''
