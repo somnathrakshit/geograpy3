@@ -11,6 +11,7 @@ from collections import Counter
 from lodstorage.uml import UML
 import os
 import re
+from bs4.builder import FAST
 
 class TestLocator(unittest.TestCase):
     '''
@@ -125,7 +126,7 @@ select distinct subdivision_1_iso_code as isocode from cities
             countries(list): a list of expected country iso codes
         '''
         for index,example in enumerate(examples):
-            city=geograpy.locate(example,debug=debug)
+            city=geograpy.locateCity(example,debug=debug)
             if self.debug:
                 print("%3d: %22s->%s" % (index,example,city))
             if check:
@@ -161,16 +162,43 @@ select distinct subdivision_1_iso_code as isocode from cities
         countries=['MX','UK','PR']
         self.checkExamples(examples, countries,debug=True,check=False)
         
+    def testDelimiters(self):
+        '''
+        test the delimiter statistics for names
+        '''
+        loc=Locator.getInstance()
+        loc.populate_db()
+        
+        ddls=["DROP VIEW IF EXISTS allNames","""CREATE VIEW allNames as select countryLabel as name from countries
+        union select regionLabel as name from regions
+        union select city_name as name from cities
+        union select cityLabel as name from cityPops"""]
+        for ddl in ddls:
+            loc.sqlDB.execute(ddl)
+        query="SELECT name from allNames"
+        nameRecords=loc.sqlDB.query(query)
+        print("found %d name records" % len(nameRecords))
+        ordC=Counter()
+        for nameRecord in nameRecords:
+            name=nameRecord["name"]
+            for char in name:
+                code=ord(char)
+                if code<ord("A"):
+                    ordC[code]+=1
+        for index,countT in enumerate(ordC.most_common(10)):
+            code,count=countT
+            print ("%d: %d %s -> %d" % (index,code,chr(code),count))
+        
         
     def testExamples(self):
         '''
         test examples
         '''
-        examples=['Amsterdam, Netherlands', 'Vienna, Austria','Vienna IL','Paris - Texas', 'Paris TX',
-                  'Austin, TX','Austin Texas',
+        examples=['Amsterdam, Netherlands', 'Vienna, Austria','Vienna, IL','Paris, Texas', 'Paris, TX',
+                  'Austin, TX','Austin, Texas',
                   ]
         countries=['NL','AT','US','US','US','US','US']
-        self.checkExamples(examples, countries)
+        self.checkExamples(examples, countries,debug=False)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

@@ -107,7 +107,7 @@ class TestExtractor(unittest.TestCase):
             {'iso': 'US'}
         ]
         for index,locality in enumerate(localities):
-            city=geograpy.locate(locality,debug=False)
+            city=geograpy.locateCity(locality,debug=False)
             if self.debug:
                 print("  %s" % city)
             self.assertEqual(expected[index]['iso'],city.country.iso)
@@ -130,7 +130,7 @@ class TestExtractor(unittest.TestCase):
             'Shanghai, China']
         expectedCountry=['SG','CN','FR','ES','IT','US','TH','AT','GR','CN']
         for index,locality in enumerate(localities):
-            city=geograpy.locate(locality)
+            city=geograpy.locateCity(locality)
             if self.debug:
                 print("  %s" % city)
             self.assertEqual(expectedCountry[index],city.country.iso)

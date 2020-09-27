@@ -1,3 +1,6 @@
+'''
+main geograpy 3 module
+'''
 from geograpy.extraction import Extractor
 from geograpy.places import PlaceContext
 from geograpy.locator import Locator
@@ -44,7 +47,7 @@ def get_place_context(url=None, text=None,labels=Labels.default, debug=False):
     pc.setAll()
     return pc
 
-def locate(location,correctMisspelling=False,debug=False):
+def locateCity(location,correctMisspelling=False,debug=False):
     '''
     locate the given location string
     Args:
@@ -55,6 +58,6 @@ def locate(location,correctMisspelling=False,debug=False):
     e = Extractor(text=location,debug=debug)
     e.split()
     loc=Locator.getInstance(correctMisspelling=correctMisspelling,debug=debug)
-    city=loc.locate(e.places)
+    city=loc.locateCity(e.places)
     return city
     

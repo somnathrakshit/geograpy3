@@ -140,21 +140,27 @@ PREFIX p: <http://www.wikidata.org/prop/>
 PREFIX ps: <http://www.wikidata.org/prop/statement/>
 PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
 # get City details with Country
-SELECT DISTINCT ?country ?countryLabel ?countryIsoCode ?countryPopulation ?countryGDP_perCapita ?coord  WHERE {
-  # instance of City Country
-  ?country wdt:P31/wdt:P279* wd:Q3624078 .
+SELECT DISTINCT ?country ?countryLabel ?countryIsoCode ?countryPopulation ?countryGDP_perCapita ?countryCoord  WHERE {
+  # instance of Country
+  ?country wdt:P31/wdt:P279* wd:Q6256 .
+  # VALUES ?country { wd:Q55}.
   # label for the country
   ?country rdfs:label ?countryLabel filter (lang(?countryLabel) = "en").
   # get the coordinates
-  ?country wdt:P625 ?coord.
+  OPTIONAL { 
+    select (max(?coord) as ?countryCoord) where {
+      ?country wdt:P625 ?coord.
+    }
+  } 
   # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
   ?country wdt:P297 ?countryIsoCode.
-  # population of country
+  # population of country   
   ?country wdt:P1082 ?countryPopulation.
   # https://www.wikidata.org/wiki/Property:P2132
-  # nonminal GDP per capita
-  ?country wdt:P2132 ?countryGDP_perCapita.
-}"""
+  # nominal GDP per capita
+  OPTIONAL { ?country wdt:P2132 ?countryGDP_perCapita. }
+}
+ORDER BY ?countryIsoCode"""
         wd=SPARQL(self.endpoint)
         results=wd.query(queryString)
         self.countryList=wd.asListOfDicts(results)

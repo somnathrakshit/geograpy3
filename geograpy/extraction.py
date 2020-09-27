@@ -33,14 +33,14 @@ class Extractor(object):
             a.parse()
             self.text = a.text
             
-    def split(self):
+    def split(self,delimiter=r","):
         '''
         simpler regular expression splitter with not entity check
         
         hat tip: https://stackoverflow.com/a/1059601/1497139
         '''
         self.set_text()
-        self.places=re.split(r"\W+",self.text)
+        self.places=re.split(delimiter,self.text)
             
     def find_geoEntities(self):
         '''

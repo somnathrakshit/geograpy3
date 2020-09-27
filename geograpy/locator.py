@@ -36,7 +36,6 @@ import pycountry
 import sys
 import gzip
 import shutil
-from geograpy.prefixtree import PrefixTree
 from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
 from geograpy.utils import remove_non_ascii
@@ -167,7 +166,7 @@ class Locator(object):
         self.db_file = db_file or self.db_path+"/locs.db"
         self.view="GeoLite2CityLookup"
         self.sqlDB=SQLDB(self.db_file,errorDebug=True)
-        self.dbVersion="2020-09-27 07:11:17"
+        self.dbVersion="2020-09-27 16:48:09"
         
     @staticmethod
     def resetInstance():
@@ -187,12 +186,13 @@ class Locator(object):
             Locator.locator=Locator(correctMisspelling=correctMisspelling,debug=debug)
         return Locator.locator
         
-    def locate(self,places):
+    def locateCity(self,places):
         '''
-        locate a city, region country combination based on the places information
+        locate a city, region country combination based on the given wordtoken information
         
         Args:
-            places(list): a list of place tokens e.g. "Vienna, Austria"
+            places(list): a list of places derived by splitting a locality e.g.  "San Francisco, CA"
+            leads to "San Francisco", "CA"
         
         Returns:
             City: a city with country and region details
@@ -202,45 +202,18 @@ class Locator(object):
         country=None
         cities=[]
         regions=[]
-        level=1
-        prefix=''
+        # loop over all word elements
         for place in places:
-            isPrefix=PrefixTree.isPrefix(self.sqlDB,prefix+place,level)
-            isAmbigous=False
-            if not isPrefix:
-                prefix=''
-            checkPlace=prefix+place
-            if isPrefix:
-                isAmbigous=self.isAmbiguousPrefix(prefix+place)
-                level+=1
-                prefix="%s%s " % (prefix,place)
-            if not isPrefix or isAmbigous:
-                foundCountry=self.getCountry(checkPlace)
-                if foundCountry is not None:
-                    country=foundCountry
-                foundCities=self.cities_for_name(checkPlace)
-                cities.extend(foundCities)
-                foundRegions=self.regions_for_name(checkPlace)
-                regions.extend(foundRegions)
+            place=place.strip()
+            foundCountry=self.getCountry(place)
+            if foundCountry is not None:
+                country=foundCountry
+            foundCities=self.cities_for_name(place)
+            cities.extend(foundCities)
+            foundRegions=self.regions_for_name(place)
+            regions.extend(foundRegions)
         foundCity=self.disambiguate(country, regions, cities)
         return foundCity
-    
-    def isAmbiguousPrefix(self,name):
-        '''
-        check if the given name is an ambiguous prefix
-        
-        Args:
-            name(string): the city name to check
-            
-        Returns:
-            bool: True if this is a known prefix that is ambigous that is there is also a city with 
-            such a name    
-        '''
-        query="select name from ambiguous where name=?"
-        params=(name,)
-        aResult=self.sqlDB.query(query,params)
-        result=len(aResult)>0
-        return result
     
     def isISO(self,s):
         '''
@@ -378,6 +351,12 @@ class Locator(object):
         country=None
         if pcountry is not None:
             country=Country.fromPyCountry(pcountry)
+        #if country is None:
+        #    query="SELECT * FROM countries WHERE countryLabel = (?)"""
+        #    params=(name,)
+        #    countryRecords=self.sqlDB.query(query,params)
+        #    if len(countryRecords)>0:
+        #        pass
         return country
     
     def getView(self):
@@ -441,9 +420,7 @@ class Locator(object):
             self.populateFromWikidata(self.sqlDB)
             self.getWikidataCityPopulation(self.sqlDB)
             self.createViews(self.sqlDB)
-            self.populate_PrefixTree(self.sqlDB,self.getView())
-            self.populate_PrefixAmbiguities(self.sqlDB,self.getView())
-            self.populate_Version()
+            self.populate_Version(self.sqlDB)
     
         elif not hasData:
             url="http://wiki.bitplan.com/images/confident/locs.db.gz"
@@ -458,9 +435,12 @@ class Locator(object):
             raise("could not create lookup database %s" % self.db_file)
             
             
-    def populateVersion(self,sqlDB):
+    def populate_Version(self,sqlDB):
         '''
         populate the version table
+        
+        Args:
+            sqlDB(SQLDB): target SQL database
         '''
         versionList=[{"version":self.dbVersion}]
         entityInfo=sqlDB.createTable(versionList,"Version","version",withDrop=True)
@@ -469,6 +449,9 @@ class Locator(object):
     def populateFromWikidata(self,sqlDB):
         '''
         populate countries and regions from Wikidata
+        
+        Args:
+            sqlDB(SQLDB): target SQL database
         '''
         self.populate_Countries(sqlDB)
         self.populate_Regions(sqlDB)
@@ -497,16 +480,22 @@ FROM City_wikidata
     def populate_Countries(self,sqlDB):
         '''
         populate database with countries from wikiData
+        
+        Args:
+            sqlDB(SQLDB): target SQL database
         '''
         print("retrieving Country data from wikidata ... (this might take a few seconds)")
         wikidata=Wikidata()
         wikidata.getCountries()
-        entityInfo=sqlDB.createTable(wikidata.countryList[:5000],"countries","countryIsoCode",withDrop=True)
-        sqlDB.store(wikidata.countryList,entityInfo)
+        entityInfo=sqlDB.createTable(wikidata.countryList,"countries",None,withDrop=True,sampleRecordCount=200)
+        sqlDB.store(wikidata.countryList,entityInfo,fixNone=True)
 
     def populate_Regions(self,sqlDB):
         '''
         populate database with regions from wikiData
+        
+        Args:
+            sqlDB(SQLDB): target SQL database
         '''
         print("retrieving Region data from wikidata ... (this might take a minute)")
         wikidata=Wikidata()
@@ -635,46 +624,6 @@ FROM citiesWithPopulation
         for viewDDL in viewDDLs:
             sqlDB.execute(viewDDL)
         
-    def populate_PrefixAmbiguities(self,sqlDB,view):
-        '''
-        create a table with ambiguous prefixes
-        
-        Args:
-            sqlDB(SQLDB): the SQL database to use
-            view(str): the view to use
-        '''
-        query="""SELECT distinct name 
-from %s c join prefixes p on c.name=p.prefix
-order by name""" % view
-        ambigousPrefixes=sqlDB.query(query)
-        entityInfo=sqlDB.createTable(ambigousPrefixes, "ambiguous","name",withDrop=True)
-        sqlDB.store(ambigousPrefixes,entityInfo)
-        return ambigousPrefixes
-        
-    def populate_PrefixTree(self,sqlDB,view):
-        '''
-        calculate the PrefixTree info
-        
-        Args:
-            sqlDb(SQLDB): the SQL Database to use
-            view(string): the view to use
-        
-        Returns:
-            PrefixTree: the prefix tree
-        '''
-        query="""select 
-  distinct name from GeoLite2CityLookup 
-  where not name=""
-union 
-  select distinct wikidataName as name 
-  from GeoLite2CityLookup %s""" % view
-        nameRecords=sqlDB.query(query)
-        trie=PrefixTree()   
-        for nameRecord in nameRecords:
-            name=nameRecord['name']
-            trie.add(name)
-        trie.store(sqlDB)   
-        return trie     
     
     def db_recordCount(self,tableList,tableName):
         '''
