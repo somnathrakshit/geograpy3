@@ -167,6 +167,7 @@ class Locator(object):
         self.db_file = db_file or self.db_path+"/locs.db"
         self.view="GeoLite2CityLookup"
         self.sqlDB=SQLDB(self.db_file,errorDebug=True)
+        self.dbVersion="2020-09-27 07:11:17"
         
     @staticmethod
     def resetInstance():
@@ -283,8 +284,8 @@ class Locator(object):
         '''
         if self.debug:
             print("countries: %s " % country)
-            print("regions: %s" % ",".join(str(r) for r in regions))
-            print("cities: %s" % ",".join(str(c) for c in cities))
+            print("regions: %s" % "\n\t".join(str(r) for r in regions))
+            print("cities: %s" % "\n\t".join(str(c) for c in cities))
         foundCity=None
         # is the city information unique?
         if len(cities)==1:
@@ -459,6 +460,7 @@ class Locator(object):
             self.createViews(self.sqlDB)
             self.populate_PrefixTree(self.sqlDB,self.getView())
             self.populate_PrefixAmbiguities(self.sqlDB,self.getView())
+            self.populate_Version()
     
         elif not hasData:
             url="http://wiki.bitplan.com/images/confident/locs.db.gz"
@@ -473,6 +475,14 @@ class Locator(object):
             raise("could not create lookup database %s" % self.db_file)
             
             
+    def populateVersion(self,sqlDB):
+        '''
+        populate the version table
+        '''
+        versionList=[{"version":self.dbVersion}]
+        entityInfo=sqlDB.createTable(versionList,"Version","version",withDrop=True)
+        sqlDB.store(versionList,entityInfo)
+        
     def populateFromWikidata(self,sqlDB):
         '''
         populate countries and regions from Wikidata
@@ -717,8 +727,14 @@ union
         hasCities=self.db_recordCount(tableList,"citiesWithPopulation")>10000
         hasCountries=self.db_recordCount(tableList,"countries")>100
         hasRegions=self.db_recordCount(tableList,"regions")>1000
+        hasVersion=self.db_recordCount(tableList,"Version")==1
+        versionOk=False
+        if hasVersion:
+            query="SELECT version from Version"
+            dbVersionList=self.sqlDB.query(query)
+            versionOk=dbVersionList[0]['version']==self.dbVersion
         #hasWikidataCities=self.db_recordCount(tableList,'City_wikidata')>100000
-        ok=hasCities and hasRegions and hasCountries
+        ok=hasVersion and versionOk and hasCities and hasRegions and hasCountries
         return ok
     
 __version__ = '0.1.15'
