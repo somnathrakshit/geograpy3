@@ -41,4 +41,5 @@ echo "installing required python modules with useroption $useroption"
 $pip install $useroption -r requirements.txt
 
 # used fixed geography-nltk script
+export PYTHONPATH="."
 geograpy/bin/geograpy-nltk
