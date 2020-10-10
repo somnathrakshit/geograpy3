@@ -195,7 +195,19 @@ select distinct regionIsoCode as isocode from regions
         for index,countT in enumerate(ordC.most_common(10)):
             code,count=countT
             print ("%d: %d %s -> %d" % (index,code,chr(code),count))
-        
+    
+    
+    def testIssue22(self):  
+        '''
+        https://github.com/somnathrakshit/geograpy3/issues/22
+        '''  
+        url='https://en.wikipedia.org/wiki/2012_Summer_Olympics_torch_relay'
+        places = geograpy.get_geoPlace_context(url = url)
+        if self.debug:
+            print(places)
+        self.assertTrue(len(places.countries)>5)
+        self.assertTrue(len(places.regions)>5)
+        self.assertTrue(len(places.cities)>20)
         
     def testExamples(self):
         '''
