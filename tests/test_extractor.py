@@ -54,11 +54,15 @@ class TestExtractor(unittest.TestCase):
         '''
         test geo place handling
         '''
-        url='http://www.bbc.com/news/world-europe-26919928'
+        # 'http://www.bbc.com/news/world-europe-26919928'
+        # broken since 2020-10 - returns javascript instead of plain html
+        url='https://en.wikipedia.org/wiki/Golden_spike'
         places=geograpy.get_geoPlace_context(url=url)
         if self.debug:
             print(places)
-        self.assertEqual(['Moscow', 'Donetsk', 'Luhansk', 'Kharkiv', 'Brussels', 'Russia'],places.cities)
+        self.assertTrue("Ogden" in places.cities)
+        self.assertTrue('Utah' in places.regions)
+        self.assertTrue('United States' in places.countries)
         
     def testExtractorFromText(self):
         '''
