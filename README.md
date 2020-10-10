@@ -48,7 +48,7 @@ scripts/install
 Import the module, give some text or a URL, and presto.
 ```python
 import geograpy
-url = 'http://www.bbc.com/news/world-europe-26919928'
+url = 'https://en.wikipedia.org/wiki/2012_Summer_Olympics_torch_relay'
 places = geograpy.get_geoPlace_context(url=url)
 ```
 
@@ -94,7 +94,7 @@ You can of course use each of Geograpy's modules on their own. For example:
 ```python
 from geograpy import extraction
 
-e = extraction.Extractor(url='http://www.bbc.com/news/world-europe-26919928')
+e = extraction.Extractor(url='https://en.wikipedia.org/wiki/2012_Summer_Olympics_torch_relay')
 e.find_geoEntities()
 
 # You can now access all of the places found by the Extractor
@@ -142,4 +142,3 @@ geograpy3 uses the following data sources:
 * [Wikidata](https://www.wikidata.org) for country/region/city information with disambiguation details like population/gdpPerCapita
 
 Hat tip to [Chris Albon](https://github.com/chrisalbon) for the name.
-
