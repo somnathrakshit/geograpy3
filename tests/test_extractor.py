@@ -34,10 +34,10 @@ class TestExtractor(unittest.TestCase):
         '''
         test the extractor
         '''
-        url='http://www.bbc.com/news/world-europe-26919928'
+        url='https://en.wikipedia.org/wiki/Louvre'
         e = Extractor(url=url)
         e.find_geoEntities()
-        self.check(e.places,['Russia','Kiev','Ukraine'])
+        self.check(e.places,['Paris','France'])
         
     def testGeograpyIssue32(self):
         '''
