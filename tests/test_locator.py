@@ -11,7 +11,6 @@ from collections import Counter
 from lodstorage.uml import UML
 import os
 import re
-from bs4.builder import FAST
 
 class TestLocator(unittest.TestCase):
     '''
@@ -168,6 +167,22 @@ select distinct regionIsoCode as isocode from regions
         examples=['Puebla City, Mexico','Newcastle, UK','San Juan, Puerto Rico']
         countries=['MX','GB','PR']
         self.checkExamples(examples, countries)
+        
+    def testProceedingsExample(self):
+        '''
+        '''
+        examples=['''Proceedings of the 
+IEEE 14th International Conference on 
+Semantic Computing, ICSC 2020, 
+San Diego, CA, USA, 
+February 3-5, 2020''']
+        for example in examples:
+            places = geograpy.get_place_context(text=example) 
+            print(places)
+            city=geograpy.locateCity(example,debug=False)
+            print(city)
+        
+        
         
     def testDelimiters(self):
         '''
