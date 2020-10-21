@@ -181,6 +181,15 @@ select distinct regionIsoCode as isocode from regions
         for example in examples:
             city=geograpy.locateCity(example,debug=False)
             print(city)
+            
+    def testStackOverflow64418919(self):
+        '''
+        https://stackoverflow.com/questions/64418919/problem-retrieving-region-in-us-with-geograpy3
+        '''
+        examples=['Seattle']
+        for example in examples:
+            city=geograpy.locateCity(example,debug=False)
+            print(city)
         
     def testProceedingsExample(self):
         '''
