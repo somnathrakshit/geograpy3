@@ -168,8 +168,23 @@ select distinct regionIsoCode as isocode from regions
         countries=['MX','GB','PR']
         self.checkExamples(examples, countries)
         
+    def testStackOverflow64379688(self):
+        '''
+        compare old and new geograpy interface
+        '''
+        examples=['John Doe 160 Huntington Terrace Newark, New York 07112 United States of America',
+                  'John Doe 30 Huntington Terrace Newark, New York 07112 USA',
+                  'John Doe 22 Huntington Terrace Newark, New York 07112 US',
+                  'Mario Bianchi, Via Nazionale 256, 00148 Roma (RM) Italia',
+                  'Mario Bianchi, Via Nazionale 256, 00148 Roma (RM) Italy',
+                  'Newark','Rome']
+        for example in examples:
+            city=geograpy.locateCity(example,debug=False)
+            print(city)
+        
     def testProceedingsExample(self):
         '''
+        test a proceedings title Example
         '''
         examples=['''Proceedings of the 
 IEEE 14th International Conference on 
