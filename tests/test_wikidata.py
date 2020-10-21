@@ -6,6 +6,7 @@ Created on 2020-09-23
 import unittest
 from geograpy.wikidata import Wikidata
 from geograpy.locator import Locator
+import urllib
 
 import getpass
 import time
@@ -40,8 +41,13 @@ class TestWikidata(unittest.TestCase):
         test getting country information from wikidata
         '''
         wikidata=Wikidata()
-        wikidata.getCountries()
-        self.assertTrue(len(wikidata.countryList)>=190)
+        try:
+            wikidata.getCountries()
+            self.assertTrue(len(wikidata.countryList)>=190)
+        except urllib.error.HTTPError as err:
+            # urllib.error.HTTPError: HTTP Error 500: Internal Server Error
+            print("Couldn't run Wikidata test due to upstream error - probably 500 %s" % err )
+            pass
 
     def testWikidataCities(self):
         '''
