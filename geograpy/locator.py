@@ -1,6 +1,6 @@
 '''
-The locator module allows to get detailed city 
-information including the region and country of a city from a 
+The locator module allows to get detailed city
+information including the region and country of a city from a
 location string.
 
 Examples for location strings are:
@@ -10,19 +10,19 @@ Examples for location strings are:
     Vienna, IL
     Paris - Texas
     Paris TX
-    
+
 the locator will lookup the cities and try to disambiguate the result based on the country or region information found.
 
 The results in string representationa are:
-    
+
     Amsterdam (NH(North Holland) - NL(Netherlands))
     Vienna (9(Vienna) - AT(Austria))
     Vienna (IL(Illinois) - US(United States))
-    Paris (TX(Texas) - US(United States)) 
     Paris (TX(Texas) - US(United States))
-    
+    Paris (TX(Texas) - US(United States))
+
 Each city returned has a city.region and city.country attribute with the details of the city.
-    
+
 
 Created on 2020-09-18
 
@@ -49,17 +49,17 @@ class City(object):
     '''
     def __init__(self):
         pass
-    
+
     def __str__(self):
         text="%s (%s - %s)" % (self.name,self.region,self.country)
         return text
-    
-    
+
+
     def setValue(self,name,record):
         '''
         set a field value with the given name  to
         the given record dicts corresponding entry or none
-        
+
         Args:
             name(string): the name of the field
             record(dict): the dict to get the value from
@@ -69,7 +69,7 @@ class City(object):
         else:
             value=None
         self.__dict__[name]=value
-            
+
     @staticmethod
     def fromGeoLite2(record):
         city=City()
@@ -81,62 +81,62 @@ class City(object):
         city.region=Region.fromGeoLite2(record)
         city.country=Country.fromGeoLite2(record)
         return city
-    
+
 class Region(object):
     '''
     a Region (Subdivision)
     '''
     def __init__(self):
         pass
-    
+
     def __str__(self):
         text="%s(%s)" % (self.iso,self.name)
         return text
-    
+
     @staticmethod
     def fromGeoLite2(record):
         '''
         create  a region from a Geolite2 record
-        
+
         Args:
             record(dict): the records as returned from a Query
-            
+
         Returns:
             Region: the corresponding region information
         '''
         region=Region()
         region.name=record['regionName']
-        region.iso="%s-%s" % (record['countryIsoCode'],record['regionIsoCode']) 
-        return region   
-    
+        region.iso="%s-%s" % (record['countryIsoCode'],record['regionIsoCode'])
+        return region
+
     @staticmethod
     def fromWikidata(record):
         '''
         create  a region from a Wikidata record
-        
+
         Args:
             record(dict): the records as returned from a Query
-            
+
         Returns:
             Region: the corresponding region information
         '''
         region=Region()
         region.name=record['regionLabel']
-        region.iso=record['regionIsoCode'] 
-        return region   
-    
+        region.iso=record['regionIsoCode']
+        return region
+
 class Country(object):
     '''
     a country
     '''
     def __init__(self):
         pass
-    
+
     def __str__(self):
         text="%s(%s)" % (self.iso,self.name)
         return text
-    
-    @staticmethod 
+
+    @staticmethod
     def fromGeoLite2(record):
         '''
         create a country from a geolite2 record
@@ -145,14 +145,14 @@ class Country(object):
         country.name=record['countryName']
         country.iso=record['countryIsoCode']
         return country
-    
+
     @staticmethod
     def fromPyCountry(pcountry):
         '''
         Args:
             pcountry(PyCountry): a country as gotten from pycountry
-        Returns: 
-            Country: the country 
+        Returns:
+            Country: the country
         '''
         country=Country()
         country.name=pcountry.name
@@ -163,14 +163,14 @@ class Locator(object):
     '''
     location handling
     '''
-    
+
     # singleton instance
     locator=None
 
     def __init__(self, db_file=None,correctMisspelling=False,debug=False):
         '''
         Constructor
-        
+
         Args:
             db_file(str): the path to the database file
             correctMispelling(bool): if True correct typical misspellings
@@ -178,23 +178,23 @@ class Locator(object):
         '''
         self.debug=debug
         self.correctMisspelling=correctMisspelling
-        self.db_path=os.path.dirname(os.path.realpath(__file__)) 
-        self.db_file = db_file or self.db_path+"/locs.db"
+        self.db_path=os.path.dirname(os.path.realpath(__file__))
+        self.db_file = db_file or os.getenv('GEOGRAPY_DB', self.db_path + "/locs.db")
         self.view="GeoLite2CityLookup"
         self.sqlDB=SQLDB(self.db_file,errorDebug=True)
         self.getAliases()
         self.dbVersion="2020-09-27 16:48:09"
-        
+
     @staticmethod
     def resetInstance():
-        Locator.locator=None    
-    
+        Locator.locator=None
+
     @staticmethod
     def getInstance(correctMisspelling=False,debug=False):
         '''
         get the singleton instance of the Locator. If parameters are changed on further calls
         the initial parameters will still be in effect since the original instance will be returned!
-        
+
         Args:
             correctMispelling(bool): if True correct typical misspellings
             debug(bool): if True show debug information
@@ -202,15 +202,15 @@ class Locator(object):
         if Locator.locator is None:
             Locator.locator=Locator(correctMisspelling=correctMisspelling,debug=debug)
         return Locator.locator
-        
+
     def locateCity(self,places):
         '''
         locate a city, region country combination based on the given wordtoken information
-        
+
         Args:
             places(list): a list of places derived by splitting a locality e.g.  "San Francisco, CA"
             leads to "San Francisco", "CA"
-        
+
         Returns:
             City: a city with country and region details
         '''
@@ -233,27 +233,27 @@ class Locator(object):
             regions.extend(foundRegions)
         foundCity=self.disambiguate(country, regions, cities)
         return foundCity
-    
+
     def isISO(self,s):
         '''
         check if the given string is an ISO code
-        
+
         Returns:
             bool: True if the string is an ISO Code
         '''
         m=re.search(r"^([A-Z]{1,2}\-)?[0-9A-Z]{1,3}$",s)
         result=m is not None
         return result
-               
-    def disambiguate(self,country,regions,cities,byPopulation=True): 
+
+    def disambiguate(self,country,regions,cities,byPopulation=True):
         '''
         try determining country, regions and city from the potential choices
-        
+
         Args:
             country(Country): a matching country found
             regions(list): a list of matching Regions found
             cities(list): a list of matching cities found
-            
+
         Return:
             City: the found city or None
         '''
@@ -265,7 +265,7 @@ class Locator(object):
         # is the city information unique?
         if len(cities)==1:
             foundCity=cities[0]
-        else: 
+        else:
             if len(cities)>1:
                 if country is not None:
                     for city in cities:
@@ -285,16 +285,16 @@ class Locator(object):
                 if foundCity is None and byPopulation:
                     foundCity=max(cities,key=lambda city:0 if city.population is None else city.population)
                     pass
-                    
-        return foundCity    
-    
+
+        return foundCity
+
     def cities_for_name(self, cityName):
         '''
         find cities with the given cityName
-        
+
         Args:
             cityName(string): the potential name of a city
-        
+
         Returns:
             a list of city records
         '''
@@ -308,14 +308,14 @@ class Locator(object):
     def regions_for_name(self, region_name):
         '''
         get the regions for the given region_name (which might be an ISO code)
-        
+
         Args:
             region_name(string): region name
-            
+
         Returns:
             list: the list of cities for this region
         '''
-        regions=[]    
+        regions=[]
         if self.isISO(region_name):
             columnName="regionIsoCode"
         else:
@@ -325,11 +325,11 @@ class Locator(object):
         regionRecords=self.sqlDB.query(query,params)
         for regionRecord in regionRecords:
             regions.append(Region.fromWikidata(regionRecord))
-        return regions                     
-    
+        return regions
+
     def correct_country_misspelling(self, name):
         '''
-        correct potential misspellings 
+        correct potential misspellings
         Args:
             name(string): the name of the country potentially misspelled
         Return:
@@ -346,7 +346,7 @@ class Locator(object):
     def is_a_country(self, name):
         '''
         check if the given string name is a country
-        
+
         Args:
             name(string): the string to check
         Returns:
@@ -355,13 +355,13 @@ class Locator(object):
         country=self.getCountry(name)
         result=country is not None
         return result
-       
+
     def getCountry(self,name):
         '''
-        get the country for the given name    
+        get the country for the given name
         Args:
             name(string): the name of the country to lookup
-        Returns:     
+        Returns:
             country: the country if one was found or None if not
         '''
         if self.isISO(name):
@@ -380,17 +380,17 @@ class Locator(object):
         #    if len(countryRecords)>0:
         #        pass
         return country
-    
+
     def getView(self):
         '''
         get the view to be used
-        
+
         Returns:
             str: the SQL view to be used for CityLookups e.g. GeoLite2CityLookup
         '''
         view=self.view
         return view
- 
+
     def places_by_name(self, placeName, columnName):
         '''
         get places by name and column
@@ -405,17 +405,17 @@ class Locator(object):
         params=(placeName,)
         cities=self.sqlDB.query(query,params)
         return cities
-    
+
     def getGeolite2Cities(self):
         '''
         get the Geolite2 City-Locations as a list of Dicts
-        
+
         Returns:
             list: a list of Geolite2 City-Locator dicts
         '''
         cities=self.readCSV("GeoLite2-City-Locations-en.csv")
         return cities
-    
+
     def readCSV(self,fileName):
         records=[]
         cur_dir = os.path.dirname(os.path.realpath(__file__))
@@ -425,18 +425,18 @@ class Locator(object):
             for row in reader:
                 records.append(row)
         return records
-     
+
     def recreateDatabase(self):
         '''
         recreate my lookup database
         '''
         print("recreating database ... %s" % self.db_file)
         self.populate_db(force=True)
-                
+
     def populate_db(self,force=False):
         '''
         populate the cities SQL database which caches the information from the GeoLite2-City-Locations.csv file
-        
+
         Args:
             force(bool): if True force a recreation of the database
         '''
@@ -447,7 +447,7 @@ class Locator(object):
             self.getWikidataCityPopulation(self.sqlDB)
             self.createViews(self.sqlDB)
             self.populate_Version(self.sqlDB)
-    
+
         elif not hasData:
             url="http://wiki.bitplan.com/images/confident/locs.db.gz"
             zipped=self.db_file+".gz"
@@ -459,18 +459,18 @@ class Locator(object):
                     shutil.copyfileobj(gzipped, unzipped)
         if not os.path.isfile(self.db_file):
             raise("could not create lookup database %s" % self.db_file)
-            
+
     def populate_Version(self,sqlDB):
         '''
         populate the version table
-        
+
         Args:
             sqlDB(SQLDB): target SQL database
         '''
         versionList=[{"version":self.dbVersion}]
         entityInfo=sqlDB.createTable(versionList,"Version","version",withDrop=True)
         sqlDB.store(versionList,entityInfo)
-        
+
     def getAliases(self):
         '''
         get the aliases hashTable
@@ -479,11 +479,11 @@ class Locator(object):
         self.aliases={}
         for alias in aliases:
             self.aliases[alias['name']]=alias['alias']
-        
+
     def populateFromWikidata(self,sqlDB):
         '''
         populate countries and regions from Wikidata
-        
+
         Args:
             sqlDB(SQLDB): target SQL database
         '''
@@ -494,7 +494,7 @@ class Locator(object):
         self.populate_Cities_FromWikidata(sqlDB)
         viewDDLs=["DROP VIEW IF EXISTS WikidataCityLookup","""
 CREATE VIEW WikidataCityLookup AS
-SELECT 
+SELECT
   name AS name,
   regionLabel as regionName,
   regionIsoCode as regionIsoCode,
@@ -510,11 +510,11 @@ FROM City_wikidata
 #  country_iso_code as countryIsoCode
         for viewDDL in viewDDLs:
             self.sqlDB.execute(viewDDL)
-           
+
     def populate_Countries(self,sqlDB):
         '''
         populate database with countries from wikiData
-        
+
         Args:
             sqlDB(SQLDB): target SQL database
         '''
@@ -527,7 +527,7 @@ FROM City_wikidata
     def populate_Regions(self,sqlDB):
         '''
         populate database with regions from wikiData
-        
+
         Args:
             sqlDB(SQLDB): target SQL database
         '''
@@ -536,11 +536,11 @@ FROM City_wikidata
         wikidata.getRegions()
         entityInfo=sqlDB.createTable(wikidata.regionList[:5000],"regions",primaryKey=None,withDrop=True)
         sqlDB.store(wikidata.regionList,entityInfo,fixNone=True)
-   
+
     def populate_Cities_FromWikidata(self,sqlDB):
         '''
         populate the given sqlDB with the Wikidata Cities
-        
+
         Args:
             sqlDB(SQLDB): target SQL database
         '''
@@ -551,7 +551,7 @@ FROM City_wikidata
             urllib.request.urlretrieve(dbUrl,dbFile)
         wikiCitiesDB=SQLDB(dbFile)
         wikiCitiesDB.copyTo(sqlDB)
-        
+
     def getWikidataCityPopulation(self,sqlDB,endpoint=None):
         '''
         Args:
@@ -567,21 +567,21 @@ FROM City_wikidata
                 wikidata=Wikidata()
                 wikidata.endpoint=endpoint
                 cityList=wikidata.getCityPopulations()
-                wikiCitiesDB=SQLDB(dbFile) 
+                wikiCitiesDB=SQLDB(dbFile)
                 entityInfo=wikiCitiesDB.createTable(cityList[:300],rawTableName,primaryKey=None,withDrop=True)
                 wikiCitiesDB.store(cityList,entityInfo,fixNone=True)
             else:
-                # just download a copy 
+                # just download a copy
                 print("Downloading %s ... this might take a few seconds" % dbFile)
                 dbUrl="http://wiki.bitplan.com/images/confident/city_wikidata_population.db"
                 urllib.request.urlretrieve(dbUrl,dbFile)
         # (re) open the database
-        wikiCitiesDB=SQLDB(dbFile) 
-          
+        wikiCitiesDB=SQLDB(dbFile)
+
         # check whether the table is populated
-        tableList=sqlDB.getTableList()        
-        tableName="citiesWithPopulation"     
-      
+        tableList=sqlDB.getTableList()
+        tableName="citiesWithPopulation"
+
         if self.db_recordCount(tableList, tableName)<10000:
             # check that database is writable
             # https://stackoverflow.com/a/44707371/1497139
@@ -590,7 +590,7 @@ FROM City_wikidata
             wikiCitiesDB.copyTo(sqlDB)
             # create joined table
             sqlQuery="""
-              select 
+              select
     geoname_id,
     city_name,
     cp.cityLabel,
@@ -599,12 +599,12 @@ FROM City_wikidata
     subdivision_1_iso_code,
     subdivision_1_name,
     cp.city as wikidataurl,
-    cp.cityPop 
-  from cities c 
-  join cityPops cp 
-  on c.geoname_id=cp.geoNameId 
-union  
-  select 
+    cp.cityPop
+  from cities c
+  join cityPops cp
+  on c.geoname_id=cp.geoNameId
+union
+  select
     geoNameId as geoname_id,
     null as city_name,
     cityLabel,
@@ -613,24 +613,24 @@ union
     null as subdivision_1_iso_code,
     null as subdivision_1_name,
     city as wikidataurl,
-    cityPop 
-  from cityPops 
+    cityPop
+  from cityPops
   where cityPop is not Null
 group by geoNameId
 order by cityPop desc
             """
-            cityList=sqlDB.query(sqlQuery) 
+            cityList=sqlDB.query(sqlQuery)
             entityInfo=sqlDB.createTable(cityList,tableName,primaryKey=None,withDrop=True,sampleRecordCount=500)
             sqlDB.store(cityList,entityInfo,fixNone=True)
             # remove raw Table
             #sqlCmd="DROP TABLE %s " %rawTableName
             #sqlDB.execute(sqlCmd)
-            
-     
+
+
     def populate_Cities(self,sqlDB):
         '''
         populate the given sqlDB with the Geolite2 Cities
-        
+
         Args:
             sqlDB(SQLDB): the SQL database to use
         '''
@@ -639,11 +639,11 @@ order by cityPop desc
         primaryKey="geoname_id"
         entityInfo=sqlDB.createTable(cities[:100],entityName,primaryKey,withDrop=True)
         sqlDB.store(cities,entityInfo,executeMany=False)
-        
+
     def createViews(self,sqlDB):
         viewDDLs=["DROP VIEW IF EXISTS GeoLite2CityLookup","""
 CREATE VIEW GeoLite2CityLookup AS
-SELECT 
+SELECT
   city_name AS name,
   cityLabel AS wikidataName,
   wikidataurl,
@@ -657,18 +657,18 @@ FROM citiesWithPopulation
 """]
         for viewDDL in viewDDLs:
             sqlDB.execute(viewDDL)
-        
-    
+
+
     def db_recordCount(self,tableList,tableName):
         '''
         count the number of records for the given tableName
-        
+
         Args:
             tableList(list): the list of table to check
             tableName(str): the name of the table to check
-            
+
         Returns
-            int: the number of records found for the table 
+            int: the number of records found for the table
         '''
         tableFound=False
         for table in tableList:
@@ -676,16 +676,16 @@ FROM citiesWithPopulation
                 tableFound=True
                 break
         count=0
-        if tableFound:    
+        if tableFound:
             query="SELECT Count(*) AS count FROM %s" % tableName
             countResult=self.sqlDB.query(query)
             count=countResult[0]['count']
         return count
-     
+
     def db_has_data(self):
         '''
         check whether the database has data / is populated
-        
+
         Returns:
             boolean: True if the cities table exists and has more than one record
         '''
@@ -702,22 +702,22 @@ FROM citiesWithPopulation
         #hasWikidataCities=self.db_recordCount(tableList,'City_wikidata')>100000
         ok=hasVersion and versionOk and hasCities and hasRegions and hasCountries
         return ok
-    
+
 __version__ = '0.1.15'
 __date__ = '2020-09-26'
-__updated__ = '2020-09-26'    
+__updated__ = '2020-09-26'
 
 DEBUG = 1
 
-    
+
 def main(argv=None): # IGNORE:C0111
     '''main program.'''
 
     if argv is None:
         argv = sys.argv
     else:
-        sys.argv.extend(argv)    
-        
+        sys.argv.extend(argv)
+
     program_name = os.path.basename(sys.argv[0])
     program_version = "v%s" % __version__
     program_build_date = str(__updated__)
@@ -753,7 +753,7 @@ USAGE
             loc.recreateDatabase()
         else:
             print ("no other functionality yet ...")
-        
+
     except KeyboardInterrupt:
         ### handle keyboard interrupt ###
         return 1
@@ -763,9 +763,9 @@ USAGE
         indent = len(program_name) * " "
         sys.stderr.write(program_name + ": " + repr(e) + "\n")
         sys.stderr.write(indent + "  for help use --help")
-        return 2     
-        
+        return 2
+
 if __name__ == "__main__":
     if DEBUG:
         sys.argv.append("-d")
-    sys.exit(main())        
+    sys.exit(main())
