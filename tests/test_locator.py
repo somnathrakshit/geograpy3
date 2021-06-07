@@ -6,7 +6,7 @@ Created on 2020-09-19
 import unittest
 import geograpy
 import getpass
-from geograpy.locator import Locator, CountryList
+from geograpy.locator import Locator,CountryList
 from collections import Counter
 from lodstorage.uml import UML
 import os
@@ -17,7 +17,7 @@ class TestLocator(unittest.TestCase):
     test the Locator class from the location module
     '''
     def setUp(self):
-        self.debug=True
+        self.debug=False
         pass
 
     def tearDown(self):
@@ -256,6 +256,17 @@ February 3-5, 2020''']
                   ]
         countries=['US','NL','AT','US','US','US','US']
         self.checkExamples(examples, countries,debug=False)
+
+    def testIssue41_CountriesFromErdem(self):
+        '''
+        test getting Country list from Erdem
+
+        '''
+        countryList=CountryList.fromErdem()
+        self.assertEqual(247,len(countryList.countries))
+        if self.debug:
+            for country in countryList.countries:
+                print(country)
 
     def testLocationListLoading(self):
         samples="""
