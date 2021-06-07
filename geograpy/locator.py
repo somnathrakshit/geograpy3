@@ -45,23 +45,35 @@ from argparse import RawDescriptionHelpFormatter
 from lodstorage.jsonable import JSONAble, JSONAbleList
 
 class LocationList(JSONAbleList):
+    '''
+    a list of locations
+    '''
     
     def __init__(self,listName:str=None,clazz=None,tableName:str=None):
         super(LocationList, self).__init__(listName, clazz, tableName)
 
 
 class CountryList(LocationList):
+    '''
+    a list of countries
+    '''
     
     def __init__(self):
         super(CountryList, self).__init__('countries', Country)
         
 class RegionList(LocationList):
+    '''
+    a list of regions
+    '''
     
     def __init__(self):
         super(RegionList, self).__init__('regions', Region)
 
 
 class CityList(LocationList):
+    '''
+    a list of cities
+    '''
     
     def __init__(self):
         super(CityList, self).__init__('cities', City)
