@@ -42,7 +42,29 @@ from geograpy.utils import remove_non_ascii
 from geograpy import wikidata
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
+from lodstorage.jsonable import JSONAble
 
+class Location(JSONAble):
+    '''
+    Represents a Location
+    '''
+    def __init__(self, **kwargs):
+        self.__dict__=kwargs
+
+    @classmethod
+    def getSamples(cls):
+        samplesLOD = [{
+            "name": "Los Angeles",
+            "wikidataid": "Q65",
+            "coordinates": "34.05223,-118.24368",
+            "partOf": "US/CA",
+            "level": 5,
+            "locationKind": "City",
+            "comment": None,
+            "population": 3976322
+        }]
+        return samplesLOD
+    
 class City(object):
     '''
     a single city as an object
@@ -125,12 +147,16 @@ class Region(object):
         region.iso=record['regionIsoCode'] 
         return region   
     
-class Country(object):
+class Country(Location):
     '''
     a country
     '''
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        super(Country, self).__init__(**kwargs)
+        if 'level' not in self.__dict__:
+            self.__dict__['level']=3
+        if 'locationKind' not in self.__dict__:
+            self.__dict__['locationKind']="Country"
     
     def __str__(self):
         text="%s(%s)" % (self.iso,self.name)
