@@ -207,7 +207,6 @@ February 3-5, 2020''']
             print(city)
         
         
-        
     def testDelimiters(self):
         '''
         test the delimiter statistics for names
