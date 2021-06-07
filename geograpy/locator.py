@@ -36,6 +36,7 @@ import pycountry
 import sys
 import gzip
 import shutil
+import json
 from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
 from geograpy.utils import remove_non_ascii
@@ -60,6 +61,26 @@ class CountryList(LocationList):
     
     def __init__(self):
         super(CountryList, self).__init__('countries', Country)
+       
+    @classmethod
+    def fromErdem(cls):
+        '''
+        get country list provided by Erdem Ozkol https://github.com/erdem
+        '''
+        countryList=CountryList()
+        countryList.countries=[]
+        countryJsonUrl="https://gist.githubusercontent.com/erdem/8c7d26765831d0f9a8c62f02782ae00d/raw/248037cd701af0a4957cce340dabb0fd04e38f4c/countries.json"
+        with urllib.request.urlopen(countryJsonUrl) as url:
+            jsonCountryList=json.loads(url.read().decode())   
+            for jsonCountry in jsonCountryList:
+                country=Country()
+                country.name=jsonCountry['name']
+                country.iso=jsonCountry['country_code']
+                country.lat=jsonCountry['latlng'][0]
+                country.lon=jsonCountry['latlng'][1]    
+                countryList.countries.append(country)
+                
+        return countryList                               
         
 class RegionList(LocationList):
     '''
@@ -91,7 +112,8 @@ class Location(JSONAble):
         samplesLOD = [{
             "name": "Los Angeles",
             "wikidataid": "Q65",
-            "coordinates": "34.05223,-118.24368",
+            "lat": 34.05223,
+            "lon": -118.24368,
             "partOf": "US/CA",
             "level": 5,
             "locationKind": "City",
@@ -221,7 +243,6 @@ class Region(Location):
         region.iso=record['regionIsoCode'] 
         return region   
     
-    
 class Country(Location):
     '''
     a country
@@ -232,6 +253,22 @@ class Country(Location):
             self.__dict__['level']=3
         if 'locationKind' not in self.__dict__:
             self.__dict__['locationKind']="Country"
+            
+    @classmethod
+    def getSamples(cls):
+        samplesLOD = [{
+            "name": "United States of America",
+            "wikidataid": "Q30",
+            "lat": 39.82818,
+            "lon": -98.5795,
+            "partOf": "North America",
+            "level": 3,
+            "locationKind": "Country",
+            "comment": None,
+            "labels":["USA", "US", "United States of America"],
+            "iso":"US"
+        }]
+        return samplesLOD
     
     def __str__(self):
         text="%s(%s)" % (self.iso,self.name)
