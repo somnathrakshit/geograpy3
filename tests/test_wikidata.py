@@ -91,6 +91,18 @@ class TestWikidata(unittest.TestCase):
             #self.assertEqual(region['cities'],len(cityList))
             pass
 
+    def testGetCitiesOfRegion(self):
+        '''
+        Test getting cities based on region wikidata id
+        '''
+        if getpass.getuser()!="wf":
+            return
+        wikidata = Wikidata()
+        californiaWikidataId="Q99"
+        cities=wikidata.getCitiesOfRegion(californiaWikidataId, 1)
+        # [{'city': 'http://www.wikidata.org/entity/Q1050826', 'citylabel': 'Greater Los Angeles Area', 'population': 18550288.0, 'coordinates': 'Point(-118.25 35.05694444)'}]
+        print(cities)
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

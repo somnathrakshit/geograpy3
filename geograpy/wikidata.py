@@ -207,3 +207,73 @@ ORDER BY ?regionIsoCode"""
         wd=SPARQL(self.endpoint)
         results=wd.query(queryString)
         self.regionList=wd.asListOfDicts(results)
+
+    def getCitiesOfRegion(self, regionWikidataId: str, limit:int):
+        """
+        Queries the cities of the given region. If the region is a city state the region is returned as city.
+        The cities are ordered by population and can be limited by the given limit attribute.
+
+        Args:
+            regionWikidataId: wikidata id of the region the cities should be queried for
+            limit: Limits the amount of returned cities
+
+        Returns:
+            Returns list of cities of the given region ordered by population
+        """
+        query = """
+SELECT distinct ?city ?citylabel ?population ?coordinates
+WHERE {
+  VALUES ?possibleCityID {wd:Q1549591 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972}
+  wd:%s  (^wdt:P131|^wdt:P131/^wdt:P131|^wdt:P131/^wdt:P131/^wdt:P131|^wdt:P131/^wdt:P131/^wdt:P131/^wdt:P131) ?city .
+  {
+    ?city wdt:P31 ?x .
+    ?x wdt:P279 ?possibleCityID .
+  }UNION{
+    ?city wdt:P31 ?possibleCityID .
+  }
+  OPTIONAL{
+     ?city rdfs:label ?citylabel .
+    FILTER(lang(?citylabel)="en")
+  }
+  OPTIONAL{
+     ?city wdt:P1082 ?population .
+  }
+  OPTIONAL{
+     ?city wdt:P625 ?coordinates .
+  }
+
+}
+ORDER BY DESC(?population)
+LIMIT %s
+    """ % (regionWikidataId, limit)
+        askIfCity = """
+ASK
+WHERE{
+  VALUES ?possibleCityID {wd:Q1549591 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972 wd:Q133442}
+  wd:%s  wdt:P31 ?possibleCityID .
+}
+    """ % (regionWikidataId)
+        wd = SPARQL(self.endpoint)
+        cities = []
+        ids = []
+        # check if region is city (city-state)
+        try:
+            isCityResult = wd.query(askIfCity)
+            isCity = wd.asListOfDicts(isCityResult)
+            if isCity:
+                # ToDo: return region as city once city class is refactored
+                pass
+            else:
+                pass
+        except Exception as e:
+            print(e)
+            pass
+
+        try:
+            queryRes = wd.query(query)
+            # ToDo: return results as list of cities once the city class is refactored
+            res=wd.asListOfDicts(queryRes)
+            return res
+        except Exception as  e:
+            pass
+        return cities
