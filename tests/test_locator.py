@@ -6,7 +6,7 @@ Created on 2020-09-19
 import unittest
 import geograpy
 import getpass
-from geograpy.locator import Locator
+from geograpy.locator import Locator, CountryList
 from collections import Counter
 from lodstorage.uml import UML
 import os
@@ -256,6 +256,68 @@ February 3-5, 2020''']
                   ]
         countries=['US','NL','AT','US','US','US','US']
         self.checkExamples(examples, countries,debug=False)
+
+    def testLocationListLoading(self):
+        samples="""
+        {
+            "countries": [
+                {
+                    "name": "Afghanistan",
+                    "wikidataid": "Q889",
+                    "lat": 34,
+                    "lon": 66,
+                    "coordinates": "34,66",
+                    "partOf": null,
+                    "level": 3,
+                    "locationKind": "Country",
+                    "comment": null,
+                    "iso": "AF"
+                },
+                {
+                    "name": "United States of America",
+                    "wikidataid": "Q30",
+                    "lat": 39.82818,
+                    "lon": -98.5795,
+                    "partOf": "Noth America",
+                    "level": 3,
+                    "locationKind": "Country",
+                    "comment": null,
+                    "labels": [
+                        "America",
+                        "UNITED STATES OF AMERICA",
+                        "USA",
+                        "United States",
+                        "United States of America (the)"
+                    ],
+                    "iso": "US"
+                },
+                {
+                    "name": "Australia",
+                    "wikidataid": "Q408",
+                    "lat": -28,
+                    "lon": 137,
+                    "coordinates": "-28,137",
+                    "partOf": null,
+                    "level": 3,
+                    "locationKind": "Country",
+                    "comment": null,
+                    "labels": [
+                        "AUS"
+                    ],
+                    "iso": "AU"
+                }
+            ]
+        }
+        """
+        countries = CountryList().restoreFromJsonStr(samples)
+        # USA is a country that should always be in the list test if present
+        us_present = False
+        for country in countries:
+            if 'wikidataid' in country.__dict__:
+                if country.wikidataid == "Q30":
+                    us_present = True
+                    break
+        self.assertTrue(us_present)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
