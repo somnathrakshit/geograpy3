@@ -42,7 +42,30 @@ from geograpy.utils import remove_non_ascii
 from geograpy import wikidata
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
-from lodstorage.jsonable import JSONAble
+from lodstorage.jsonable import JSONAble, JSONAbleList
+
+class LocationList(JSONAbleList):
+    
+    def __init__(self,listName:str=None,clazz=None,tableName:str=None):
+        super(LocationList, self).__init__(listName, clazz, tableName)
+
+
+class CountryList(LocationList):
+    
+    def __init__(self):
+        super(CountryList, self).__init__('countries', Country)
+        
+class RegionList(LocationList):
+    
+    def __init__(self):
+        super(RegionList, self).__init__('regions', Region)
+
+
+class CityList(LocationList):
+    
+    def __init__(self):
+        super(CityList, self).__init__('cities', City)
+        
 
 class Location(JSONAble):
     '''
@@ -65,12 +88,31 @@ class Location(JSONAble):
         }]
         return samplesLOD
     
-class City(object):
+class City(Location):
     '''
     a single city as an object
     '''
-    def __init__(self):
-        pass
+
+    def __init__(self, **kwargs):
+        super(City, self).__init__(**kwargs)
+        if 'level' not in self.__dict__:
+            self.__dict__['level']=5
+        if 'locationKind' not in self.__dict__:
+            self.__dict__['locationKind']="City"
+
+    @classmethod
+    def getSamples(cls):
+        samplesLOD = [{
+            "name": "Los Angeles",
+            "wikidataid": "Q65",
+            "coordinates": "34.05223,-118.24368",
+            "partOf": "US/CA",
+            "level": 5,
+            "locationKind": "City",
+            "comment": None,
+            "population": "3976322"
+        }]
+        return samplesLOD
     
     def __str__(self):
         text="%s (%s - %s)" % (self.name,self.region,self.country)
@@ -103,13 +145,33 @@ class City(object):
         city.region=Region.fromGeoLite2(record)
         city.country=Country.fromGeoLite2(record)
         return city
-    
-class Region(object):
+        
+class Region(Location):
     '''
     a Region (Subdivision)
     '''
-    def __init__(self):
-        pass
+
+    def __init__(self, **kwargs):
+        super(Region, self).__init__(**kwargs)
+        if 'level' not in self.__dict__:
+            self.__dict__['level']=4
+        if 'locationKind' not in self.__dict__:
+            self.__dict__['locationKind']="Region"
+
+    @classmethod
+    def getSamples(cls):
+        samplesLOD = [{
+            "name": "California",
+            "wikidataid": "Q99",
+            "coordinates": "37.0,-120.0",
+            "partOf": "US",
+            "level": 4,
+            "locationKind": "Region",
+            "comment": None,
+            "labels": ["CA", "California"],
+            "isocode": "US-CA"
+        }]
+        return samplesLOD
     
     def __str__(self):
         text="%s(%s)" % (self.iso,self.name)
@@ -146,6 +208,7 @@ class Region(object):
         region.name=record['regionLabel']
         region.iso=record['regionIsoCode'] 
         return region   
+    
     
 class Country(Location):
     '''
