@@ -91,7 +91,8 @@ class Location(JSONAble):
         samplesLOD = [{
             "name": "Los Angeles",
             "wikidataid": "Q65",
-            "coordinates": "34.05223,-118.24368",
+            "lat": 34.05223,
+            "lon": -118.24368,
             "partOf": "US/CA",
             "level": 5,
             "locationKind": "City",
@@ -117,7 +118,8 @@ class City(Location):
         samplesLOD = [{
             "name": "Los Angeles",
             "wikidataid": "Q65",
-            "coordinates": "34.05223,-118.24368",
+            "lat": 34.05223,
+            "lon": -118.24368,
             "partOf": "US/CA",
             "level": 5,
             "locationKind": "City",
@@ -175,13 +177,14 @@ class Region(Location):
         samplesLOD = [{
             "name": "California",
             "wikidataid": "Q99",
-            "coordinates": "37.0,-120.0",
+            "lat": 37.0,
+            "lon": -120.0,
             "partOf": "US",
             "level": 4,
             "locationKind": "Region",
             "comment": None,
             "labels": ["CA", "California"],
-            "isocode": "US-CA"
+            "iso": "US-CA"
         }]
         return samplesLOD
     
@@ -232,6 +235,22 @@ class Country(Location):
             self.__dict__['level']=3
         if 'locationKind' not in self.__dict__:
             self.__dict__['locationKind']="Country"
+
+    @classmethod
+    def getSamples(cls):
+        samplesLOD = [{
+            "name": "United States of America",
+            "wikidataid": "Q30",
+            "lat": 39.82818,
+            "lon": -98.5795,
+            "partOf": "North America",
+            "level": 3,
+            "locationKind": "Country",
+            "comment": None,
+            "labels": ["USA", "US", "United States of America"],
+            "iso": "US"
+        }]
+        return samplesLOD
     
     def __str__(self):
         text="%s(%s)" % (self.iso,self.name)
