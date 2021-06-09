@@ -346,6 +346,13 @@ February 3-5, 2020''']
                     break
         self.assertTrue(us_present)
 
+    def testCountryListFromWikidata(self):
+        '''
+        tests if the CountryList id correctly loaded from Wikidata query result
+        '''
+        countryList=CountryList.fromWikidata()
+        self.assertTrue(len(countryList.countries)>=190)
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
