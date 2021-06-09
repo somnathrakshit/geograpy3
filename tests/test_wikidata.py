@@ -100,33 +100,29 @@ class TestWikidata(unittest.TestCase):
         wikidata = Wikidata()
         californiaWikidataId="Q99"
         cities=wikidata.getCitiesOfRegion(californiaWikidataId, 1)
-        # [{'city': 'http://www.wikidata.org/entity/Q1050826', 'citylabel': 'Greater Los Angeles Area', 'population': 18550288.0, 'coordinates': 'Point(-118.25 35.05694444)'}]
-        print(cities)
+        # [{'city': 'http://www.wikidata.org/entity/Q1050826', 'cityLabel': 'Greater Los Angeles Area', 'cityPop': 18550288.0, 'cityCoord': 'Point(-118.25 35.05694444)'}]
+        wikidataURL="http://www.wikidata.org/entity/Q1050826"
+        biggestCity=cities[0]
+        self.assertEqual(biggestCity['city'], wikidataURL)
 
     def testGetWikidataId(self):
-        if getpass.getuser()!="wf":
-            return
-        wikidata = Wikidata()
         # test entity
         wikidataURL="https://www.wikidata.org/wiki/Q1"
         expectedID="Q1"
-        id=wikidata.getWikidataId(wikidataURL)
+        id=Wikidata.getWikidataId(wikidataURL)
         self.assertEqual(id, expectedID)
         # test proiperty
         wikidataURLProperty="https://www.wikidata.org/wiki/Property:P31"
         expectedPropertyID="P31"
-        propertyId=wikidata.getWikidataId(wikidataURLProperty)
+        propertyId=Wikidata.getWikidataId(wikidataURLProperty)
         self.assertEqual(expectedPropertyID, propertyId)
 
     def testGetCoordinateComponents(self):
-        if getpass.getuser()!="wf":
-            return
-        wikidata = Wikidata()
         coordinate='Point(-118.25 35.05694444)'
         expLon='-118.25'
         expLat='35.05694444'
 
-        lon, lat=wikidata.getCoordinateComponents(coordinate)
+        lon, lat=Wikidata.getCoordinateComponents(coordinate)
 
         self.assertEqual(expLat, lat)
         self.assertEqual(expLon, lon)
