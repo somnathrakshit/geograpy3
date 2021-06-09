@@ -44,6 +44,7 @@ from geograpy import wikidata
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 from lodstorage.jsonable import JSONAble, JSONAbleList
+from math import radians, cos, sin, asin, sqrt
 
 class LocationList(JSONAbleList):
     '''
@@ -106,6 +107,38 @@ class Location(JSONAble):
     '''
     def __init__(self, **kwargs):
         self.__dict__=kwargs
+        
+    @staticmethod
+    def haversine(lon1, lat1, lon2, lat2):
+        """
+        Calculate the great circle distance between two points 
+        on the earth (specified in decimal degrees)
+        """
+        # convert decimal degrees to radians 
+        lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    
+        # haversine formula 
+        dlon = lon2 - lon1 
+        dlat = lat2 - lat1 
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2 * asin(sqrt(a)) 
+        r = 6371 # Radius of earth in kilometers. Use 3956 for miles
+        return c * r
+
+    def distance(self,other)->float:
+        '''
+        calculate the distance to another Location
+        
+        Args:
+            other(Location): the other location
+            
+        Returns:
+            the haversine distance in km
+        '''
+        # see https://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points
+        distance=Location.haversine(self.lon,self.lat,other.lon,other.lat)
+        return distance
+        
 
     @classmethod
     def getSamples(cls):
