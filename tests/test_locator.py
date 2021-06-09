@@ -6,7 +6,7 @@ Created on 2020-09-19
 import unittest
 import geograpy
 import getpass
-from geograpy.locator import Locator,CountryList
+from geograpy.locator import Locator,CountryList,Location
 from collections import Counter
 from lodstorage.uml import UML
 import os
@@ -267,6 +267,22 @@ February 3-5, 2020''']
         if self.debug:
             for country in countryList.countries:
                 print(country)
+                
+    def testIssue_42_distance(self):
+        '''
+        test haversine and location
+        '''
+        loc1=Location()
+        loc1.lat=0
+        loc1.lon=0
+        loc2=Location()
+        loc2.lat=90
+        loc2.lon=0
+        d=loc1.distance(loc2)
+        #self.debug=True
+        if self.debug:
+            print(d)
+        self.assertAlmostEqual(10007.54,d,delta=0.1)
 
     def testLocationListLoading(self):
         samples="""
