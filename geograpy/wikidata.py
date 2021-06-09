@@ -113,9 +113,7 @@ WHERE {
   OPTIONAL { ?city wdt:P1082 ?cityPop.}
    # get the coordinates
   OPTIONAL { 
-    select (max(?coord) as ?cityCoord) where {
-      ?city wdt:P625 ?coord.
-    }
+      ?city wdt:P625 ?cityCoord.
   } 
 } 
 ORDER BY ?cityLabel""" % values
@@ -150,9 +148,7 @@ SELECT DISTINCT ?country ?countryLabel ?countryIsoCode ?countryPopulation ?count
   ?country rdfs:label ?countryLabel filter (lang(?countryLabel) = "en").
   # get the coordinates
   OPTIONAL { 
-    select (max(?coord) as ?countryCoord) where {
-      ?country wdt:P625 ?coord.
-    }
+      ?country wdt:P625 ?countryCoord.
   } 
   # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
   ?country wdt:P297 ?countryIsoCode.
