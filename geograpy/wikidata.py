@@ -3,6 +3,7 @@ Created on 2020-09-23
 
 @author: wf
 '''
+import re
 import time
 from lodstorage.sparql import SPARQL
 class Wikidata(object):
@@ -277,3 +278,42 @@ WHERE{
         except Exception as  e:
             pass
         return cities
+
+    def getCoordinateComponents(self, coordinate:str) -> (str, str):
+        '''
+        Converts the wikidata coordinate representation into its subcomponents longitude and latitude
+        Example: 'Point(-118.25 35.05694444)' results in ('-118.25' '35.05694444')
+
+        Args:
+            coordinate: coordinate value in the format as returned by wikidata queries
+
+        Returns:
+            Returns the longitude and latitude of the given coordinate as separate values
+        '''
+        coordinateComponents = coordinate.replace('Point(', '').replace(')').split(", ")
+        if len(coordinateComponents) == 2:
+            lon = coordinateComponents[0]
+            lat = coordinateComponents[1]
+            return lon, lat
+        else:
+            # coordinate does not have the expected format
+            return None, None
+
+    def getWikidataId(self, wikidataURL:str):
+        '''
+        Extracts the wikidata id from the given wikidata URL
+
+        Args:
+            wikidataURL: wikidata URL the id should be extracted from
+
+        Returns:
+            The wikidata id if present in the given wikidata URL otherwise None
+        '''
+
+        # regex pattern taken from https://www.wikidata.org/wiki/Q43649390 and extended to also support property ids
+        wikidataidMatch = re.match("[PQ][1-9]\d*", wikidataURL)
+        if wikidataidMatch.group(0):
+            wikidataid = wikidataidMatch.group(0)
+            return wikidataid
+        else:
+            return None

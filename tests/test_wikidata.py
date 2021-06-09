@@ -103,6 +103,34 @@ class TestWikidata(unittest.TestCase):
         # [{'city': 'http://www.wikidata.org/entity/Q1050826', 'citylabel': 'Greater Los Angeles Area', 'population': 18550288.0, 'coordinates': 'Point(-118.25 35.05694444)'}]
         print(cities)
 
+    def testGetWikidataId(self):
+        if getpass.getuser()!="wf":
+            return
+        wikidata = Wikidata()
+        # test entity
+        wikidataURL="https://www.wikidata.org/wiki/Q1"
+        expectedID="Q1"
+        id=wikidata.getWikidataId(wikidataURL)
+        self.assertEqual(id, expectedID)
+        # test proiperty
+        wikidataURLProperty="https://www.wikidata.org/wiki/Property:P31"
+        expectedPropertyID="P31"
+        propertyId=wikidata.getWikidataId(wikidataURLProperty)
+        self.assertEqual(expectedPropertyID, propertyId)
+
+    def testGetCoordinateComponents(self):
+        if getpass.getuser()!="wf":
+            return
+        wikidata = Wikidata()
+        coordinate='Point(-118.25 35.05694444)'
+        expLon='-118.25'
+        expLat='35.05694444'
+
+        lon, lat=wikidata.getCoordinateComponents(coordinate)
+
+        self.assertEqual(expLat, lat)
+        self.assertEqual(expLon, lon)
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
