@@ -296,11 +296,14 @@ WHERE{
         Returns:
             Returns the longitude and latitude of the given coordinate as separate values
         '''
-        coordinateComponents = coordinate.replace('Point(', '').replace(')','').split(' ')
-        if len(coordinateComponents) == 2:
-            lon = coordinateComponents[0]
-            lat = coordinateComponents[1]
-            return lon, lat
+        # https://stackoverflow.com/a/18237992/1497139
+        floatRegex="[-+]?\d+([.,]\d*)?"
+        regexp=f"Point\((?P<lon>{floatRegex})\s+(?P<lat>{floatRegex})\)"
+        cMatch = re.search(regexp, coordinate)
+        if cMatch:
+            latStr=cMatch.group("lat")
+            lonStr=cMatch.group("lon")
+            return float(latStr.replace(",",".")),float(lonStr.replace(",","."))
         else:
             # coordinate does not have the expected format
             return None, None

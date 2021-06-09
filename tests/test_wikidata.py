@@ -118,14 +118,21 @@ class TestWikidata(unittest.TestCase):
         self.assertEqual(expectedPropertyID, propertyId)
 
     def testGetCoordinateComponents(self):
-        coordinate='Point(-118.25 35.05694444)'
-        expLon='-118.25'
-        expLat='35.05694444'
-
-        lon, lat=Wikidata.getCoordinateComponents(coordinate)
-
-        self.assertEqual(expLat, lat)
-        self.assertEqual(expLon, lon)
+        '''
+        test the splitting of coordinate components in WikiData query results
+        '''
+        cList=[
+            {
+              "coordinate":'Point(-118.25 35.05694444)',
+              "expected":(-118.25,35.05694444)
+            }
+        ]
+        for c  in cList:
+            coordinate=c["coordinate"]
+            expLat,expLon=c["expected"]
+            lon, lat=Wikidata.getCoordinateComponents(coordinate)
+            self.assertEqual(expLat, lat)
+            self.assertEqual(expLon, lon)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

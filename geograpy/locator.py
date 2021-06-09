@@ -53,6 +53,7 @@ class LocationList(JSONAbleList):
     
     def __init__(self,listName:str=None,clazz=None,tableName:str=None):
         super(LocationList, self).__init__(listName, clazz, tableName)
+        
 
 
 class CountryList(LocationList):
@@ -62,6 +63,24 @@ class CountryList(LocationList):
     
     def __init__(self):
         super(CountryList, self).__init__('countries', Country)
+        # TODO decide whether JsonAbleList should do this
+        self.countries=[]
+        
+    @classmethod
+    def from_sqlDb(cls,sqlDB):
+        countryList=CountryList()
+        query="select * from countries"
+        countryLod=sqlDB.query(query)
+        for countryRecord in countryLod:
+            country=Country()
+            country.name=countryRecord["countryLabel"]
+            country.iso=countryRecord["countryIsoCode"]
+            # TODO Fix table to supply lat/lon directly
+            coordStr=countryRecord["countryCoord"]
+            country.lat,country.lon=Wikidata.getCoordinateComponents(coordStr)
+            countryList.countries.append(country)
+        return countryList
+        
 
     @classmethod
     def fromErdem(cls):
@@ -69,7 +88,6 @@ class CountryList(LocationList):
         get country list provided by Erdem Ozkol https://github.com/erdem
         '''
         countryList=CountryList()
-        countryList.countries=[]
         countryJsonUrl="https://gist.githubusercontent.com/erdem/8c7d26765831d0f9a8c62f02782ae00d/raw/248037cd701af0a4957cce340dabb0fd04e38f4c/countries.json"
         with urllib.request.urlopen(countryJsonUrl) as url:
             jsonCountryList=json.loads(url.read().decode())
@@ -82,6 +100,7 @@ class CountryList(LocationList):
                 countryList.countries.append(country)
 
         return countryList
+            
 
 class RegionList(LocationList):
     '''
