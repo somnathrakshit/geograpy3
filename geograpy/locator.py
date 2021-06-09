@@ -53,7 +53,7 @@ class LocationList(JSONAbleList):
     
     def __init__(self,listName:str=None,clazz=None,tableName:str=None):
         super(LocationList, self).__init__(listName, clazz, tableName)
-
+        self.countries = []
 
 class CountryList(LocationList):
     '''
@@ -82,6 +82,28 @@ class CountryList(LocationList):
                 countryList.countries.append(country)
 
         return countryList
+
+    @classmethod
+    def fromWikidata(cls):
+        '''
+        get country list form wikidata
+        '''
+        countryList = CountryList()
+        wikidata=Wikidata()
+        wikidata.getCountries()
+        if 'countryList' in wikidata.__dict__:
+            for countryRecord in wikidata.countryList:
+                country = Country()
+                country.wikidataid=Wikidata.getWikidataId(countryRecord['country'])
+                country.name = countryRecord['countryLabel']
+                country.iso = countryRecord['countryIsoCode']
+                lon, lat = Wikidata.getCoordinateComponents(countryRecord['countryCoord'])
+                country.lat = lat
+                country.lon = lon
+                country.population = countryRecord['countryPopulation']
+                countryList.countries.append(country)
+        return countryList
+
 
 class RegionList(LocationList):
     '''
