@@ -6,6 +6,7 @@ Created on 2020-09-23
 import re
 import time
 from lodstorage.sparql import SPARQL
+
 class Wikidata(object):
     '''
     Wikidata access
@@ -222,8 +223,8 @@ ORDER BY ?regionIsoCode"""
             Returns list of cities of the given region ordered by population
         """
         query = """
-SELECT distinct ?city ?citylabel ?population ?coordinates
-WHERE {
+WHERE {SELECT distinct ?city as  ?cityLabel ?cityPop ?cityCoord
+
   VALUES ?possibleCityID {wd:Q1549591 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972}
   wd:%s  (^wdt:P131|^wdt:P131/^wdt:P131|^wdt:P131/^wdt:P131/^wdt:P131|^wdt:P131/^wdt:P131/^wdt:P131/^wdt:P131) ?city .
   {
@@ -233,18 +234,18 @@ WHERE {
     ?city wdt:P31 ?possibleCityID .
   }
   OPTIONAL{
-     ?city rdfs:label ?citylabel .
-    FILTER(lang(?citylabel)="en")
+     ?city rdfs:label ?cityLabel .
+    FILTER(lang(?cityLabel)="en")
   }
   OPTIONAL{
-     ?city wdt:P1082 ?population .
+     ?city wdt:P1082 ?cityPop .
   }
   OPTIONAL{
-     ?city wdt:P625 ?coordinates .
+     ?city wdt:P625 ?cityCoord .
   }
 
 }
-ORDER BY DESC(?population)
+ORDER BY DESC(?cityPop)
 LIMIT %s
     """ % (regionWikidataId, limit)
         askIfCity = """
@@ -272,8 +273,11 @@ WHERE{
 
         try:
             queryRes = wd.query(query)
-            # ToDo: return results as list of cities once the city class is refactored
-            res=wd.asListOfDicts(queryRes)
+            cityLoD=wd.asListOfDicts(queryRes)
+            res=[]
+            # [{'city': 'http://www.wikidata.org/entity/Q1050826', 'citylabel': 'Greater Los Angeles Area', 'population': 18550288.0, 'coordinates': 'Point(-118.25 35.05694444)'}]
+            for cityRecord in cityLoD:
+                res.append(cityRecord)
             return res
         except Exception as  e:
             pass
