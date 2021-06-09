@@ -223,8 +223,8 @@ ORDER BY ?regionIsoCode"""
             Returns list of cities of the given region ordered by population
         """
         query = """
-WHERE {SELECT distinct ?city as  ?cityLabel ?cityPop ?cityCoord
-
+SELECT distinct ?city ?cityLabel ?cityPop ?cityCoord
+WHERE {
   VALUES ?possibleCityID {wd:Q1549591 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972}
   wd:%s  (^wdt:P131|^wdt:P131/^wdt:P131|^wdt:P131/^wdt:P131/^wdt:P131|^wdt:P131/^wdt:P131/^wdt:P131/^wdt:P131) ?city .
   {
@@ -249,7 +249,7 @@ ORDER BY DESC(?cityPop)
 LIMIT %s
     """ % (regionWikidataId, limit)
         askIfCity = """
-ASK
+SELECT *
 WHERE{
   VALUES ?possibleCityID {wd:Q1549591 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972 wd:Q133442}
   wd:%s  wdt:P31 ?possibleCityID .
