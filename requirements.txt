@@ -18,4 +18,4 @@ pylodstorage>=0.0.30
 sphinx-rtd-theme
 # https://pypi.org/project/scikit-learn/
 scikit-learn
-sklearn
+sqlalchemy
