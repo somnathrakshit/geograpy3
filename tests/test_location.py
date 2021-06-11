@@ -5,7 +5,7 @@ Created on 2021-06-09
 '''
 import unittest
 import numpy as np
-from geograpy.locator import Locator,CountryList
+from geograpy.locator import Locator,CountryList , Country
 from sklearn.neighbors import BallTree
 from geograpy.locator import Location
 import json
@@ -46,30 +46,16 @@ class TestLocationHierarchy(unittest.TestCase):
 
 
     def testMatchingv2(self):
-        locator = Locator()
-        if not locator.db_has_data():
-            locator.populate_db()
+        country = Country()
+        country.name= 'Germany'
+        country.lat = 51.0
+        country.lon = 9.0
         countryList = CountryList.fromErdem()
-        jsonLoad = json.loads(countryList.toJSON())
-        countries = pd.DataFrame(jsonLoad['countries'])
-        countries['lat'] = pd.to_numeric(countries['lat'], downcast="float")
-        countries['lon'] = pd.to_numeric(countries['lon'], downcast="float")
-        countries['rad_lat'] = countries['lat'].apply(lambda x: radians(x))
-        countries['rad_lon'] = countries['lon'].apply(lambda x: radians(x))
-        coordinatesrad = np.array(list(zip(countries['rad_lat'], countries['rad_lon'])))
-        balltree = BallTree(coordinatesrad, metric='haversine')
-        test_radius = 500  # Kms
-        test_NN= 5
-        cl2 = CountryList.from_sqlDb(locator.sqlDB)
-        for country in cl2.countries:
-            testpoint = np.array([(radians(country.lat), radians(country.lon))])
-            name = country.name
-            results = Location.getClosestLocations(name, 2, countries, balltree,coordinatesrad, 'number')
-
-            if results is not None:
-                print(results.Country.values[-1], " is closest to ", name)
-            else:
-                print(country.name, 'not found')
+        results = country.getClosestLocations(2,countryList, 'number')
+        if self.debug:
+            print(results)
+        self.assertEqual(len(results),2)
+        self.assertEqual(results[0]['Location'],'Luxembourg')
 
 
     def testMatching(self):

@@ -38,6 +38,7 @@ import gzip
 import shutil
 import json
 import pandas as pd
+from sklearn.neighbors import BallTree
 from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
 from geograpy.utils import remove_non_ascii
@@ -57,6 +58,8 @@ class LocationList(JSONAbleList):
     def __init__(self,listName:str=None,clazz=None,tableName:str=None):
         super(LocationList, self).__init__(listName, clazz, tableName)
 
+
+
 class CountryList(LocationList):
     '''
     a list of countries
@@ -66,7 +69,22 @@ class CountryList(LocationList):
         super(CountryList, self).__init__('countries', Country)
         # TODO decide whether JsonAbleList should do this
         self.countries=[]
-        
+        self.balltree= None
+
+    def getBallTree(self):
+        if self.balltree is None:
+            jsonLoad = json.loads(self.toJSON())
+            self.lookupdf = pd.DataFrame(jsonLoad['countries'])
+            self.lookupdf['lat'] = pd.to_numeric(self.lookupdf['lat'], downcast="float")
+            self.lookupdf['lon'] = pd.to_numeric(self.lookupdf['lon'], downcast="float")
+            self.lookupdf['rad_lat'] = self.lookupdf['lat'].apply(lambda x: radians(x))
+            self.lookupdf['rad_lon'] = self.lookupdf['lon'].apply(lambda x: radians(x))
+            coordinatesrad = np.array(list(zip(self.lookupdf['rad_lat'], self.lookupdf['rad_lon'])))
+            self.balltree = BallTree(coordinatesrad, metric='haversine')
+            return self.balltree
+        else:
+            return self.balltree
+
     @classmethod
     def from_sqlDb(cls,sqlDB):
         countryList=CountryList()
@@ -110,6 +128,7 @@ class CountryList(LocationList):
         '''
         countryList = CountryList()
         wikidata=Wikidata()
+
         wikidata.getCountries()
         if 'countryList' in wikidata.__dict__:
             for countryRecord in wikidata.countryList:
@@ -195,7 +214,7 @@ class Location(JSONAble):
     '''
     def __init__(self, **kwargs):
         self.__dict__=kwargs
-        
+
     @staticmethod
     def haversine(lon1, lat1, lon2, lat2):
         """
@@ -213,40 +232,37 @@ class Location(JSONAble):
         r = 6371 # Radius of earth in kilometers. Use 3956 for miles
         return c * r
 
-    @classmethod
-    def getClosestLocations(cls, name, test_parameter, locations, balltree, coordinatesrad, testType='distance'):
+
+    def getClosestLocations(self, n_Closest, listOfLocations, nType='distance'):
         """
-        Gives the closest locations to the given location based on Nearest Neighbours or radius
+        Gives the closest locations from itself to the given location based on Nearest Neighbours or radius
         Args:
-            name(str): Country Name for Query
             test_parameter(int): Radius if testType is distance and number of neighbours if testType is Number
-            locations(DataFrame): Dataframe used to create ball tree
-            balltree(sklearn.balltree): Balltree object
-            coordinatesrad(np.array): Numpy array used to create balltree
             testType(str): Search in radius if "distance", search as Nearest Neighbours if "number"
         Returns:
-            result(DataFrame): DataFrame with the nearest locations sorted by distance
+            result(LOD): List of Dictionaries with the nearest locations sorted by distance
 
         """
         earth_radius = 6371000  # meters in earth
         result = None
-        index = locations.index[locations['name'] == name].to_list()
-        for i in index:
-            if testType == 'distance':
-                test_radius = 1000 * test_parameter
-                listoflocations = balltree.query_radius([coordinatesrad[i]], r=test_radius / earth_radius,
-                                                        return_distance=True)
-                result = pd.DataFrame(np.array([listoflocations[0][0], listoflocations[1][0]]).T,
-                                      columns=['Country', 'Distance'])
-            elif testType == 'number':
-                listoflocations = balltree.query([coordinatesrad[i]], k=test_parameter, return_distance=True)
-                result = pd.DataFrame(np.array([listoflocations[1][0], listoflocations[0][0]]).T,
-                                      columns=['Country', 'Distance'])
+        if nType == 'distance':
+            n_radius = 1000 * n_Closest
+            listoflocations = listOfLocations.getBallTree().query_radius([[radians(self.lat),radians(self.lon)]], r=n_radius / earth_radius,
+                                                    return_distance=True)
+            result = pd.DataFrame(np.array([listoflocations[0][0], listoflocations[1][0]]).T,
+                                  columns=['Location', 'Distance'])
+        elif nType == 'number':
+            listoflocations = listOfLocations.getBallTree().query([[radians(self.lat),radians(self.lon)]], k=n_Closest+1, return_distance=True)
+            result = pd.DataFrame(np.array([listoflocations[1][0], listoflocations[0][0]]).T,
+                                  columns=['Location', 'Distance'])
 
-            result['Country'] = result['Country'].apply(lambda x: locations['name'].loc[int(x)])
-            result['Distance'] = result['Distance'] * earth_radius / 1000
-            result = result.sort_values(by='Distance')
-        return result
+        result['Location'] = result['Location'].apply(lambda x: listOfLocations.lookupdf['name'].loc[int(x)])
+        result['Distance'] = result['Distance'] * earth_radius / 1000
+        result = result.sort_values(by='Distance')
+        if len(result[result['Distance'] == 0])> 0:
+            return result[result['Distance'] > 0].to_dict('records')
+        else:
+            return result.to_dict('records')
 
     def distance(self,other)->float:
         '''
@@ -405,12 +421,13 @@ class Country(Location):
     '''
     a country
     '''
-    def __init__(self, **kwargs):
+    def __init__(self,lookupSource='sqlDB', **kwargs):
         super(Country, self).__init__(**kwargs)
         if 'level' not in self.__dict__:
             self.__dict__['level']=3
         if 'locationKind' not in self.__dict__:
             self.__dict__['locationKind']="Country"
+
 
     @classmethod
     def getSamples(cls):
