@@ -20,3 +20,5 @@ sphinx-rtd-theme
 scikit-learn
 # https://pypi.org/project/SQLAlchemy/
 sqlalchemy
+# https://pypi.org/project/pandas/
+pandas

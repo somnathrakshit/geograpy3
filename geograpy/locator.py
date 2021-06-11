@@ -37,6 +37,7 @@ import sys
 import gzip
 import shutil
 import json
+import pandas as pd
 from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
 from geograpy.utils import remove_non_ascii
@@ -45,6 +46,8 @@ from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 from lodstorage.jsonable import JSONAble, JSONAbleList
 from math import radians, cos, sin, asin, sqrt
+import numpy as np
+
 
 class LocationList(JSONAbleList):
     '''
@@ -209,6 +212,41 @@ class Location(JSONAble):
         c = 2 * asin(sqrt(a)) 
         r = 6371 # Radius of earth in kilometers. Use 3956 for miles
         return c * r
+
+    @classmethod
+    def getClosestLocations(cls, name, test_parameter, locations, balltree, coordinatesrad, testType='distance'):
+        """
+        Gives the closest locations to the given location based on Nearest Neighbours or radius
+        Args:
+            name(str): Country Name for Query
+            test_parameter(int): Radius if testType is distance and number of neighbours if testType is Number
+            locations(DataFrame): Dataframe used to create ball tree
+            balltree(sklearn.balltree): Balltree object
+            coordinatesrad(np.array): Numpy array used to create balltree
+            testType(str): Search in radius if "distance", search as Nearest Neighbours if "number"
+        Returns:
+            result(DataFrame): DataFrame with the nearest locations sorted by distance
+
+        """
+        earth_radius = 6371000  # meters in earth
+        result = None
+        index = locations.index[locations['name'] == name].to_list()
+        for i in index:
+            if testType == 'distance':
+                test_radius = 1000 * test_parameter
+                listoflocations = balltree.query_radius([coordinatesrad[i]], r=test_radius / earth_radius,
+                                                        return_distance=True)
+                result = pd.DataFrame(np.array([listoflocations[0][0], listoflocations[1][0]]).T,
+                                      columns=['Country', 'Distance'])
+            elif testType == 'number':
+                listoflocations = balltree.query([coordinatesrad[i]], k=test_parameter, return_distance=True)
+                result = pd.DataFrame(np.array([listoflocations[1][0], listoflocations[0][0]]).T,
+                                      columns=['Country', 'Distance'])
+
+            result['Country'] = result['Country'].apply(lambda x: locations['name'].loc[int(x)])
+            result['Distance'] = result['Distance'] * earth_radius / 1000
+            result = result.sort_values(by='Distance')
+        return result
 
     def distance(self,other)->float:
         '''
