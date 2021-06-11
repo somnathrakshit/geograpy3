@@ -6,7 +6,7 @@ Created on 2020-09-19
 import unittest
 import geograpy
 import getpass
-from geograpy.locator import Locator,CountryList,Location
+from geograpy.locator import Locator, CountryList, Location, CityList
 from collections import Counter
 from lodstorage.uml import UML
 import os
@@ -352,6 +352,22 @@ February 3-5, 2020''']
         '''
         countryList=CountryList.fromWikidata()
         self.assertTrue(len(countryList.countries)>=190)
+
+    def testCityListFromJSONBackup(self):
+        '''
+        tests the loading and parsing of the cityList form the json backup file
+        '''
+        cityList=CityList().fromJSONBackup()
+        self.assertTrue('cities' in cityList.__dict__)
+        self.assertTrue(len(cityList.cities)>=50000)
+        # check if Los Angeles is in the list (popular city should always be in the list)
+        la_present = False
+        for city in cityList.cities:
+            if 'wikidataid' in city.__dict__:
+                if city.wikidataid == "Q65":
+                    la_present = True
+                    break
+        self.assertTrue(la_present)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

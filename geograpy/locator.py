@@ -138,7 +138,53 @@ class CityList(LocationList):
     
     def __init__(self):
         super(CityList, self).__init__('cities', City)
-        
+
+    @classmethod
+    def fromWikidata(cls, fromBackup:bool = True):
+        '''
+        get city list form wikidata
+
+        Args:
+            fromBackup(bool): If True instead of querying wikidata a backup of the wikidata results is used to create the city list. Otherwise wikidata is queried for the city data. Default is True
+
+        Returns:
+            CityList based wikidata query results
+        '''
+        if fromBackup:
+            cityList = cls.fromJSONBackup()
+            return cityList
+        cityList = CityList()
+        wikidata = Wikidata()
+        wikidata.getCities()
+        if 'cityList' in wikidata.__dict__:
+            for cityRecord in wikidata.cityList:
+                city = City()
+                city.wikidataid = Wikidata.getWikidataId(cityRecord['city'])
+                city.name = cityRecord['cityLabel']
+                regionIso = cityRecord['regionIsoCode']
+                city.partOf = regionIso
+                if 'countryCoord' in cityRecord:
+                    lon, lat = Wikidata.getCoordinateComponents(cityRecord['countryCoord'])
+                    city.lat = lat
+                    city.lon = lon
+                city.population = cityRecord['cityPop']
+                cityList.cities.append(city)
+        return cityList
+
+    @classmethod
+    def fromJSONBackup(cls):
+        '''
+        get city list from json backup (json backup is based on wikidata query results)
+
+        Returns:
+            CityList based on the json backup
+        '''
+        cityList = CityList()
+        cityJsonUrl = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json"
+        with urllib.request.urlopen(cityJsonUrl) as url:
+            jsonCityListStr = url.read().decode()
+            cityList.restoreFromJsonStr(jsonCityListStr)
+        return cityList
 
 class Location(JSONAble):
     '''
