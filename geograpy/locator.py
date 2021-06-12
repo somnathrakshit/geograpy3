@@ -66,24 +66,28 @@ class LocationList(JSONAbleList):
         '''
         return self.__dict__[self.listName]
         
-    def getBallTree(self,cache:bool=True):
+    def getBallTuple(self,cache:bool=True):
         '''
-        get the BallTree of this location list
+        get the BallTuple=BallTree,validList of this location list
         
         Args:
             cache(bool): if True calculate and use a cached version otherwise recalculate on
             every call of this function
             
         Returns:
-            BallTree: a sklearn.neighbors.BallTree for the given list of locations
+            BallTree,list: a sklearn.neighbors.BallTree for the given list of locations, list: the valid list of locations
+            list: valid list of locations
         '''
+        validList=[]
         if self.balltree is None or not cache:
             coordinatesrad=[]
             for location in self.getLocationList():
-                latlonrad=(radians(location.lat),radians(location.lon))
-                coordinatesrad.append(latlonrad)
-            self.balltree = BallTree(coordinatesrad, metric='haversine')
-        return self.balltree
+                if location.lat and location.lon:
+                    latlonrad=(radians(location.lat),radians(location.lon))
+                    coordinatesrad.append(latlonrad)
+                    validList.append(location)
+            self.ballTuple = BallTree(coordinatesrad, metric='haversine'),validList
+        return self.ballTuple
 
 
 class CountryList(LocationList):
@@ -162,6 +166,22 @@ class RegionList(LocationList):
     
     def __init__(self):
         super(RegionList, self).__init__('regions', Region)
+        self.regions=[]
+        
+    @classmethod
+    def from_sqlDb(cls,sqlDB):
+        regionList=RegionList()
+        query="select * from regions"
+        regionsLod=sqlDB.query(query)
+        for regionRecord in regionsLod:
+            region=Region()
+            region.name=regionRecord["regionLabel"]
+            region.iso=regionRecord["regionIsoCode"]
+            # TODO Fix table to supply lat/lon directly
+            coordStr=regionRecord["location"]
+            region.lat,region.lon=Wikidata.getCoordinateComponents(coordStr)
+            regionList.regions.append(region)
+        return regionList
 
 
 class CityList(LocationList):
@@ -272,9 +292,9 @@ class Location(JSONAble):
         Returns:
             list: a list of result Location/distance tuples
         """
-        balltree=lookupLocationList.getBallTree()
+        balltree,lookupListOfLocations=lookupLocationList.getBallTuple()
         distances,indices = balltree.query([[radians(self.lat),radians(self.lon)]], k=n+1, return_distance=True)
-        resultLocations=self.balltreeQueryResultToLocationList(distances[0],indices[0],lookupLocationList)
+        resultLocations=self.balltreeQueryResultToLocationList(distances[0],indices[0],lookupListOfLocations)
         return resultLocations
         
     def getLocationsWithinRadius(self,lookupLocationList,radiusKm:float):
@@ -288,27 +308,26 @@ class Location(JSONAble):
         Returns:
             list: a list of result Location/distance tuples
         """
-        balltree=lookupLocationList.getBallTree()
+        balltree,lookupListOfLocations=lookupLocationList.getBallTuple()
         
         indices,distances = balltree.query_radius([[radians(self.lat),radians(self.lon)]], r=radiusKm / Earth.radius,
                                                     return_distance=True)
-        locationList=self.balltreeQueryResultToLocationList(distances[0],indices[0],lookupLocationList)
+        locationList=self.balltreeQueryResultToLocationList(distances[0],indices[0],lookupListOfLocations)
         return locationList
     
-    def balltreeQueryResultToLocationList(self,distances,indices,lookupLocationList):
+    def balltreeQueryResultToLocationList(self,distances,indices,lookupListOfLocations):
         '''
         convert the given ballTree Query Result to a LocationList
         
         Args:
             distances(list): array of distances
             indices(list): array of indices
-            lookupLocationList(LocationList): a LocationList object to use for lookup
+            lookupListOfLocations(list): a list of valid locations to use for lookup
             
         Return:
             list: a list of result Location/distance tuples
         '''
         locationListWithDistance=[]
-        lookupListOfLocations=lookupLocationList.getLocationList()
         for i,locationIndex in enumerate(indices):
             distance=distances[i]*Earth.radius 
             location=lookupListOfLocations[locationIndex]

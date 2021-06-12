@@ -281,7 +281,7 @@ WHERE{
         return cities
 
     @staticmethod
-    def getCoordinateComponents(coordinate:str) -> (str, str):
+    def getCoordinateComponents(coordinate:str) -> (float, float):
         '''
         Converts the wikidata coordinate representation into its subcomponents longitude and latitude
         Example: 'Point(-118.25 35.05694444)' results in ('-118.25' '35.05694444')
@@ -295,11 +295,20 @@ WHERE{
         # https://stackoverflow.com/a/18237992/1497139
         floatRegex="[-+]?\d+([.,]\d*)?"
         regexp=f"Point\((?P<lon>{floatRegex})\s+(?P<lat>{floatRegex})\)"
-        cMatch = re.search(regexp, coordinate)
+        cMatch=None
+        if coordinate:
+            try:
+                cMatch = re.search(regexp, coordinate)
+            except Exception as ex:
+                # ignore
+                pass
         if cMatch:
             latStr=cMatch.group("lat")
             lonStr=cMatch.group("lon")
-            return float(latStr.replace(",",".")),float(lonStr.replace(",","."))
+            lat,lon=float(latStr.replace(",",".")),float(lonStr.replace(",","."))
+            if lon>180:
+                lon=lon-360
+            return lat,lon
         else:
             # coordinate does not have the expected format
             return None, None

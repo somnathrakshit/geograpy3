@@ -5,7 +5,7 @@ Created on 2021-06-09
 '''
 import unittest
 import numpy as np
-from geograpy.locator import Locator,CountryList , Country, Earth
+from geograpy.locator import Locator,CountryList,RegionList, Country, Earth
 from sklearn.neighbors import BallTree
 from math import radians
 
@@ -43,9 +43,10 @@ class TestLocationHierarchy(unittest.TestCase):
         test calculation a ball tree for a given list of locations
         '''
         countryList=CountryList.fromErdem()
-        ballTree=countryList.getBallTree()
+        ballTree,validList=countryList.getBallTuple()
+        self.assertEqual(245,len(validList))
         self.assertEqual("BallTree",type(ballTree).__name__)
-        self.assertAlmostEqual(247, ballTree.sum_weight, delta=0.1)
+        self.assertAlmostEqual(245, ballTree.sum_weight, delta=0.1)
         pass
     
     def checkLocationListWithDistances(self,locationListWithDistances,expectedCount,expectedClosest,expectedDistance):
@@ -86,11 +87,11 @@ class TestLocationHierarchy(unittest.TestCase):
         locator=Locator()
         if not locator.db_has_data():
             locator.populate_db()
-        lookupCountryList=CountryList.fromErdem()
-        countryList2=CountryList.from_sqlDb(locator.sqlDB)
-        for country in countryList2.countries:
-            locationListWithDistances=country.getNClosestLocations(lookupCountryList,3)
-            print(country)
+        countryList=CountryList.fromErdem()
+        regionList=RegionList.from_sqlDb(locator.sqlDB)
+        for country in countryList.countries:
+            locationListWithDistances=country.getNClosestLocations(regionList,3)
+            print(f"{country}{country.lat:.2f},{country.lon:.2f}")
             for i,locationWithDistance in enumerate(locationListWithDistances):
                 location,distance=locationWithDistance
                 print(f"    {i}:{location}-{distance:.0f} km")
