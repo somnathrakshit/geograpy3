@@ -280,7 +280,7 @@ class Location(JSONAble):
         c = 2 * asin(sqrt(a)) 
         return c * Earth.radius
 
-    def getNClosestLocations(self, lookupLocationList,n):
+    def getNClosestLocations(self, lookupLocationList,n:int):
         """
         Gives a list of up to n locations which have the shortest distance to 
         me as calculated from the given listOfLocations

@@ -145,6 +145,7 @@ select distinct regionIsoCode as isocode from regions
         '''
         examples=['Paris','Vienna']
         countries=['FR','AT']
+        # TODO: Berlin, DE fails
         self.checkExamples(examples, countries)
         pass
     
