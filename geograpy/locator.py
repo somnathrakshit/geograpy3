@@ -293,6 +293,7 @@ class Location(JSONAble):
             list: a list of result Location/distance tuples
         """
         balltree,lookupListOfLocations=lookupLocationList.getBallTuple()
+        # check for n+1 entries since we might have my own record in the lookup list which we'll ignore late
         distances,indices = balltree.query([[radians(self.lat),radians(self.lon)]], k=n+1, return_distance=True)
         resultLocations=self.balltreeQueryResultToLocationList(distances[0],indices[0],lookupListOfLocations)
         return resultLocations
@@ -334,6 +335,7 @@ class Location(JSONAble):
             # do not add myself or any other equivalent location
             if not distance<0.0001:
                 locationListWithDistance.append((location,distance))
+        # sort by distance (Ball tree only does this for one of the queries ...)        
         locationListWithDistance = sorted(locationListWithDistance, key=lambda lwd: lwd[1])
         return locationListWithDistance
 
