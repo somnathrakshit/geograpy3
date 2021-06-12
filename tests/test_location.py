@@ -5,14 +5,9 @@ Created on 2021-06-09
 '''
 import unittest
 import numpy as np
-from geograpy.locator import Locator,CountryList , Country
+from geograpy.locator import Locator,CountryList , Country, Earth
 from sklearn.neighbors import BallTree
-from geograpy.locator import Location
-import json
-import pandas as pd
-
 from math import radians
-from sqlalchemy.sql.functions import cube
 
 class TestLocationHierarchy(unittest.TestCase):
     '''
@@ -30,7 +25,7 @@ class TestLocationHierarchy(unittest.TestCase):
 
     def testDistance(self):
         # https://stackoverflow.com/a/64585765/1497139
-        earth_radius = 6371000 # meters in earth
+        earth_radius = Earth.radius*1000 # meters in earth
         test_radius = 1300000 # meters
         
         test_points = [[32.027240,-81.093190],[41.981876,-87.969982]]
@@ -43,47 +38,62 @@ class TestLocationHierarchy(unittest.TestCase):
             print(ind)
             print(results * earth_radius/1000)
 
+    def testIssue45_BallTree(self):
+        '''
+        test calculation a ball tree for a given list of locations
+        '''
+        countryList=CountryList.fromErdem()
+        ballTree=countryList.getBallTree()
+        self.assertEqual("BallTree",type(ballTree).__name__)
+        self.assertAlmostEqual(247, ballTree.sum_weight, delta=0.1)
+        pass
+    
+    def checkLocationListWithDistances(self,locationListWithDistances,expectedCount,expectedClosest,expectedDistance):
+        '''
+        check the location list with the given distances
+        '''        
+        if self.debug:
+            for i,locationWithDistance in enumerate(locationListWithDistances):
+                location,distance=locationWithDistance
+                print(f"{i}:{location}-{distance:.0f} km")
+        self.assertEqual(len(locationListWithDistances),expectedCount)
+        closestLocation,distance=locationListWithDistances[0]
+        self.assertEqual(expectedClosest,closestLocation.name)
+        self.assertAlmostEqual(expectedDistance, distance,delta=1)
 
-
-    def testMatchingv2(self):
+    def testClosestLocation(self):
+        '''
+        test getting the closes Location to a given location
+        '''
+        # sample Country: Germany
         country = Country()
         country.name= 'Germany'
         country.lat = 51.0
         country.lon = 9.0
-        countryList = CountryList.fromErdem()
-        results = country.getClosestLocations(2,countryList, 'number')
-        if self.debug:
-            print(results)
-        self.assertEqual(len(results),2)
-        self.assertEqual(results[0]['Location'],'Luxembourg')
+        # get a country list
+        lookupCountryList = CountryList.fromErdem()
+        # get the closest 2 locations for the given countryList
+        countryListWithDistances= country.getNClosestLocations(lookupCountryList,2)
+        self.checkLocationListWithDistances(countryListWithDistances, 2, "Luxembourg", 244)
 
+        countryListWithDistances=country.getLocationsWithinRadius(lookupCountryList, 300)
+        self.checkLocationListWithDistances(countryListWithDistances, 2, "Luxembourg", 244)
 
-    def testMatching(self):
+    def testCountryMatching(self):
         '''
         test country matches
         '''
         locator=Locator()
         if not locator.db_has_data():
             locator.populate_db()
-        countryList=CountryList.fromErdem()
-        # https://stackoverflow.com/a/39109296/1497139
-        coords = np.array([[radians(country.lat), radians(country.lon)] for country in countryList.countries ])
-        #https://en.wikipedia.org/wiki/Ball_tree
-        tree = BallTree(coords, metric = 'haversine')
-        cl2=CountryList.from_sqlDb(locator.sqlDB)
-        earth_radius = 6371000 # meters in earth
-        test_radius = 1300000 # meters
-        maxDistRatio=test_radius/earth_radius
-        for country in cl2.countries:
-            testpoint=np.array([(radians(country.lat),radians(country.lon))])
-            iclosest,dclosest=tree.query_radius(testpoint,maxDistRatio,return_distance  = True)
-            print (country)
-            iclosest=iclosest.tolist()
-            dclosest=dclosest.tolist()
-            for i,ci in enumerate(iclosest):
-                countryIndex=ci[i]
-                cCountry=cl2.countries[countryIndex]
-                print(country,cCountry,dclosest[i])
+        lookupCountryList=CountryList.fromErdem()
+        countryList2=CountryList.from_sqlDb(locator.sqlDB)
+        for country in countryList2.countries:
+            locationListWithDistances=country.getNClosestLocations(lookupCountryList,3)
+            print(country)
+            for i,locationWithDistance in enumerate(locationListWithDistances):
+                location,distance=locationWithDistance
+                print(f"    {i}:{location}-{distance:.0f} km")
         pass
 
 

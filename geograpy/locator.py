@@ -37,7 +37,6 @@ import sys
 import gzip
 import shutil
 import json
-import pandas as pd
 from sklearn.neighbors import BallTree
 from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
@@ -47,7 +46,6 @@ from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 from lodstorage.jsonable import JSONAble, JSONAbleList
 from math import radians, cos, sin, asin, sqrt
-import numpy as np
 
 
 class LocationList(JSONAbleList):
@@ -56,8 +54,36 @@ class LocationList(JSONAbleList):
     '''
     
     def __init__(self,listName:str=None,clazz=None,tableName:str=None):
+        '''
+        construct me
+        '''
         super(LocationList, self).__init__(listName, clazz, tableName)
-
+        self.balltree= None
+        
+    def getLocationList(self):
+        '''
+        get my location list
+        '''
+        return self.__dict__[self.listName]
+        
+    def getBallTree(self,cache:bool=True):
+        '''
+        get the BallTree of this location list
+        
+        Args:
+            cache(bool): if True calculate and use a cached version otherwise recalculate on
+            every call of this function
+            
+        Returns:
+            BallTree: a sklearn.neighbors.BallTree for the given list of locations
+        '''
+        if self.balltree is None or not cache:
+            coordinatesrad=[]
+            for location in self.getLocationList():
+                latlonrad=(radians(location.lat),radians(location.lon))
+                coordinatesrad.append(latlonrad)
+            self.balltree = BallTree(coordinatesrad, metric='haversine')
+        return self.balltree
 
 
 class CountryList(LocationList):
@@ -69,22 +95,7 @@ class CountryList(LocationList):
         super(CountryList, self).__init__('countries', Country)
         # TODO decide whether JsonAbleList should do this
         self.countries=[]
-        self.balltree= None
-
-    def getBallTree(self):
-        if self.balltree is None:
-            jsonLoad = json.loads(self.toJSON())
-            self.lookupdf = pd.DataFrame(jsonLoad['countries'])
-            self.lookupdf['lat'] = pd.to_numeric(self.lookupdf['lat'], downcast="float")
-            self.lookupdf['lon'] = pd.to_numeric(self.lookupdf['lon'], downcast="float")
-            self.lookupdf['rad_lat'] = self.lookupdf['lat'].apply(lambda x: radians(x))
-            self.lookupdf['rad_lon'] = self.lookupdf['lon'].apply(lambda x: radians(x))
-            coordinatesrad = np.array(list(zip(self.lookupdf['rad_lat'], self.lookupdf['rad_lon'])))
-            self.balltree = BallTree(coordinatesrad, metric='haversine')
-            return self.balltree
-        else:
-            return self.balltree
-
+       
     @classmethod
     def from_sqlDb(cls,sqlDB):
         countryList=CountryList()
@@ -207,6 +218,9 @@ class CityList(LocationList):
             jsonCityListStr = url.read().decode()
             cityList.restoreFromJsonStr(jsonCityListStr)
         return cityList
+    
+class Earth:
+    radius = 6371.000  # radius of earth in km
 
 class Location(JSONAble):
     '''
@@ -214,6 +228,21 @@ class Location(JSONAble):
     '''
     def __init__(self, **kwargs):
         self.__dict__=kwargs
+        
+    @classmethod
+    def getSamples(cls):
+        samplesLOD = [{
+            "name": "Los Angeles",
+            "wikidataid": "Q65",
+            "lat": 34.05223,
+            "lon": -118.24368,
+            "partOf": "US/CA",
+            "level": 5,
+            "locationKind": "City",
+            "comment": None,
+            "population": 3976322
+        }]
+        return samplesLOD
 
     @staticmethod
     def haversine(lon1, lat1, lon2, lat2):
@@ -229,40 +258,65 @@ class Location(JSONAble):
         dlat = lat2 - lat1 
         a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
         c = 2 * asin(sqrt(a)) 
-        r = 6371 # Radius of earth in kilometers. Use 3956 for miles
-        return c * r
+        return c * Earth.radius
 
-
-    def getClosestLocations(self, n_Closest, listOfLocations, nType='distance'):
+    def getNClosestLocations(self, lookupLocationList,n):
         """
-        Gives the closest locations from itself to the given location based on Nearest Neighbours or radius
+        Gives a list of up to n locations which have the shortest distance to 
+        me as calculated from the given listOfLocations
+        
         Args:
-            test_parameter(int): Radius if testType is distance and number of neighbours if testType is Number
-            testType(str): Search in radius if "distance", search as Nearest Neighbours if "number"
+            lookupLocationList(LocationList): a LocationList object to use for lookup
+            n(int): the maximum number of closest locations to return 
+        
         Returns:
-            result(LOD): List of Dictionaries with the nearest locations sorted by distance
-
+            list: a list of result Location/distance tuples
         """
-        earth_radius = 6371000  # meters in earth
-        result = None
-        if nType == 'distance':
-            n_radius = 1000 * n_Closest
-            listoflocations = listOfLocations.getBallTree().query_radius([[radians(self.lat),radians(self.lon)]], r=n_radius / earth_radius,
+        balltree=lookupLocationList.getBallTree()
+        distances,indices = balltree.query([[radians(self.lat),radians(self.lon)]], k=n+1, return_distance=True)
+        resultLocations=self.balltreeQueryResultToLocationList(distances[0],indices[0],lookupLocationList)
+        return resultLocations
+        
+    def getLocationsWithinRadius(self,lookupLocationList,radiusKm:float):
+        """
+        Gives the n closest locations to me from the given lookupListOfLocations
+        
+        Args:
+            lookupLocationList(LocationList): a LocationList object to use for lookup
+            radiusKm(float): the radius in which to check (in km)
+            
+        Returns:
+            list: a list of result Location/distance tuples
+        """
+        balltree=lookupLocationList.getBallTree()
+        
+        indices,distances = balltree.query_radius([[radians(self.lat),radians(self.lon)]], r=radiusKm / Earth.radius,
                                                     return_distance=True)
-            result = pd.DataFrame(np.array([listoflocations[0][0], listoflocations[1][0]]).T,
-                                  columns=['Location', 'Distance'])
-        elif nType == 'number':
-            listoflocations = listOfLocations.getBallTree().query([[radians(self.lat),radians(self.lon)]], k=n_Closest+1, return_distance=True)
-            result = pd.DataFrame(np.array([listoflocations[1][0], listoflocations[0][0]]).T,
-                                  columns=['Location', 'Distance'])
-
-        result['Location'] = result['Location'].apply(lambda x: listOfLocations.lookupdf['name'].loc[int(x)])
-        result['Distance'] = result['Distance'] * earth_radius / 1000
-        result = result.sort_values(by='Distance')
-        if len(result[result['Distance'] == 0])> 0:
-            return result[result['Distance'] > 0].to_dict('records')
-        else:
-            return result.to_dict('records')
+        locationList=self.balltreeQueryResultToLocationList(distances[0],indices[0],lookupLocationList)
+        return locationList
+    
+    def balltreeQueryResultToLocationList(self,distances,indices,lookupLocationList):
+        '''
+        convert the given ballTree Query Result to a LocationList
+        
+        Args:
+            distances(list): array of distances
+            indices(list): array of indices
+            lookupLocationList(LocationList): a LocationList object to use for lookup
+            
+        Return:
+            list: a list of result Location/distance tuples
+        '''
+        locationListWithDistance=[]
+        lookupListOfLocations=lookupLocationList.getLocationList()
+        for i,locationIndex in enumerate(indices):
+            distance=distances[i]*Earth.radius 
+            location=lookupListOfLocations[locationIndex]
+            # do not add myself or any other equivalent location
+            if not distance<0.0001:
+                locationListWithDistance.append((location,distance))
+        locationListWithDistance = sorted(locationListWithDistance, key=lambda lwd: lwd[1])
+        return locationListWithDistance
 
     def distance(self,other)->float:
         '''
@@ -278,21 +332,6 @@ class Location(JSONAble):
         distance=Location.haversine(self.lon,self.lat,other.lon,other.lat)
         return distance
         
-
-    @classmethod
-    def getSamples(cls):
-        samplesLOD = [{
-            "name": "Los Angeles",
-            "wikidataid": "Q65",
-            "lat": 34.05223,
-            "lon": -118.24368,
-            "partOf": "US/CA",
-            "level": 5,
-            "locationKind": "City",
-            "comment": None,
-            "population": 3976322
-        }]
-        return samplesLOD
     
 class City(Location):
     '''
@@ -422,6 +461,9 @@ class Country(Location):
     a country
     '''
     def __init__(self,lookupSource='sqlDB', **kwargs):
+        '''
+        coonstruct me
+        '''
         super(Country, self).__init__(**kwargs)
         if 'level' not in self.__dict__:
             self.__dict__['level']=3
