@@ -100,10 +100,15 @@ class TestWikidata(unittest.TestCase):
         wikidata = Wikidata()
         californiaWikidataId="Q99"
         cities=wikidata.getCitiesOfRegion(californiaWikidataId, 1)
+        if self.debug:
+            print(cities)
         # [{'city': 'http://www.wikidata.org/entity/Q1050826', 'cityLabel': 'Greater Los Angeles Area', 'cityPop': 18550288.0, 'cityCoord': 'Point(-118.25 35.05694444)'}]
         wikidataURL="http://www.wikidata.org/entity/Q1050826"
-        biggestCity=cities[0]
-        self.assertEqual(biggestCity['city'], wikidataURL)
+        if cities and len(cities)>0:
+            biggestCity=cities[0]
+            self.assertEqual(biggestCity['city'], wikidataURL)
+        else:
+            self.fail("California should have at least one city")
 
     def testGetWikidataId(self):
         # test entity
