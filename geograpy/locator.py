@@ -57,6 +57,13 @@ class LocationList(JSONAbleList):
     def __init__(self,listName:str=None,clazz=None,tableName:str=None):
         super(LocationList, self).__init__(listName, clazz, tableName)
 
+    @staticmethod
+    def getURLContent(url:str):
+        with urllib.request.urlopen(url) as urlResponse:
+            content = urlResponse.read().decode()
+            return content
+
+
 class CountryList(LocationList):
     '''
     a list of countries
@@ -124,6 +131,20 @@ class CountryList(LocationList):
                 countryList.countries.append(country)
         return countryList
 
+    @classmethod
+    def fromJSONBackup(cls):
+        '''
+        get country list from json backup (json backup is based on wikidata query results)
+
+        Returns:
+            CountryList based on the json backup
+        '''
+        countryList = CountryList()
+        url="https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/countries_geograpy3.json"
+        jsonStr = LocationList.getURLContent(url)
+        countryList.restoreFromJsonStr(jsonStr)
+        return countryList
+
 
 class RegionList(LocationList):
     '''
@@ -132,6 +153,20 @@ class RegionList(LocationList):
     
     def __init__(self):
         super(RegionList, self).__init__('regions', Region)
+
+    @classmethod
+    def fromJSONBackup(cls):
+        '''
+        get region list from json backup (json backup is based on wikidata query results)
+
+        Returns:
+            RegionList based on the json backup
+        '''
+        regionList = RegionList()
+        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/regions_geograpy3.json"
+        jsonStr=LocationList.getURLContent(url)
+        regionList.restoreFromJsonStr(jsonStr)
+        return regionList
 
 
 class CityList(LocationList):
@@ -183,10 +218,9 @@ class CityList(LocationList):
             CityList based on the json backup
         '''
         cityList = CityList()
-        cityJsonUrl = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json"
-        with urllib.request.urlopen(cityJsonUrl) as url:
-            jsonCityListStr = url.read().decode()
-            cityList.restoreFromJsonStr(jsonCityListStr)
+        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json"
+        jsonStr = LocationList.getURLContent(url)
+        cityList.restoreFromJsonStr(jsonStr)
         return cityList
 
 class Location(JSONAble):

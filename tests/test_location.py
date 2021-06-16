@@ -5,7 +5,7 @@ Created on 2021-06-09
 '''
 import unittest
 import numpy as np
-from geograpy.locator import Locator,CountryList
+from geograpy.locator import Locator, CountryList, CityList, RegionList
 from sklearn.neighbors import BallTree
 from geograpy.locator import Location
 import json
@@ -184,6 +184,38 @@ class TestLocationHierarchy(unittest.TestCase):
                     la_present = True
                     break
         self.assertTrue(la_present)
+
+    def testRegionListFromJSONBackup(self):
+        '''
+        tests the loading and parsing of the RegionList form the json backup file
+        '''
+        regionList=RegionList.fromJSONBackup()
+        self.assertTrue('regions' in regionList.__dict__)
+        self.assertTrue(len(regionList.regions) >= 1000)
+        # check if California is in the list
+        ca_present=False
+        for region in regionList.regions:
+            if 'wikidataid' in region.__dict__:
+                if region.wikidataid == "Q99":
+                    ca_present = True
+                    break
+        self.assertTrue(ca_present)
+
+    def testCountryListFromJSONBackup(self):
+        '''
+        tests the loading and parsing of the RegionList form the json backup file
+        '''
+        countryList=CountryList.fromJSONBackup()
+        self.assertTrue('countries' in countryList.__dict__)
+        self.assertTrue(len(countryList.countries) >= 180)
+        # check if California is in the list
+        us_present=False
+        for country in countryList.countries:
+            if 'wikidataid' in country.__dict__:
+                if country.wikidataid == "Q30":
+                    us_present = True
+                    break
+        self.assertTrue(us_present)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ Created on 2020-09-19
 import unittest
 import geograpy
 import getpass
-from geograpy.locator import Locator, CountryList, Location, CityList
+from geograpy.locator import Locator, CountryList, Location
 from collections import Counter
 from lodstorage.uml import UML
 import os
