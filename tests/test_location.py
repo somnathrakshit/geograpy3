@@ -100,6 +100,91 @@ class TestLocationHierarchy(unittest.TestCase):
                 print(country,cCountry,dclosest[i])
         pass
 
+    def testLocationListLoading(self):
+        samples="""
+        {
+            "countries": [
+                {
+                    "name": "Afghanistan",
+                    "wikidataid": "Q889",
+                    "lat": 34,
+                    "lon": 66,
+                    "coordinates": "34,66",
+                    "partOf": null,
+                    "level": 3,
+                    "locationKind": "Country",
+                    "comment": null,
+                    "iso": "AF"
+                },
+                {
+                    "name": "United States of America",
+                    "wikidataid": "Q30",
+                    "lat": 39.82818,
+                    "lon": -98.5795,
+                    "partOf": "Noth America",
+                    "level": 3,
+                    "locationKind": "Country",
+                    "comment": null,
+                    "labels": [
+                        "America",
+                        "UNITED STATES OF AMERICA",
+                        "USA",
+                        "United States",
+                        "United States of America (the)"
+                    ],
+                    "iso": "US"
+                },
+                {
+                    "name": "Australia",
+                    "wikidataid": "Q408",
+                    "lat": -28,
+                    "lon": 137,
+                    "coordinates": "-28,137",
+                    "partOf": null,
+                    "level": 3,
+                    "locationKind": "Country",
+                    "comment": null,
+                    "labels": [
+                        "AUS"
+                    ],
+                    "iso": "AU"
+                }
+            ]
+        }
+        """
+        countries = CountryList().restoreFromJsonStr(samples)
+        # USA is a country that should always be in the list test if present
+        us_present = False
+        for country in countries:
+            if 'wikidataid' in country.__dict__:
+                if country.wikidataid == "Q30":
+                    us_present = True
+                    break
+        self.assertTrue(us_present)
+
+    def testCountryListFromWikidata(self):
+        '''
+        tests if the CountryList id correctly loaded from Wikidata query result
+        '''
+        countryList=CountryList.fromWikidata()
+        self.assertTrue(len(countryList.countries)>=190)
+
+    def testCityListFromJSONBackup(self):
+        '''
+        tests the loading and parsing of the cityList form the json backup file
+        '''
+        cityList=CityList().fromJSONBackup()
+        self.assertTrue('cities' in cityList.__dict__)
+        self.assertTrue(len(cityList.cities)>=50000)
+        # check if Los Angeles is in the list (popular city should always be in the list)
+        la_present = False
+        for city in cityList.cities:
+            if 'wikidataid' in city.__dict__:
+                if city.wikidataid == "Q65":
+                    la_present = True
+                    break
+        self.assertTrue(la_present)
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
