@@ -69,11 +69,17 @@ WHERE {
     def getCities(self,region=None, country=None):
         '''
         get the cities from Wikidata
+
+        Args:
+            region: List of countryWikiDataIDs. Limits the returned cities to the given countries
+            country: List of regionWikiDataIDs. Limits the returned cities to the given regions
         '''
+        values=""
         if region is not None:
-            values="VALUES ?region { wd:%s }" % region
+
+            values+=Wikidata.getValuesClause("region", region)
         if country is not None:
-            values="VALUES ?country { wd:%s}" % country
+            values+=Wikidata.getValuesClause("country", country)
         queryString="""# get a list of cities for the given region
 # for geograpy3 library
 # see https://github.com/somnathrakshit/geograpy3/issues/15
@@ -332,3 +338,30 @@ WHERE{
             return wikidataid
         else:
             return None
+
+    @staticmethod
+    def getValuesClause(varName:str, values, wikidataEntities:bool=True):
+        '''
+        generates the SPARQL value clause for the given variable name containing the given values
+        Args:
+            varName: variable name for the ValuesClause
+            values: values for the clause
+            wikidataEntities(bool): if true the wikidata prefix is added to the values otherwise it is expected taht the given values are proper IRIs
+
+        Returns:
+            str
+        '''
+        clauseValues=""
+        if isinstance(values, list):
+            for value in values:
+                if wikidataEntities:
+                    clauseValues+=f"wd:{value} "
+                else:
+                    clauseValues+=f"{value} "
+        else:
+            if wikidataEntities:
+                clauseValues = f"wd:{values} "
+            else:
+                clauseValues = f"{values} "
+        clause = "VALUES ?%s { %s }" %(varName, clauseValues)
+        return clause

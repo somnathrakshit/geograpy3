@@ -241,6 +241,20 @@ class TestLocationHierarchy(unittest.TestCase):
         self.assertIsNotNone(ca)
         self.assertEqual(ca.name, "California")
 
+    def test_CityListFromWikidata(self):
+        '''
+        tests the loading of the RegionList from wikidata query results
+        '''
+        regions=["Q1198"]
+        cityList=CityList.fromWikidata(regionIDs=regions, fromBackup=False)
+        #check amount of regions
+        self.assertTrue(len(cityList.cities)>1300)
+        # check if NRW is present (region of Germany)
+        aachen=cityList.getLocationByID("Q1017")
+        self.assertIsNotNone(aachen)
+        self.assertEqual(aachen.name, "Aachen")
+
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
