@@ -220,6 +220,28 @@ class TestLocationHierarchy(unittest.TestCase):
         self.assertTrue(us_present)
 
 
+    def test_getLocationByID(self):
+        '''
+        tests if the correct location for a given wikidataid is returned
+        '''
+        countryList=CountryList.fromJSONBackup()
+        country=countryList.getLocationByID("Q30")   # wikidataid of USA
+        self.assertTrue('iso' in country.__dict__)
+        self.assertEqual(country.iso, 'US')
+
+    def test_RegionListFromWikidata(self):
+        '''
+        tests the loading of the RegionList from wikidata query results
+        '''
+        regionList = RegionList.fromWikidata()
+        #check amount of regions
+        self.assertTrue(len(regionList.regions)>3500)
+        # check if california is present
+        ca=regionList.getLocationByID("Q99")
+        self.assertIsNotNone(ca)
+        self.assertEqual(ca.name, "California")
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

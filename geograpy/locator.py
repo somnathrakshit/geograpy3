@@ -89,6 +89,21 @@ class LocationList(JSONAbleList):
             self.ballTuple = BallTree(coordinatesrad, metric='haversine'),validList
         return self.ballTuple
 
+    def getLocationByID(self, wikidataID:str):
+        '''
+        Returns the location object that corresponds to the given location
+
+        Args:
+            wikidataID: wikidataid of the location that should be returned
+
+        Returns:
+            Location object
+        '''
+        for location in self.__dict__[self.listName]:
+            if 'wikidataid' in location.__dict__:
+                if location.wikidataid == wikidataID:
+                    return location
+
 
     @staticmethod
     def getURLContent(url:str):
@@ -203,6 +218,61 @@ class RegionList(LocationList):
             region.lat,region.lon=Wikidata.getCoordinateComponents(coordStr)
             regionList.regions.append(region)
         return regionList
+
+    @classmethod
+    def fromWikidata(cls):
+        '''
+        get region list form wikidata
+        '''
+        regionList=RegionList()
+        regionIDs=[]
+        wikidata = Wikidata()
+        wikidata.getRegions()
+        for regionRecord in wikidata.regionList:
+            if 'region' in regionRecord:
+                wikidataid=Wikidata.getWikidataId(regionRecord['region'])
+                if wikidataid in regionIDs:
+                    # complete existing region entry
+                    region=regionList.getLocationByID(wikidataid)
+                    # current assumption is that only population and label are duplicates
+                    if 'labels' in regionRecord:
+                        if 'labels' in region.__dict__:
+                            if isinstance(region.labels, list):
+                                if regionRecord['labels'] in region.labels:
+                                    region.labels.append(regionRecord['labels'])
+                            else:
+                                labels=[]
+                                labels.append(region.labels)
+                                labels.append(regionRecord['labels'])
+                                region.labels=labels
+                        else:
+                            region.__dict__['labels']=[regionRecord['labels']]
+                    if 'regionPopulation' in regionRecord:
+                        population=None
+                        if 'population' in region.__dict__:
+                            population=max(regionRecord['regionPopulation'], region.population)
+                        else:
+                            population=regionRecord['regionPopulation']
+                        region.population = population
+                else:
+                    # add new region to the regionList
+                    region=Region()
+                    region.wikidataid=wikidataid
+                    region.name = regionRecord['regionLabel']
+                    region.iso = regionRecord['regionIsoCode']#
+                    if 'location' in regionRecord:
+                        lon, lat = Wikidata.getCoordinateComponents(regionRecord['location'])
+                        region.lat = lat
+                        region.lon = lon
+                    if 'regionPopulation' in regionRecord:
+                        region.population=regionRecord['regionPopulation']
+                    if 'country' in regionRecord:
+                        country=regionRecord['country']
+                    country_wikidataid=Wikidata.getWikidataId(country)
+                    region.country_wikidataid=country_wikidataid
+                    regionIDs.append(wikidataid)
+                    regionList.__dict__[regionList.listName].append(region)
+        return  regionList
 
     @classmethod
     def fromJSONBackup(cls):
