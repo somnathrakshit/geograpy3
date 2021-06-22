@@ -23,7 +23,7 @@ setup(name='geograpy3',
       license='Apache',
       project_urls=OrderedDict(
         (
-            ("Documentation", "https://geograpy3.netlify.app"),
+            ("Documentation", "https://geograpy3.readthedocs.io"),
             ("Code", "https://github.com/somnathrakshit/geograpy3"),
             ("Issue tracker", "https://github.com/somnathrakshit/geograpy3/issues"),
         )
