@@ -41,7 +41,7 @@ setup(name='geograpy3',
           'newspaper3k',
           'jellyfish',
           'pycountry',
-	  'pylodstorage'
+          'pylodstorage'
       ],
       scripts=['geograpy/bin/geograpy-nltk'],
       package_data={

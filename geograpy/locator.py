@@ -499,6 +499,25 @@ class Location(JSONAble):
         # see https://stackoverflow.com/questions/4913349/haversine-formula-in-python-bearing-and-distance-between-two-gps-points
         distance=Location.haversine(self.lon,self.lat,other.lon,other.lat)
         return distance
+
+    def isKnownAs(self, name)->bool:
+        '''
+        Checks if this location is known under the given name
+
+        Args:
+            name(str): name the location should be checked against
+
+        Returns:
+            True if the given name is either the name of the location or present in the labels of the location
+        '''
+        isKnown=False
+        if 'labels' in self.__dict__:
+            if name in self.labels:
+                isKnown=True
+        if 'name' in self.__dict__:
+            if name == self.name:
+                isKnown=True
+        return isKnown
         
     
 class City(Location):
@@ -512,6 +531,8 @@ class City(Location):
             self.__dict__['level']=5
         if 'locationKind' not in self.__dict__:
             self.__dict__['locationKind']="City"
+        self._country=None
+        self._region=None
 
     @classmethod
     def getSamples(cls):
@@ -559,6 +580,22 @@ class City(Location):
         city.region=Region.fromGeoLite2(record)
         city.country=Country.fromGeoLite2(record)
         return city
+
+    @property
+    def country(self):
+        return self._country
+
+    @country.setter
+    def country(self, country):
+        self._country=country
+
+    @property
+    def region(self):
+        return self._region
+
+    @region.setter
+    def region(self, region):
+        self._region=region
         
 class Region(Location):
     '''
@@ -571,6 +608,7 @@ class Region(Location):
             self.__dict__['level']=4
         if 'locationKind' not in self.__dict__:
             self.__dict__['locationKind']="Region"
+        self._country=None
 
     @classmethod
     def getSamples(cls):
@@ -622,7 +660,15 @@ class Region(Location):
         region=Region()
         region.name=record['regionLabel']
         region.iso=record['regionIsoCode'] 
-        return region   
+        return region
+
+    @property
+    def country(self):
+        return self._country
+
+    @country.setter
+    def country(self, country):
+        self._country=country
 
 class Country(Location):
     '''
@@ -681,6 +727,104 @@ class Country(Location):
         country.name=pcountry.name
         country.iso=pcountry.alpha_2
         return country
+
+
+class LocationContext(object):
+    '''
+    Holds LocationLists of all hierarchy levels and provides methods to traverse through the levels
+    '''
+
+    def __init__(self,countryList:CountryList, regionList:RegionList, cityList:CityList ):
+        self._countries=countryList
+        self._regions=regionList
+        self._cities=cityList
+        self._countryLookup=countryList.getLookup("wikidataid")[0]
+        self._regionLookup=regionList.getLookup("wikidataid")[0]
+        self._cityLookup=cityList.getLookup("wikidataid")[0]
+
+        # interlink region with country
+        for region in self.regions:
+            country=self._countryLookup.get(region.__dict__['country_wikidataid'])
+            if country is not None and isinstance(country, Country):
+                region.country=country
+
+        # interlink city with region and country
+        for city in self.cities:
+            country = self._countryLookup.get(city.__dict__['country_wikidataid'])
+            if country is not None and isinstance(country, Country):
+                city.country=country
+            region = self._regionLookup.get(city.__dict__['region_wikidataid'])
+            if region is not None and isinstance(region, Region):
+                city.region=region
+
+    @classmethod
+    def fromJSONBackup(cls):
+        '''
+        Inits a LocationContext form the JSON backup
+        '''
+        countryList=CountryList.fromJSONBackup()
+        regionList=RegionList.fromJSONBackup()
+        cityList=CityList.fromJSONBackup()
+        locationContext = LocationContext(countryList, regionList, cityList)
+        return locationContext
+
+    @property
+    def countries(self) -> list:
+        return self._countries.__dict__[self._countries.listName]
+
+    @property
+    def regions(self)->list:
+        return self._regions.__dict__[self._regions.listName]
+
+    @property
+    def cities(self) -> list:
+        return self._cities.__dict__[self._cities.listName]
+
+    @property
+    def countryList(self):
+        return self._countries
+
+    @property
+    def regionList(self):
+        return self._regions
+
+    @property
+    def cityList(self):
+        return self._cities
+
+    def getCountries(self, name:str):
+        '''Returns all countries that are known under the given name'''
+        countries=self._getLocation(name, self.countries)
+        return countries
+
+    def getRegions(self, name:str):
+        '''Returns all regions that are known under the given name'''
+        regions=self._getLocation(name, self.regions)
+        return regions
+
+    def getCities(self, name:str):
+        '''Returns all cities that are known under the given name'''
+        cities=self._getLocation(name, self.cities)
+        return cities
+
+    def _getLocation(self, name:str, locations:list):
+        '''
+        Returns all locations that are in the given list and are known under the given name
+        Args:
+            name: Name of the location that should be returned
+            locations: list of locations to search in
+
+        Returns:
+            List of locations that are known under the given name
+        '''
+        if name is None:
+            return None
+        res=[]
+        for location in locations:
+            if location.isKnownAs(name):
+                res.append(location)
+        return res
+
 
 class Locator(object):
     '''

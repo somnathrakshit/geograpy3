@@ -5,7 +5,7 @@ Created on 2021-06-09
 '''
 import unittest
 import numpy as np
-from geograpy.locator import Locator,CityList,CountryList,RegionList, Country, Earth
+from geograpy.locator import Locator, CityList, CountryList, RegionList, Country, Earth, LocationContext
 from sklearn.neighbors import BallTree
 from geograpy.locator import Location
 import json
@@ -254,6 +254,21 @@ class TestLocationHierarchy(unittest.TestCase):
         self.assertIsNotNone(aachen)
         self.assertEqual(aachen.name, "Aachen")
 
+
+    def test_LocationContext(self):
+        '''
+        tests the LocationContext class
+        '''
+        locationContext=LocationContext.fromJSONBackup()
+        # test interlinking of city with region and country
+        cities=locationContext.getCities('Los Angeles')
+        la=[x for x in cities if x.wikidataid =="Q65"][0]
+        self.assertEqual(la.name, 'Los Angeles')
+        ca=la.region
+        self.assertEqual(ca.name, 'California')
+        us=la.country
+        self.assertEqual(us.wikidataid, 'Q30')
+        self.assertEqual(la.country, ca.country)
 
 
 if __name__ == "__main__":
