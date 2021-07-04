@@ -103,6 +103,7 @@ class LocationList(JSONAbleList):
             if 'wikidataid' in location.__dict__:
                 if location.wikidataid == wikidataID:
                     return location
+        return None
 
 
     @staticmethod
@@ -322,67 +323,84 @@ class CityList(LocationList):
         for cityRecord in cityLOD:
             if 'city' in cityRecord:
                 wikidataid = Wikidata.getWikidataId(cityRecord['city'])
-                if wikidataid in cityIDs:
-                    # city already in the cityList -> merge
-                    city = cityList.getLocationByID(wikidataid)
-                    # current assumption is that only population and label are duplicates
-                    if 'labels' in cityRecord:
-                        if 'labels' in city.__dict__:
-                            if isinstance(city.labels, list):
-                                if cityRecord['labels'] in city.labels:
-                                    city.labels.append(cityRecord['labels'])
-                            else:
-                                labels = []
-                                labels.append(city.labels)
-                                labels.append(cityRecord['labels'])
-                                city.labels = labels
-                        else:
-                            city.__dict__['labels'] = [cityRecord['labels']]
-                    if 'cityPop' in cityRecord:
-                        population = None
-                        if 'population' in city.__dict__:
-                            population = max(cityRecord['cityPop'], city.population)
-                        else:
-                            population = cityRecord['cityPop']
-                        city.population = population
-                else:
-                    # add new city to list
-                    city=City()
-                    city.wikidataid = wikidataid
-                    city.name = cityRecord['cityLabel']
-                    regionIso = cityRecord['regionIsoCode']
-                    city.partOf = regionIso
-                    if 'countryCoord' in cityRecord:
-                        lon, lat = Wikidata.getCoordinateComponents(cityRecord['cityCoord'])
-                        city.lat = lat
-                        city.lon = lon
-                    if 'country' in cityRecord:
-                        country = cityRecord['country']
-                        country_wikidataid = Wikidata.getWikidataId(country)
-                        city.country_wikidataid = country_wikidataid
-                    if 'region' in cityRecord:
-                        region = cityRecord['region']
-                        region_wikidataid = Wikidata.getWikidataId(region)
-                        city.region_wikidataid = region_wikidataid
-                    if 'cityPop' in cityRecord:
-                        city.population = cityRecord['cityPop']
-                    cityIDs.append(wikidataid)
-                    if cityList.listName not in cityList.__dict__ or cityList.__dict__[cityList.listName] is None:
-                        cityList.__dict__[cityList.listName]=[]
-                    cityList.__dict__[cityList.listName].append(city)
+                cityList.updateCity(wikidataid, cityRecord)
         return cityList
 
+    def updateCity(self, wikidataid:str, cityRecord:dict):
+        '''
+        Updates the city corresponding to the given city with the given data.
+        If the city does not exist a new city object is created and added to this CityList
+        Args:
+            wikidataid(str): wikidata id of the city that should be updated/added
+            cityRecord(dict): data of the given city that should be updated/added
+
+        Returns:
+            Nothing
+        '''
+        city = self.getLocationByID(wikidataid)
+        if city is not None:
+            # city already in the cityList -> merge
+            # current assumption is that only population and label are duplicates
+            if 'labels' in cityRecord:
+                if 'labels' in city.__dict__:
+                    if isinstance(city.labels, list):
+                        if cityRecord['labels'] in city.labels:
+                            city.labels.append(cityRecord['labels'])
+                    else:
+                        labels = []
+                        labels.append(city.labels)
+                        labels.append(cityRecord['labels'])
+                        city.labels = labels
+                else:
+                    city.__dict__['labels'] = [cityRecord['labels']]
+            if 'cityPop' in cityRecord:
+                population = None
+                if 'population' in city.__dict__  and city.population is not None:
+                    if cityRecord['cityPop'] is None:
+                        population=city.population
+                    else:
+                        population = max(float(cityRecord['cityPop']), float(city.population))
+                else:
+                    population = cityRecord['cityPop']
+                city.population = population
+        else:
+            # add new city to list
+            city = City()
+            city.wikidataid = wikidataid
+            city.name = cityRecord['cityLabel']
+            if 'countryCoord' in cityRecord:
+                lon, lat = Wikidata.getCoordinateComponents(cityRecord['cityCoord'])
+                city.lat = lat
+                city.lon = lon
+            if 'country' in cityRecord:
+                country = cityRecord['country']
+                country_wikidataid = Wikidata.getWikidataId(country)
+                city.country_wikidataid = country_wikidataid
+            if 'region' in cityRecord:
+                region = cityRecord['region']
+                region_wikidataid = Wikidata.getWikidataId(region)
+                city.region_wikidataid = region_wikidataid
+            if 'cityPop' in cityRecord:
+                city.population = cityRecord['cityPop']
+            if self.listName not in self.__dict__ or self.__dict__[self.listName] is None:
+                self.__dict__[self.listName] = []
+            self.__dict__[self.listName].append(city)
+
     @classmethod
-    def fromJSONBackup(cls):
+    def fromJSONBackup(cls, jsonStr:str=None):
         '''
         get city list from json backup (json backup is based on wikidata query results)
+
+        Args:
+            jsonStr(str): JSON string the CityList should be loaded from. If None json backup is loaded. Default is None
 
         Returns:
             CityList based on the json backup
         '''
         cityList = CityList()
-        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json"
-        jsonStr = LocationList.getURLContent(url)
+        if jsonStr is None:
+            url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json"
+            jsonStr = LocationList.getURLContent(url)
         cityList.restoreFromJsonStr(jsonStr)
         return cityList
     
@@ -545,7 +563,9 @@ class City(Location):
             "level": 5,
             "locationKind": "City",
             "comment": None,
-            "population": "3976322"
+            "population": "3976322",
+            "region_wikidataid": "Q99",
+            "country_wikidataid": "Q30"
         }]
         return samplesLOD
     
@@ -622,7 +642,8 @@ class Region(Location):
             "locationKind": "Region",
             "comment": None,
             "labels": ["CA", "California"],
-            "iso": "US-CA"
+            "iso": "US-CA",
+            "country_wikidataid": "Q30"
         }]
         return samplesLOD
     
