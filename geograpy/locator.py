@@ -1137,7 +1137,7 @@ class Locator(object):
             self.populate_Version(self.sqlDB)
     
         elif not hasData:
-            url="http://wiki.bitplan.com/images/confident/locs.db.gz"
+            url="https://github.com/somnathrakshit/geograpy3/releases/download/0.1.27/locs.db.gz"
             zipped=self.db_file+".gz"
             print("Downloading %s from %s ... this might take a few seconds" % (zipped,url))
             urllib.request.urlretrieve(url,zipped)
@@ -1235,7 +1235,7 @@ FROM City_wikidata
         dbFile=self.db_path+"/City_wikidata.db"
         if not os.path.exists(dbFile):
             print("Downloading %s ... this might take a few seconds" % dbFile)
-            dbUrl="http://wiki.bitplan.com/images/confident/City_wikidata.db"
+            dbUrl="https://github.com/somnathrakshit/geograpy3/releases/download/0.1.27/City_wikidata.db"
             urllib.request.urlretrieve(dbUrl,dbFile)
         wikiCitiesDB=SQLDB(dbFile)
         wikiCitiesDB.copyTo(sqlDB)
@@ -1261,7 +1261,7 @@ FROM City_wikidata
             else:
                 # just download a copy 
                 print("Downloading %s ... this might take a few seconds" % dbFile)
-                dbUrl="http://wiki.bitplan.com/images/confident/city_wikidata_population.db"
+                dbUrl="https://github.com/somnathrakshit/geograpy3/releases/download/0.1.27/city_wikidata_population.db"
                 urllib.request.urlretrieve(dbUrl,dbFile)
         # (re) open the database
         wikiCitiesDB=SQLDB(dbFile) 

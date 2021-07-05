@@ -12,7 +12,7 @@ except:
     long_description = open('../../README.md').read()
 
 setup(name='geograpy3',
-      version='0.1.25',
+      version='0.1.27',
       description='Extract countries, regions and cities from a URL or text',
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -33,20 +33,20 @@ setup(name='geograpy3',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
-	    'Programming Language :: Python :: 3.9'
+	        'Programming Language :: Python :: 3.9'
       ],
       packages=['geograpy'],
       install_requires=[
-          'numpy',
-          'nltk',
-          'newspaper3k',
-          'jellyfish',
-          'pycountry',
-	  'pylodstorage',
-	  'sphinx-rtd-theme',
-	  'scikit-learn',
-	  'sqlalchemy',
-	  'pandas'
+        'numpy',
+        'nltk',
+        'newspaper3k',
+        'jellyfish',
+        'pycountry',
+        'pylodstorage',
+        'sphinx-rtd-theme',
+        'scikit-learn',
+        'sqlalchemy',
+        'pandas'
       ],
       scripts=['geograpy/bin/geograpy-nltk'],
       package_data={
