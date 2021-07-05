@@ -37,6 +37,7 @@ import sys
 import gzip
 import shutil
 import json
+from pathlib import Path
 from sklearn.neighbors import BallTree
 from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
@@ -111,6 +112,45 @@ class LocationList(JSONAbleList):
         with urllib.request.urlopen(url) as urlResponse:
             content = urlResponse.read().decode()
             return content
+
+    @staticmethod
+    def getFileContent(path:str):
+        with open(path, "r") as file:
+            content=file.read()
+            return content
+
+    @staticmethod
+    def getBackupDirectory():
+        home = str(Path.home())
+        path = f"{home}/.geograpy3"
+        return path
+
+    @staticmethod
+    def downloadBackupFile(url:str, fileName:str):
+        '''
+        Downloads from the given url the zip-file and extracts the file corresponding to the given fileName.
+
+        Args:
+            url: url linking to a downloadable gzip file
+            fileName: Name of the file that should be extracted from gzip file
+
+        Returns:
+            Name of the extracted file with path to the backup directory
+        '''
+        backupDirectory=LocationList.getBackupDirectory()
+        if not os.path.isdir(backupDirectory):
+            os.makedirs(backupDirectory)
+        extractTo= f"{backupDirectory}/{fileName}"
+        zipped = f"{extractTo}.gz"
+        print(f"Downloading {zipped} from {url} ... this might take a few seconds")
+        urllib.request.urlretrieve(url, zipped)
+        print(f"unzipping {extractTo} from {zipped}")
+        with gzip.open(zipped, 'rb') as gzipped:
+            with open(extractTo, 'wb') as unzipped:
+                shutil.copyfileobj(gzipped, unzipped)
+        if not os.path.isfile(extractTo):
+            raise (f"could extract {fileName} from {zipped}")
+        return extractTo
 
 
 class CountryList(LocationList):
@@ -190,8 +230,10 @@ class CountryList(LocationList):
             CountryList based on the json backup
         '''
         countryList = CountryList()
-        url="https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/countries_geograpy3.json"
-        jsonStr = LocationList.getURLContent(url)
+        fileName="countries_geograpy3.json"
+        url="https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/countries_geograpy3.json.gz"
+        backupFile=LocationList.downloadBackupFile(url, fileName)
+        jsonStr = LocationList.getFileContent(backupFile)
         countryList.restoreFromJsonStr(jsonStr)
         return countryList
 
@@ -286,8 +328,10 @@ class RegionList(LocationList):
             RegionList based on the json backup
         '''
         regionList = RegionList()
-        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/regions_geograpy3.json"
-        jsonStr=LocationList.getURLContent(url)
+        fileName="regions_geograpy3.json"
+        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/regions_geograpy3.json.gz"
+        backupFile = LocationList.downloadBackupFile(url, fileName)
+        jsonStr = LocationList.getFileContent(backupFile)
         regionList.restoreFromJsonStr(jsonStr)
         return regionList
 
@@ -399,8 +443,10 @@ class CityList(LocationList):
         '''
         cityList = CityList()
         if jsonStr is None:
-            url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json"
-            jsonStr = LocationList.getURLContent(url)
+            fileName="cities_geograpy3.json"
+            url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json.gz"
+            backupFile = LocationList.downloadBackupFile(url, fileName)
+            jsonStr = LocationList.getFileContent(backupFile)
         cityList.restoreFromJsonStr(jsonStr)
         return cityList
     
