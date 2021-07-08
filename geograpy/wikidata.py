@@ -299,7 +299,7 @@ WHERE{
             Returns the longitude and latitude of the given coordinate as separate values
         '''
         # https://stackoverflow.com/a/18237992/1497139
-        floatRegex="[-+]?\d+([.,]\d*)?"
+        floatRegex=r"[-+]?\d+([.,]\d*)?"
         regexp=f"Point\((?P<lon>{floatRegex})\s+(?P<lat>{floatRegex})\)"
         cMatch=None
         if coordinate:
@@ -332,7 +332,7 @@ WHERE{
         '''
 
         # regex pattern taken from https://www.wikidata.org/wiki/Q43649390 and extended to also support property ids
-        wikidataidMatch = re.search("[PQ][1-9]\d*", wikidataURL)
+        wikidataidMatch = re.search(r"[PQ][1-9]\d*", wikidataURL)
         if wikidataidMatch.group(0):
             wikidataid = wikidataidMatch.group(0)
             return wikidataid
