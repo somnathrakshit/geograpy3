@@ -300,7 +300,7 @@ WHERE{
         '''
         # https://stackoverflow.com/a/18237992/1497139
         floatRegex=r"[-+]?\d+([.,]\d*)?"
-        regexp=f"Point\((?P<lon>{floatRegex})\s+(?P<lat>{floatRegex})\)"
+        regexp=fr"Point\((?P<lon>{floatRegex})\s+(?P<lat>{floatRegex})\)"
         cMatch=None
         if coordinate:
             try:
