@@ -265,7 +265,7 @@ WHERE{
             isCityResult = wd.query(askIfCity)
             isCity = wd.asListOfDicts(isCityResult)
             if isCity:
-                # ToDo: return region as city once city class is refactored
+                # TODO: return region as city once city class is refactored
                 pass
             else:
                 pass
