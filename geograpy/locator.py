@@ -126,30 +126,33 @@ class LocationList(JSONAbleList):
         return path
 
     @staticmethod
-    def downloadBackupFile(url:str, fileName:str):
+    def downloadBackupFile(url:str, fileName:str, force:bool=False):
         '''
         Downloads from the given url the zip-file and extracts the file corresponding to the given fileName.
 
         Args:
             url: url linking to a downloadable gzip file
             fileName: Name of the file that should be extracted from gzip file
+            force (bool): True if the download should be forced
 
         Returns:
             Name of the extracted file with path to the backup directory
         '''
         backupDirectory=LocationList.getBackupDirectory()
-        if not os.path.isdir(backupDirectory):
-            os.makedirs(backupDirectory)
         extractTo= f"{backupDirectory}/{fileName}"
-        zipped = f"{extractTo}.gz"
-        print(f"Downloading {zipped} from {url} ... this might take a few seconds")
-        urllib.request.urlretrieve(url, zipped)
-        print(f"unzipping {extractTo} from {zipped}")
-        with gzip.open(zipped, 'rb') as gzipped:
-            with open(extractTo, 'wb') as unzipped:
-                shutil.copyfileobj(gzipped, unzipped)
-        if not os.path.isfile(extractTo):
-            raise (f"could extract {fileName} from {zipped}")
+        # we might want to check whether a new version is available
+        if not os.path.isfile(extractTo) or force:
+            if not os.path.isdir(backupDirectory):
+                os.makedirs(backupDirectory)
+            zipped = f"{extractTo}.gz"
+            print(f"Downloading {zipped} from {url} ... this might take a few seconds")
+            urllib.request.urlretrieve(url, zipped)
+            print(f"unzipping {extractTo} from {zipped}")
+            with gzip.open(zipped, 'rb') as gzipped:
+                with open(extractTo, 'wb') as unzipped:
+                    shutil.copyfileobj(gzipped, unzipped)
+            if not os.path.isfile(extractTo):
+                raise (f"could not extract {fileName} from {zipped}")
         return extractTo
 
 
@@ -1437,9 +1440,9 @@ FROM citiesWithPopulation
         ok=hasVersion and versionOk and hasCities and hasRegions and hasCountries
         return ok
     
-__version__ = '0.1.15'
+__version__ = '0.1.29'
 __date__ = '2020-09-26'
-__updated__ = '2020-09-26'    
+__updated__ = '2021-07-12'    
 
 DEBUG = 1
 
@@ -1461,7 +1464,7 @@ def main(argv=None): # IGNORE:C0111
     program_license = '''%s
 
   Created by %s on %s.
-  Copyright 2020 Wolfgang Fahl. All rights reserved.
+  Copyright 2020-2021 Wolfgang Fahl. All rights reserved.
 
   Licensed under the Apache License 2.0
   http://www.apache.org/licenses/LICENSE-2.0
