@@ -11,7 +11,7 @@ nltk
 jellyfish
 # https://pypi.org/project/numpy/
 numpy
-# SQL storage
+# Tabular storage e.g. SQL/SPARQL/JSON
 # https://pypi.org/project/pylodstorage/
 pylodstorage>=0.0.41
 # Documentation Read the docs Theme
