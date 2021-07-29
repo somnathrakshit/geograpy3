@@ -5,30 +5,28 @@ Created on 2021-06-09
 '''
 import unittest
 import numpy as np
-from geograpy.locator import Locator, CityList, CountryList, RegionList, Country, Earth, LocationContext
+from geograpy.locator import Locator, CityList, CountryList, RegionList, Country,  LocationContext
 from sklearn.neighbors import BallTree
-from geograpy.locator import Location
-import json
-import pandas as pd
 
 from math import radians
-from sqlalchemy.sql.functions import cube
+
 
 class TestLocationHierarchy(unittest.TestCase):
     '''
     tests for the location hierarchy
     '''
 
-
     def setUp(self):
+        self.debug=False
         pass
-
 
     def tearDown(self):
         pass
 
-
     def testDistance(self):
+        '''
+        test calculcating the distance of two points using the haversine function
+        '''
         # https://stackoverflow.com/a/64585765/1497139
         earth_radius = 6371000 # meters in earth
         test_radius = 1300000 # meters
@@ -96,13 +94,18 @@ class TestLocationHierarchy(unittest.TestCase):
         regionList=RegionList.from_sqlDb(locator.sqlDB)
         for country in countryList.countries:
             locationListWithDistances=country.getNClosestLocations(regionList,3)
-            print(f"{country}{country.lat:.2f},{country.lon:.2f}")
+            if self.debug:
+                print(f"{country}{country.lat:.2f},{country.lon:.2f}")
             for i,locationWithDistance in enumerate(locationListWithDistances):
                 location,distance=locationWithDistance
-                print(f"    {i}:{location}-{distance:.0f} km")
+                if self.debug:
+                    print(f"    {i}:{location}-{distance:.0f} km")
         pass
 
     def testLocationListLoading(self):
+        '''
+        test loading the locations from Json
+        '''
         samples="""
         {
             "countries": [

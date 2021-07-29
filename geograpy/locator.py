@@ -163,8 +163,6 @@ class CountryList(LocationList):
     
     def __init__(self):
         super(CountryList, self).__init__('countries', Country)
-        # TODO decide whether JsonAbleList should do this
-        self.countries=[]
        
     @classmethod
     def from_sqlDb(cls,sqlDB):
