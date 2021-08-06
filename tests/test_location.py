@@ -5,7 +5,7 @@ Created on 2021-06-09
 '''
 import unittest
 import numpy as np
-from geograpy.locator import Locator, CityList, CountryList, RegionList, Country,  LocationContext
+from geograpy.locator import Locator, CityManager, CountryManager, RegionManager, Country,  LocationContext
 from sklearn.neighbors import BallTree
 
 from math import radians
@@ -45,7 +45,7 @@ class TestLocationHierarchy(unittest.TestCase):
         '''
         test calculation a ball tree for a given list of locations
         '''
-        countryList=CountryList.fromErdem()
+        countryList=CountryManager.fromErdem()
         ballTree,validList=countryList.getBallTuple()
         self.assertEqual(245,len(validList))
         self.assertEqual("BallTree",type(ballTree).__name__)
@@ -75,12 +75,12 @@ class TestLocationHierarchy(unittest.TestCase):
         country.lat = 51.0
         country.lon = 9.0
         # get a country list
-        lookupCountryList = CountryList.fromErdem()
+        lookupCountryManager = CountryManager.fromErdem()
         # get the closest 2 locations for the given countryList
-        countryListWithDistances= country.getNClosestLocations(lookupCountryList,2)
+        countryListWithDistances= country.getNClosestLocations(lookupCountryManager,2)
         self.checkLocationListWithDistances(countryListWithDistances, 2, "Luxembourg", 244)
 
-        countryListWithDistances=country.getLocationsWithinRadius(lookupCountryList, 300)
+        countryListWithDistances=country.getLocationsWithinRadius(lookupCountryManager, 300)
         self.checkLocationListWithDistances(countryListWithDistances, 2, "Luxembourg", 244)
 
     def testRegionMatching(self):
@@ -90,8 +90,8 @@ class TestLocationHierarchy(unittest.TestCase):
         locator=Locator()
         if not locator.db_has_data():
             locator.populate_db()
-        countryList=CountryList.fromErdem()
-        regionList=RegionList.from_sqlDb(locator.sqlDB)
+        countryList=CountryManager.fromErdem()
+        regionList=RegionManager.from_sqlDb(locator.sqlDB)
         for country in countryList.countries:
             locationListWithDistances=country.getNClosestLocations(regionList,3)
             if self.debug:
@@ -157,7 +157,7 @@ class TestLocationHierarchy(unittest.TestCase):
             ]
         }
         """
-        countries = CountryList().restoreFromJsonStr(samples)
+        countries = CountryManager().restoreFromJsonStr(samples)
         # USA is a country that should always be in the list test if present
         us_present = False
         for country in countries:
@@ -167,18 +167,18 @@ class TestLocationHierarchy(unittest.TestCase):
                     break
         self.assertTrue(us_present)
 
-    def testCountryListFromWikidata(self):
+    def testCountryManagerFromWikidata(self):
         '''
-        tests if the CountryList id correctly loaded from Wikidata query result
+        tests if the CountryManager id correctly loaded from Wikidata query result
         '''
-        countryList=CountryList.fromWikidata()
+        countryList=CountryManager.fromWikidata()
         self.assertTrue(len(countryList.countries)>=190)
 
-    def testCityListFromJSONBackup(self):
+    def testCityManagerFromJSONBackup(self):
         '''
         tests the loading and parsing of the cityList form the json backup file
         '''
-        cityList=CityList().fromJSONBackup()
+        cityList=CityManager().fromJSONBackup()
         self.assertTrue('cities' in cityList.__dict__)
         self.assertTrue(len(cityList.cities)>=50000)
         # check if Los Angeles is in the list (popular city should always be in the list)
@@ -190,11 +190,11 @@ class TestLocationHierarchy(unittest.TestCase):
                     break
         self.assertTrue(la_present)
 
-    def testRegionListFromJSONBackup(self):
+    def testRegionManagerFromJSONBackup(self):
         '''
-        tests the loading and parsing of the RegionList form the json backup file
+        tests the loading and parsing of the RegionManager form the json backup file
         '''
-        regionList=RegionList.fromJSONBackup()
+        regionList=RegionManager.fromJSONBackup()
         self.assertTrue('regions' in regionList.__dict__)
         self.assertTrue(len(regionList.regions) >= 1000)
         # check if California is in the list
@@ -206,11 +206,11 @@ class TestLocationHierarchy(unittest.TestCase):
                     break
         self.assertTrue(ca_present)
 
-    def testCountryListFromJSONBackup(self):
+    def testCountryManagerFromJSONBackup(self):
         '''
-        tests the loading and parsing of the RegionList form the json backup file
+        tests the loading and parsing of the RegionManager form the json backup file
         '''
-        countryList=CountryList.fromJSONBackup()
+        countryList=CountryManager.fromJSONBackup()
         self.assertTrue('countries' in countryList.__dict__)
         self.assertTrue(len(countryList.countries) >= 180)
         # check if California is in the list
@@ -227,16 +227,16 @@ class TestLocationHierarchy(unittest.TestCase):
         '''
         tests if the correct location for a given wikidataid is returned
         '''
-        countryList=CountryList.fromJSONBackup()
+        countryList=CountryManager.fromJSONBackup()
         country=countryList.getLocationByID("Q30")   # wikidataid of USA
         self.assertTrue('iso' in country.__dict__)
         self.assertEqual(country.iso, 'US')
 
-    def test_RegionListFromWikidata(self):
+    def test_RegionManagerFromWikidata(self):
         '''
-        tests the loading of the RegionList from wikidata query results
+        tests the loading of the RegionManager from wikidata query results
         '''
-        regionList = RegionList.fromWikidata()
+        regionList = RegionManager.fromWikidata()
         #check amount of regions
         self.assertTrue(len(regionList.regions)>3500)
         # check if california is present
@@ -244,12 +244,12 @@ class TestLocationHierarchy(unittest.TestCase):
         self.assertIsNotNone(ca)
         self.assertEqual(ca.name, "California")
 
-    def test_CityListFromWikidata(self):
+    def test_CityManagerFromWikidata(self):
         '''
-        tests the loading of the RegionList from wikidata query results
+        tests the loading of the RegionManager from wikidata query results
         '''
         regions=["Q1198"]
-        cityList=CityList.fromWikidata(regionIDs=regions, fromBackup=False)
+        cityList=CityManager.fromWikidata(regionIDs=regions, fromBackup=False)
         #check amount of regions
         self.assertTrue(len(cityList.cities)>1300)
         # check if NRW is present (region of Germany)
