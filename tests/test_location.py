@@ -18,6 +18,7 @@ class TestLocationHierarchy(unittest.TestCase):
 
     def setUp(self):
         self.debug=False
+        self.locationContext=LocationContext.fromJSONBackup()
         pass
 
     def tearDown(self):
@@ -262,9 +263,9 @@ class TestLocationHierarchy(unittest.TestCase):
         '''
         tests the LocationContext class
         '''
-        locationContext=LocationContext.fromJSONBackup()
+
         # test interlinking of city with region and country
-        cities=locationContext.getCities('Los Angeles')
+        cities=self.locationContext.getCities('Los Angeles')
         la=[x for x in cities if x.wikidataid =="Q65"][0]
         self.assertEqual(la.name, 'Los Angeles')
         ca=la.region
@@ -273,6 +274,24 @@ class TestLocationHierarchy(unittest.TestCase):
         self.assertEqual(us.wikidataid, 'Q30')
         self.assertEqual(la.country, ca.country)
 
+    def testLocateLocation(self):
+        '''
+        test LocationContext locateLocation
+        '''
+        printPretty=lambda records:print([str(record) for record in records])
+        pl1=self.locationContext.locateLocation("Berlin", "USA")
+        self.assertEqual("Germany", pl1[0].country.name)
+        if self.debug:
+            printPretty(pl1)
+        pl2=self.locationContext.locateLocation("Los Angeles, CA")
+        if self.debug:
+            printPretty(pl2)
+        self.assertEqual("California", pl2[0].region.name)
+        pl3 = self.locationContext.locateLocation("Germany, Aachen")
+        if self.debug:
+            printPretty(pl3)
+        self.assertEqual("Aachen", pl3[0].name)
+        self.assertEqual("Germany", pl3[0].country.name)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
