@@ -296,6 +296,14 @@ class TestLocationHierarchy(unittest.TestCase):
         self.assertEqual("Aachen", pl3[0].name)
         self.assertEqual("Germany", pl3[0].country.name)
 
+    def testLocationContextFromCache(self):
+        '''
+        test loading LocationContext from cache
+        '''
+        locationContext=LocationContext.fromCache()
+        self.assertTrue(len(locationContext.countries)>180)
+        locationContext = LocationContext.fromCache(forceUpdate=True)
+        self.assertTrue(len(locationContext.countries) > 180)
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

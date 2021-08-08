@@ -279,12 +279,17 @@ class CountryManager(LocationManager):
             CountryList based on the json backup
         '''
         countryManager=CountryManager(name="countries_json", config=config)
-        fileName="countries_geograpy3.json"
-        url="https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/countries_geograpy3.json.gz"
-        backupFile=LocationManager.downloadBackupFile(url, fileName)
-        jsonStr = LocationManager.getFileContent(backupFile)
-        countryManager.restoreFromJsonStr(jsonStr)
+        countryManager.fromCache(force=True, getListOfDicts=cls.getLocationLodFromJsonBackup)
         return countryManager
+
+    @classmethod
+    def getLocationLodFromJsonBackup(cls):
+        fileName = "countries_geograpy3.json"
+        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/countries_geograpy3.json.gz"
+        backupFile = LocationManager.downloadBackupFile(url, fileName)
+        jsonStr = LocationManager.getFileContent(backupFile)
+        lod = json.loads(jsonStr)['countries']
+        return lod
 
 
 class RegionManager(LocationManager):
@@ -384,12 +389,17 @@ class RegionManager(LocationManager):
             RegionList based on the json backup
         '''
         regionManager = RegionManager(name="regions_json", config=config)
-        fileName="regions_geograpy3.json"
-        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/regions_geograpy3.json.gz"
-        backupFile = regionManager.downloadBackupFile(url, fileName)
-        jsonStr = regionManager.getFileContent(backupFile)
-        regionManager.restoreFromJsonStr(jsonStr)
+        regionManager.fromCache(force=True, getListOfDicts=cls.getLocationLodFromJsonBackup)
         return regionManager
+
+    @classmethod
+    def getLocationLodFromJsonBackup(cls):
+        fileName = "regions_geograpy3.json"
+        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/regions_geograpy3.json.gz"
+        backupFile = LocationManager.downloadBackupFile(url, fileName)
+        jsonStr = LocationManager.getFileContent(backupFile)
+        lod = json.loads(jsonStr)['regions']
+        return lod
 
 
 class CityManager(LocationManager):
@@ -495,7 +505,7 @@ class CityManager(LocationManager):
             self.getList().append(city)
 
     @classmethod
-    def fromJSONBackup(cls, jsonStr:str=None, config:StorageConfig=None):
+    def fromJSONBackup(cls, config:StorageConfig=None):
         '''
         get city list from json backup (json backup is based on wikidata query results)
 
@@ -506,13 +516,17 @@ class CityManager(LocationManager):
             CityList based on the json backup
         '''
         cityManager = CityManager(name="cities_json", config=config)
-        if jsonStr is None:
-            fileName="cities_geograpy3.json"
-            url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json.gz"
-            backupFile = LocationManager.downloadBackupFile(url, fileName)
-            jsonStr = LocationManager.getFileContent(backupFile)
-        cityManager.restoreFromJsonStr(jsonStr)
+        cityManager.fromCache(force=True, getListOfDicts=cls.getLocationLodFromJsonBackup)
         return cityManager
+
+    @classmethod
+    def getLocationLodFromJsonBackup(cls):
+        fileName = "cities_geograpy3.json"
+        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json.gz"
+        backupFile = LocationManager.downloadBackupFile(url, fileName)
+        jsonStr = LocationManager.getFileContent(backupFile)
+        lod=json.loads(jsonStr)['cities']
+        return lod
     
 class Earth:
     radius = 6371.000  # radius of earth in km
@@ -893,6 +907,21 @@ class LocationContext(object):
             region = self._regionLookup.get(getattr(city, 'region_wikidataid'))
             if region is not None and isinstance(region, Region):
                 city.region = region
+
+    @classmethod
+    def fromCache(cls, config:StorageConfig=None, forceUpdate:bool=False):
+        '''
+        Inits a LocationContext form Cache if existent otherwise init cache
+        '''
+        if config is None:
+            config=cls.getDefaultConfig()
+        cityManager=CityManager("cities", config=config)
+        regionManager=RegionManager("regions", config=config)
+        countryManager=CountryManager("countries",config=config)
+        for manager in cityManager, regionManager, countryManager:
+            manager.fromCache(force=forceUpdate, getListOfDicts=manager.getLocationLodFromJsonBackup)
+        locationContext = LocationContext(countryManager, regionManager, cityManager)
+        return locationContext
 
     @classmethod
     def fromJSONBackup(cls, config:StorageConfig=None):
