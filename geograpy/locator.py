@@ -48,7 +48,7 @@ from geograpy.utils import remove_non_ascii
 from geograpy import wikidata
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
-from lodstorage.jsonable import JSONAble, JSONAbleList
+from lodstorage.jsonable import JSONAble
 from math import radians, cos, sin, asin, sqrt
 
 
@@ -437,7 +437,6 @@ class CityManager(LocationManager):
             cityList = cls.fromJSONBackup(config=config)
             return cityList
         cityManager=CityManager(name="cities_wikidata", config=config)
-        cityIDs=[]
         wikidata = Wikidata()
         cityLOD=wikidata.getCities(region=regionIDs, country=countryIDs)
         for cityRecord in cityLOD:
@@ -1582,9 +1581,9 @@ FROM citiesWithPopulation
         ok=hasVersion and versionOk and hasCities and hasRegions and hasCountries
         return ok
     
-__version__ = '0.1.29'
+__version__ = '0.1.31'
 __date__ = '2020-09-26'
-__updated__ = '2021-07-12'    
+__updated__ = '2021-08-11'    
 
 DEBUG = 1
 
