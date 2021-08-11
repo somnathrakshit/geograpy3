@@ -880,12 +880,19 @@ class LocationContext(object):
     '''
 
     def __init__(self,countryManager:CountryManager, regionManager:RegionManager, cityManager:CityManager ):
+        '''
+        construct me
+        
+        Args:
+            countryManager(CountryManager): the country manager to be used
+            regionManager(RegionManager): the region manager to be used
+            cityManager(CityManager): the city manager to be used
+        '''
         self.countryManager=countryManager
         self.regionManager=regionManager
         self.cityManager=cityManager
         self._countryLookup=countryManager.getLookup("wikidataid")[0]
         self._regionLookup=regionManager.getLookup("wikidataid")[0]
-        self._cityLookup=cityManager.getLookup("wikidataid")[0]
         self.interlinkLocations()
 
 
