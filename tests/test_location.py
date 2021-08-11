@@ -162,7 +162,7 @@ class TestLocationHierarchy(unittest.TestCase):
         # USA is a country that should always be in the list test if present
         us_present = False
         for country in countries:
-            if 'wikidataid' in country.__dict__:
+            if hasattr(country,'wikidataid'):
                 if country.wikidataid == "Q30":
                     us_present = True
                     break
@@ -186,7 +186,7 @@ class TestLocationHierarchy(unittest.TestCase):
         # check if Los Angeles is in the list (popular city should always be in the list)
         la_present = False
         for city in cityList.cities:
-            if 'wikidataid' in city.__dict__:
+            if hasattr(city,'wikidataid'):
                 if city.wikidataid == "Q65":
                     la_present = True
                     break

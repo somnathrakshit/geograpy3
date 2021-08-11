@@ -118,9 +118,10 @@ select distinct regionIsoCode as isocode from regions
         uml=UML()
         title="""geograpy Tables
 2020-09-26
-[[https://github.com/somnathrakshit/geograpy3 © 2020 geograpy3 project]]"""
+[[https://github.com/somnathrakshit/geograpy3 © 2020-2021 geograpy3 project]]"""
         plantUml=uml.tableListToPlantUml(tableList,title=title, packageName="geograpy3")
-        if self.debug:
+        showUml=True
+        if showUml:
             print (plantUml)
             
     def checkExamples(self,examples,countries,debug=False,check=True):
