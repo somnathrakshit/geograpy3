@@ -890,8 +890,9 @@ class LocationContext(object):
         self.countryManager=countryManager
         self.regionManager=regionManager
         self.cityManager=cityManager
-        self._countryLookup=countryManager.getLookup("wikidataid")[0]
-        self._regionLookup=regionManager.getLookup("wikidataid")[0]
+        self._countryLookup,_dup=countryManager.getLookup("wikidataid")
+        self._regionLookup,_dup=regionManager.getLookup("wikidataid")
+        self._cityLookup,_dup=cityManager.getLookup("wikidataid")
         self.interlinkLocations()
 
 
