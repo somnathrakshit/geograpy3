@@ -38,6 +38,9 @@ import gzip
 import shutil
 import json
 from pathlib import Path
+
+from lodstorage.entity import EntityManager
+from lodstorage.storageconfig import StorageConfig, StoreMode
 from sklearn.neighbors import BallTree
 from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
@@ -49,23 +52,36 @@ from lodstorage.jsonable import JSONAble, JSONAbleList
 from math import radians, cos, sin, asin, sqrt
 
 
-class LocationList(JSONAbleList):
+class LocationManager(EntityManager):
     '''
     a list of locations
     '''
     
-    def __init__(self,listName:str=None,clazz=None,tableName:str=None):
+    def __init__(self,name,entityName,entityPluralName:str,listName:str=None,clazz=None,primaryKey:str=None,config=None,handleInvalidListTypes=False,filterInvalidListTypes=False,debug=False):
         '''
         construct me
+
+        Args:
+            name(string): name of this LocationManager
+            entityName(string): entityType to be managed e.g. Country
+            entityPluralName(string): plural of the the entityType e.g. Countries
+            config(StorageConfig): the configuration to be used if None a default configuration will be used
+            handleInvalidListTypes(bool): True if invalidListTypes should be converted or filtered
+            filterInvalidListTypes(bool): True if invalidListTypes should be deleted
+            debug(boolean): override debug setting when default of config is used via config=None
         '''
-        super(LocationList, self).__init__(listName, clazz, tableName)
+        super(LocationManager, self).__init__(name=name,
+                                              entityName=entityName,
+                                              entityPluralName=entityPluralName,
+                                              listName=listName,
+                                              clazz=clazz,
+                                              tableName=name,
+                                              primaryKey=primaryKey,
+                                              config=config,
+                                              handleInvalidListTypes=handleInvalidListTypes,
+                                              filterInvalidListTypes=filterInvalidListTypes,
+                                              debug=debug)
         self.balltree= None
-        
-    def getLocationList(self):
-        '''
-        get my location list
-        '''
-        return self.__dict__[self.listName]
         
     def getBallTuple(self,cache:bool=True):
         '''
@@ -82,7 +98,7 @@ class LocationList(JSONAbleList):
         validList=[]
         if self.balltree is None or not cache:
             coordinatesrad=[]
-            for location in self.getLocationList():
+            for location in self.getList():
                 if location.lat and location.lon:
                     latlonrad=(radians(location.lat),radians(location.lon))
                     coordinatesrad.append(latlonrad)
@@ -100,7 +116,7 @@ class LocationList(JSONAbleList):
         Returns:
             Location object
         '''
-        for location in self.__dict__[self.listName]:
+        for location in self.getList():
             if 'wikidataid' in location.__dict__:
                 if location.wikidataid == wikidataID:
                     return location
@@ -138,7 +154,7 @@ class LocationList(JSONAbleList):
         Returns:
             Name of the extracted file with path to the backup directory
         '''
-        backupDirectory=LocationList.getBackupDirectory()
+        backupDirectory=LocationManager.getBackupDirectory()
         extractTo= f"{backupDirectory}/{fileName}"
         # we might want to check whether a new version is available
         if not os.path.isfile(extractTo) or force:
@@ -155,18 +171,50 @@ class LocationList(JSONAbleList):
                 raise (f"could not extract {fileName} from {zipped}")
         return extractTo
 
+    def getByName(self, name:str):
+        '''
+        Get locations matching given name
+        Args:
+            name: Name of the location
 
-class CountryList(LocationList):
+        Returns:
+            Returns locations that match the given name
+        '''
+        if self.config.mode is StoreMode.SQL:
+            sqlDB=self.getSQLDB(self.config.cacheFile)
+            queryResult=sqlDB.query(f"SELECT wikidataid "
+                                    f"FROM {self.tableName} "
+                                    f"WHERE name LIKE '{name}' ")
+            res=[]
+            for record in queryResult:
+                if 'wikidataid' in record:
+                    location=[location for location in self.getList() if location.wikidataid==record['wikidataid']]
+                    res.extend(location)
+            return res
+        else:
+            return [city for city in self.getList() if city.name==name]
+
+
+class CountryManager(LocationManager):
     '''
     a list of countries
     '''
     
-    def __init__(self):
-        super(CountryList, self).__init__('countries', Country)
+    def __init__(self, name:str="CountryManager",primaryKey:str=None,config=None,handleInvalidListTypes=False,filterInvalidListTypes=False,debug=False):
+        super(CountryManager, self).__init__(name=name,
+                                             entityName="country",
+                                             entityPluralName="countries",
+                                             clazz=Country,
+                                             primaryKey=primaryKey,
+                                             config=config,
+                                             handleInvalidListTypes=handleInvalidListTypes,
+                                             filterInvalidListTypes=filterInvalidListTypes,
+                                             debug=debug
+                                             )
        
     @classmethod
     def from_sqlDb(cls,sqlDB):
-        countryList=CountryList()
+        countryManager=CountryManager(name="countries_sql")
         query="select * from countries"
         countryLod=sqlDB.query(query)
         for countryRecord in countryLod:
@@ -176,8 +224,8 @@ class CountryList(LocationList):
             # TODO Fix table to supply lat/lon directly
             coordStr=countryRecord["countryCoord"]
             country.lat,country.lon=Wikidata.getCoordinateComponents(coordStr)
-            countryList.countries.append(country)
-        return countryList
+            countryManager.getList().append(country)
+        return countryManager
         
 
     @classmethod
@@ -185,7 +233,7 @@ class CountryList(LocationList):
         '''
         get country list provided by Erdem Ozkol https://github.com/erdem
         '''
-        countryList=CountryList()
+        countryManager=CountryManager(name="countries_erdem")
         countryJsonUrl="https://gist.githubusercontent.com/erdem/8c7d26765831d0f9a8c62f02782ae00d/raw/248037cd701af0a4957cce340dabb0fd04e38f4c/countries.json"
         with urllib.request.urlopen(countryJsonUrl) as url:
             jsonCountryList=json.loads(url.read().decode())
@@ -195,9 +243,9 @@ class CountryList(LocationList):
                 country.iso=jsonCountry['country_code']
                 country.lat=jsonCountry['latlng'][0]
                 country.lon=jsonCountry['latlng'][1]
-                countryList.countries.append(country)
+                countryManager.getList().append(country)
 
-        return countryList
+        return countryManager
             
 
     @classmethod
@@ -205,7 +253,7 @@ class CountryList(LocationList):
         '''
         get country list form wikidata
         '''
-        countryList = CountryList()
+        countryManager=CountryManager(name="countries_wikidata")
         wikidata=Wikidata()
 
         wikidata.getCountries()
@@ -219,38 +267,52 @@ class CountryList(LocationList):
                 country.lat = lat
                 country.lon = lon
                 country.population = countryRecord['countryPopulation']
-                countryList.countries.append(country)
-        return countryList
+                countryManager.getList().append(country)
+        return countryManager
 
     @classmethod
-    def fromJSONBackup(cls):
+    def fromJSONBackup(cls, config:StorageConfig=None):
         '''
         get country list from json backup (json backup is based on wikidata query results)
 
         Returns:
             CountryList based on the json backup
         '''
-        countryList = CountryList()
-        fileName="countries_geograpy3.json"
-        url="https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/countries_geograpy3.json.gz"
-        backupFile=LocationList.downloadBackupFile(url, fileName)
-        jsonStr = LocationList.getFileContent(backupFile)
-        countryList.restoreFromJsonStr(jsonStr)
-        return countryList
+        countryManager=CountryManager(name="countries_json", config=config)
+        countryManager.fromCache(force=True, getListOfDicts=cls.getLocationLodFromJsonBackup)
+        return countryManager
+
+    @classmethod
+    def getLocationLodFromJsonBackup(cls):
+        fileName = "countries_geograpy3.json"
+        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/countries_geograpy3.json.gz"
+        backupFile = LocationManager.downloadBackupFile(url, fileName)
+        jsonStr = LocationManager.getFileContent(backupFile)
+        lod = json.loads(jsonStr)['countries']
+        return lod
 
 
-class RegionList(LocationList):
+class RegionManager(LocationManager):
     '''
     a list of regions
     '''
-    
-    def __init__(self):
-        super(RegionList, self).__init__('regions', Region)
-        self.regions=[]
+
+    def __init__(self, name: str = "RegionManager", primaryKey: str = None, config=None, handleInvalidListTypes=False,
+                 filterInvalidListTypes=False, debug=False):
+        super(RegionManager, self).__init__(name=name,
+                                             entityName="region",
+                                             entityPluralName="regions",
+                                             clazz=Region,
+                                             primaryKey=primaryKey,
+                                             config=config,
+                                             handleInvalidListTypes=handleInvalidListTypes,
+                                             filterInvalidListTypes=filterInvalidListTypes,
+                                             debug=debug
+                                             )
         
     @classmethod
-    def from_sqlDb(cls,sqlDB):
-        regionList=RegionList()
+    def from_sqlDb(cls,sqlDB, config:StorageConfig=None):
+        regionManager=RegionManager(name="regions_sql", config=config)
         query="select * from regions"
         regionsLod=sqlDB.query(query)
         for regionRecord in regionsLod:
@@ -260,15 +322,15 @@ class RegionList(LocationList):
             # TODO Fix table to supply lat/lon directly
             coordStr=regionRecord["location"]
             region.lat,region.lon=Wikidata.getCoordinateComponents(coordStr)
-            regionList.regions.append(region)
-        return regionList
+            regionManager.getList().append(region)
+        return regionManager
 
     @classmethod
-    def fromWikidata(cls):
+    def fromWikidata(cls, config:StorageConfig=None):
         '''
         get region list form wikidata
         '''
-        regionList=RegionList()
+        regionManager=RegionManager(name="regions_wikidata", config=config)
         regionIDs=[]
         wikidata = Wikidata()
         wikidata.getRegions()
@@ -277,7 +339,7 @@ class RegionList(LocationList):
                 wikidataid=Wikidata.getWikidataId(regionRecord['region'])
                 if wikidataid in regionIDs:
                     # complete existing region entry
-                    region=regionList.getLocationByID(wikidataid)
+                    region=regionManager.getLocationByID(wikidataid)
                     # current assumption is that only population and label are duplicates
                     if 'labels' in regionRecord:
                         if 'labels' in region.__dict__:
@@ -303,7 +365,7 @@ class RegionList(LocationList):
                     region=Region()
                     region.wikidataid=wikidataid
                     region.name = regionRecord['regionLabel']
-                    region.iso = regionRecord['regionIsoCode']#
+                    region.iso = regionRecord['regionIsoCode']
                     if 'location' in regionRecord:
                         lon, lat = Wikidata.getCoordinateComponents(regionRecord['location'])
                         region.lat = lat
@@ -315,38 +377,51 @@ class RegionList(LocationList):
                         country_wikidataid=Wikidata.getWikidataId(country)
                         region.country_wikidataid=country_wikidataid
                     regionIDs.append(wikidataid)
-                    if regionList.listName not in regionList.__dict__ or regionList.__dict__[regionList.listName] is None:
-                        regionList.__dict__[regionList.listName]=[]
-                    regionList.__dict__[regionList.listName].append(region)
-        return  regionList
+                    regionManager.getList().append(region)
+        return regionManager
 
     @classmethod
-    def fromJSONBackup(cls):
+    def fromJSONBackup(cls, config:StorageConfig=None):
         '''
         get region list from json backup (json backup is based on wikidata query results)
 
         Returns:
             RegionList based on the json backup
         '''
-        regionList = RegionList()
-        fileName="regions_geograpy3.json"
+        regionManager = RegionManager(name="regions_json", config=config)
+        regionManager.fromCache(force=True, getListOfDicts=cls.getLocationLodFromJsonBackup)
+        return regionManager
+
+    @classmethod
+    def getLocationLodFromJsonBackup(cls):
+        fileName = "regions_geograpy3.json"
         url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/regions_geograpy3.json.gz"
-        backupFile = LocationList.downloadBackupFile(url, fileName)
-        jsonStr = LocationList.getFileContent(backupFile)
-        regionList.restoreFromJsonStr(jsonStr)
-        return regionList
+        backupFile = LocationManager.downloadBackupFile(url, fileName)
+        jsonStr = LocationManager.getFileContent(backupFile)
+        lod = json.loads(jsonStr)['regions']
+        return lod
 
 
-class CityList(LocationList):
+class CityManager(LocationManager):
     '''
     a list of cities
     '''
-    
-    def __init__(self):
-        super(CityList, self).__init__('cities', City)
+
+    def __init__(self, name: str = "CityManager", primaryKey: str = None, config=None, handleInvalidListTypes=False,
+                 filterInvalidListTypes=False, debug=False):
+        super(CityManager, self).__init__(name=name,
+                                            entityName="city",
+                                            entityPluralName="cities",
+                                            clazz=City,
+                                            primaryKey=primaryKey,
+                                            config=config,
+                                            handleInvalidListTypes=handleInvalidListTypes,
+                                            filterInvalidListTypes=filterInvalidListTypes,
+                                            debug=debug
+                                            )
 
     @classmethod
-    def fromWikidata(cls, fromBackup:bool = True, countryIDs:list=None, regionIDs:list=None ):
+    def fromWikidata(cls, fromBackup:bool = True, countryIDs:list=None, regionIDs:list=None , config:StorageConfig=None):
         '''
         get city list form wikidata
 
@@ -359,17 +434,17 @@ class CityList(LocationList):
             CityList based wikidata query results
         '''
         if fromBackup:
-            cityList = cls.fromJSONBackup()
+            cityList = cls.fromJSONBackup(config=config)
             return cityList
-        cityList=CityList()
+        cityManager=CityManager(name="cities_wikidata", config=config)
         cityIDs=[]
         wikidata = Wikidata()
         cityLOD=wikidata.getCities(region=regionIDs, country=countryIDs)
         for cityRecord in cityLOD:
             if 'city' in cityRecord:
                 wikidataid = Wikidata.getWikidataId(cityRecord['city'])
-                cityList.updateCity(wikidataid, cityRecord)
-        return cityList
+                cityManager.updateCity(wikidataid, cityRecord)
+        return cityManager
 
     def updateCity(self, wikidataid:str, cityRecord:dict):
         '''
@@ -400,7 +475,7 @@ class CityList(LocationList):
                     city.__dict__['labels'] = [cityRecord['labels']]
             if 'cityPop' in cityRecord:
                 population = None
-                if 'population' in city.__dict__  and city.population is not None:
+                if 'population' in city.__dict__ and city.population is not None:
                     if cityRecord['cityPop'] is None:
                         population=city.population
                     else:
@@ -427,12 +502,10 @@ class CityList(LocationList):
                 city.region_wikidataid = region_wikidataid
             if 'cityPop' in cityRecord:
                 city.population = cityRecord['cityPop']
-            if self.listName not in self.__dict__ or self.__dict__[self.listName] is None:
-                self.__dict__[self.listName] = []
-            self.__dict__[self.listName].append(city)
+            self.getList().append(city)
 
     @classmethod
-    def fromJSONBackup(cls, jsonStr:str=None):
+    def fromJSONBackup(cls, config:StorageConfig=None):
         '''
         get city list from json backup (json backup is based on wikidata query results)
 
@@ -442,14 +515,18 @@ class CityList(LocationList):
         Returns:
             CityList based on the json backup
         '''
-        cityList = CityList()
-        if jsonStr is None:
-            fileName="cities_geograpy3.json"
-            url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json.gz"
-            backupFile = LocationList.downloadBackupFile(url, fileName)
-            jsonStr = LocationList.getFileContent(backupFile)
-        cityList.restoreFromJsonStr(jsonStr)
-        return cityList
+        cityManager = CityManager(name="cities_json", config=config)
+        cityManager.fromCache(force=True, getListOfDicts=cls.getLocationLodFromJsonBackup)
+        return cityManager
+
+    @classmethod
+    def getLocationLodFromJsonBackup(cls):
+        fileName = "cities_geograpy3.json"
+        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json.gz"
+        backupFile = LocationManager.downloadBackupFile(url, fileName)
+        jsonStr = LocationManager.getFileContent(backupFile)
+        lod=json.loads(jsonStr)['cities']
+        return lod
     
 class Earth:
     radius = 6371.000  # radius of earth in km
@@ -492,45 +569,45 @@ class Location(JSONAble):
         c = 2 * asin(sqrt(a)) 
         return c * Earth.radius
 
-    def getNClosestLocations(self, lookupLocationList,n:int):
+    def getNClosestLocations(self, lookupLocationManager,n:int):
         """
         Gives a list of up to n locations which have the shortest distance to 
         me as calculated from the given listOfLocations
         
         Args:
-            lookupLocationList(LocationList): a LocationList object to use for lookup
+            lookupLocationManager(LocationManager): a LocationManager object to use for lookup
             n(int): the maximum number of closest locations to return 
         
         Returns:
             list: a list of result Location/distance tuples
         """
-        balltree,lookupListOfLocations=lookupLocationList.getBallTuple()
+        balltree,lookupListOfLocations=lookupLocationManager.getBallTuple()
         # check for n+1 entries since we might have my own record in the lookup list which we'll ignore late
         distances,indices = balltree.query([[radians(self.lat),radians(self.lon)]], k=n+1, return_distance=True)
-        resultLocations=self.balltreeQueryResultToLocationList(distances[0],indices[0],lookupListOfLocations)
+        resultLocations=self.balltreeQueryResultToLocationManager(distances[0],indices[0],lookupListOfLocations)
         return resultLocations
         
-    def getLocationsWithinRadius(self,lookupLocationList,radiusKm:float):
+    def getLocationsWithinRadius(self,lookupLocationManager,radiusKm:float):
         """
         Gives the n closest locations to me from the given lookupListOfLocations
         
         Args:
-            lookupLocationList(LocationList): a LocationList object to use for lookup
+            lookupLocationManager(LocationManager): a LocationManager object to use for lookup
             radiusKm(float): the radius in which to check (in km)
             
         Returns:
             list: a list of result Location/distance tuples
         """
-        balltree,lookupListOfLocations=lookupLocationList.getBallTuple()
+        balltree,lookupListOfLocations=lookupLocationManager.getBallTuple()
         
         indices,distances = balltree.query_radius([[radians(self.lat),radians(self.lon)]], r=radiusKm / Earth.radius,
                                                     return_distance=True)
-        locationList=self.balltreeQueryResultToLocationList(distances[0],indices[0],lookupListOfLocations)
+        locationList=self.balltreeQueryResultToLocationManager(distances[0],indices[0],lookupListOfLocations)
         return locationList
     
-    def balltreeQueryResultToLocationList(self,distances,indices,lookupListOfLocations):
+    def balltreeQueryResultToLocationManager(self,distances,indices,lookupListOfLocations):
         '''
-        convert the given ballTree Query Result to a LocationList
+        convert the given ballTree Query Result to a LocationManager
         
         Args:
             distances(list): array of distances
@@ -799,99 +876,158 @@ class Country(Location):
 
 class LocationContext(object):
     '''
-    Holds LocationLists of all hierarchy levels and provides methods to traverse through the levels
+    Holds LocationManagers of all hierarchy levels and provides methods to traverse through the levels
     '''
 
-    def __init__(self,countryList:CountryList, regionList:RegionList, cityList:CityList ):
-        self._countries=countryList
-        self._regions=regionList
-        self._cities=cityList
-        self._countryLookup=countryList.getLookup("wikidataid")[0]
-        self._regionLookup=regionList.getLookup("wikidataid")[0]
-        self._cityLookup=cityList.getLookup("wikidataid")[0]
+    def __init__(self,countryManager:CountryManager, regionManager:RegionManager, cityManager:CityManager ):
+        self.countryManager=countryManager
+        self.regionManager=regionManager
+        self.cityManager=cityManager
+        self._countryLookup=countryManager.getLookup("wikidataid")[0]
+        self._regionLookup=regionManager.getLookup("wikidataid")[0]
+        self._cityLookup=cityManager.getLookup("wikidataid")[0]
+        self.interlinkLocations()
 
+
+    def interlinkLocations(self):
+        '''
+        Interlinks locations by adding the hierarchy references to the locations
+        '''
         # interlink region with country
         for region in self.regions:
-            country=self._countryLookup.get(region.__dict__['country_wikidataid'])
+            country = self._countryLookup.get(getattr(region, 'country_wikidataid'))
             if country is not None and isinstance(country, Country):
-                region.country=country
+                region.country = country
 
         # interlink city with region and country
         for city in self.cities:
-            country = self._countryLookup.get(city.__dict__['country_wikidataid'])
+            country = self._countryLookup.get(getattr(city, 'country_wikidataid'))
             if country is not None and isinstance(country, Country):
-                city.country=country
-            region = self._regionLookup.get(city.__dict__['region_wikidataid'])
+                city.country = country
+            region = self._regionLookup.get(getattr(city, 'region_wikidataid'))
             if region is not None and isinstance(region, Region):
-                city.region=region
+                city.region = region
 
     @classmethod
-    def fromJSONBackup(cls):
+    def fromCache(cls, config:StorageConfig=None, forceUpdate:bool=False):
+        '''
+        Inits a LocationContext form Cache if existent otherwise init cache
+        '''
+        if config is None:
+            config=cls.getDefaultConfig()
+        cityManager=CityManager("cities", config=config)
+        regionManager=RegionManager("regions", config=config)
+        countryManager=CountryManager("countries",config=config)
+        for manager in cityManager, regionManager, countryManager:
+            manager.fromCache(force=forceUpdate, getListOfDicts=manager.getLocationLodFromJsonBackup)
+        locationContext = LocationContext(countryManager, regionManager, cityManager)
+        return locationContext
+
+    @classmethod
+    def fromJSONBackup(cls, config:StorageConfig=None):
         '''
         Inits a LocationContext form the JSON backup
         '''
-        countryList=CountryList.fromJSONBackup()
-        regionList=RegionList.fromJSONBackup()
-        cityList=CityList.fromJSONBackup()
+        if config is None:
+            config=cls.getDefaultConfig()
+        countryList=CountryManager.fromJSONBackup(config=config)
+        regionList=RegionManager.fromJSONBackup(config=config)
+        cityList=CityManager.fromJSONBackup(config=config)
+        for manager in countryList, regionList, cityList:
+            manager.store()
         locationContext = LocationContext(countryList, regionList, cityList)
         return locationContext
 
+    @staticmethod
+    def getDefaultConfig()->StorageConfig:
+        '''
+        Returns default StorageConfig
+        '''
+        config = StorageConfig(cacheDirName="geograpy3")
+        cachedir = config.getCachePath()
+        config.cacheFile = f"{cachedir}/locations.db"
+        return config
+
     @property
     def countries(self) -> list:
-        return self._countries.__dict__[self._countries.listName]
+        return self.countryManager.getList()
 
     @property
     def regions(self)->list:
-        return self._regions.__dict__[self._regions.listName]
+        return self.regionManager.getList()
 
     @property
     def cities(self) -> list:
-        return self._cities.__dict__[self._cities.listName]
-
-    @property
-    def countryList(self):
-        return self._countries
-
-    @property
-    def regionList(self):
-        return self._regions
-
-    @property
-    def cityList(self):
-        return self._cities
+        return self.cityManager.getList()
 
     def getCountries(self, name:str):
         '''Returns all countries that are known under the given name'''
-        countries=self._getLocation(name, self.countries)
+        countries = self.countryManager.getByName(name)
         return countries
 
     def getRegions(self, name:str):
         '''Returns all regions that are known under the given name'''
-        regions=self._getLocation(name, self.regions)
+        regions = self.regionManager.getByName(name)
         return regions
 
     def getCities(self, name:str):
         '''Returns all cities that are known under the given name'''
-        cities=self._getLocation(name, self.cities)
+        cities=self.cityManager.getByName(name)
         return cities
 
-    def _getLocation(self, name:str, locations:list):
+    def locateLocation(self, *locations):
         '''
-        Returns all locations that are in the given list and are known under the given name
+        Get possible locations for the given location names.
+        Current prioritization of the results is city(ordered by population)→region→country
+        ToDo: Extend the ranking of the results e.g. matching of multiple location parts increase ranking
         Args:
-            name: Name of the location that should be returned
-            locations: list of locations to search in
+            *locations:
 
         Returns:
-            List of locations that are known under the given name
+
         '''
-        if name is None:
-            return None
-        res=[]
+        if locations is None or locations is (None):
+            return
+        possibleLocations={
+            self.cityManager.name:set(),
+            self.regionManager.name: set(),
+            self.countryManager.name: set()
+        }
+        locationParts=[]
         for location in locations:
-            if location.isKnownAs(name):
-                res.append(location)
+            if location is not None:
+                for locationPart in location.split(','):
+                    locationParts.append(locationPart)
+        for location in locationParts:
+            location=location.strip()
+            for manager in self.cityManager, self.regionManager, self.countryManager:
+                possibleLocation=[]
+                if Locator.isISO(location):
+                    pl=[l for l in manager.getList() if hasattr(l, 'iso') and l.iso == location]
+                    possibleLocation.extend(pl)
+                possibleLocation.extend(manager.getByName(location))
+                # search in location labels → currently not supported in sql backup (n:m relation)
+                # pl=[l for l in manager.getList() if l.isKnownAs(location)]
+                # possibleLocation.extend(pl)
+                possibleLocations[manager.name]=possibleLocations[manager.name].union(set(possibleLocation))
+        # reduce possible Locations e.g. remove regions and countries already identified by a city
+        for city in possibleLocations[self.cityManager.name]:
+            if city.region in possibleLocations[self.regionManager.name]:
+                possibleLocations[self.regionManager.name].remove(city.region)
+            if city.country in possibleLocations[self.countryManager.name]:
+                possibleLocations[self.countryManager.name].remove(city.country)
+        for region in possibleLocations[self.regionManager.name]:
+            if region.country in possibleLocations[self.countryManager.name]:
+                possibleLocations[self.countryManager.name].remove(region.country)
+        # build final result in the order city→region→country
+        cities=list(possibleLocations[self.cityManager.name])
+        cities.sort(key=lambda c: int(getattr(c, 'population', 0)) if getattr(c, 'population') is not None else 0, reverse=True)
+        res=[]
+        res.extend(cities)
+        res.extend(list(possibleLocations[self.regionManager.name]))
+        res.extend(list(possibleLocations[self.countryManager.name]))
         return res
+
 
 
 class Locator(object):
@@ -968,8 +1104,9 @@ class Locator(object):
             regions.extend(foundRegions)
         foundCity=self.disambiguate(country, regions, cities)
         return foundCity
-    
-    def isISO(self,s):
+
+    @staticmethod
+    def isISO(s):
         '''
         check if the given string is an ISO code
         

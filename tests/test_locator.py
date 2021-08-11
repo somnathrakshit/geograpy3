@@ -6,7 +6,7 @@ Created on 2020-09-19
 import unittest
 import geograpy
 import getpass
-from geograpy.locator import Locator, CountryList, Location
+from geograpy.locator import Locator, CountryManager, Location
 from collections import Counter
 from lodstorage.uml import UML
 import os
@@ -263,7 +263,7 @@ February 3-5, 2020''']
         test getting Country list from Erdem
 
         '''
-        countryList=CountryList.fromErdem()
+        countryList=CountryManager.fromErdem()
         self.assertEqual(247,len(countryList.countries))
         if self.debug:
             for country in countryList.countries:
