@@ -37,6 +37,7 @@ class TestLocationHierarchy(unittest.TestCase):
     def getLocationContext(self):
         if self.locationContext is None:
             self.locationContext=LocationContext.fromJSONBackup()
+        return self.locationContext
             
     def testDistance(self):
         '''
