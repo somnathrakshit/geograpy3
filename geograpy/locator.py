@@ -329,29 +329,13 @@ class RegionManager(LocationManager):
         for regionRecord in wikidata.regionList:
             if 'region' in regionRecord:
                 wikidataid = Wikidata.getWikidataId(regionRecord['region'])
+                # handle duplicates ...
                 if wikidataid in regionIDs:
                     # complete existing region entry
                     region = regionManager.getLocationByID(wikidataid)
-                    # current assumption is that only population and label are duplicates
-                    if 'labels' in regionRecord:
-                        if 'labels' in region.__dict__:
-                            if isinstance(region.labels, list):
-                                if regionRecord['labels'] in region.labels:
-                                    region.labels.append(regionRecord['labels'])
-                            else:
-                                labels = []
-                                labels.append(region.labels)
-                                labels.append(regionRecord['labels'])
-                                region.labels = labels
-                        else:
-                            region.__dict__['labels'] = [regionRecord['labels']]
-                    if 'regionPopulation' in regionRecord:
-                        population = None
-                        if 'population' in region.__dict__:
-                            population = max(regionRecord['regionPopulation'], region.population)
-                        else:
-                            population = regionRecord['regionPopulation']
-                        region.population = population
+                    # current assumption is that only countries are duplicates
+                    # TODO handle case later e.g. Sewastopol UA/RU 
+                    # for the time being simply ignore
                 else:
                     # add new region to the regionList
                     region = Region()
