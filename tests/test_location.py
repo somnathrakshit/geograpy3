@@ -18,7 +18,7 @@ class TestLocationHierarchy(unittest.TestCase):
 
     def setUp(self):
         self.debug=False
-        self.locationContext=LocationContext.fromJSONBackup()
+        #self.locationContext=LocationContext.fromJSONBackup()
         pass
 
     def tearDown(self):
@@ -158,23 +158,28 @@ class TestLocationHierarchy(unittest.TestCase):
             ]
         }
         """
-        countries = CountryManager().restoreFromJsonStr(samples)
-        # USA is a country that should always be in the list test if present
-        us_present = False
-        for country in countries:
-            if hasattr(country,'wikidataid'):
-                if country.wikidataid == "Q30":
-                    us_present = True
-                    break
-        self.assertTrue(us_present)
+        cm=CountryManager();
+        cm.restoreFromJsonStr(samples)
+        countriesByWikiDataId,_dup=cm.getLookup("wikidataid")
+        self.assertTrue("Q30" in countriesByWikiDataId)
+        
 
     def testCountryManagerFromWikidata(self):
         '''
         tests if the CountryManager id correctly loaded from Wikidata query result
         '''
-        return  # wikidata query results are unreliable
-        countryList=CountryManager.fromWikidata()
-        self.assertTrue(len(countryList.countries)>=190)
+        # wikidata query results are unreliable
+        try:
+            countryManager=CountryManager.fromWikidata()
+            self.assertTrue(len(countryManager.countries)>=190)
+            countriesByWikiDataId,duplicates=countryManager.getLookup("wikidataid")
+            if len(duplicates)>0:
+                for i,duplicate in enumerate(duplicates):
+                    print(f"{i}:{duplicate}")
+            self.assertEqual(len(duplicates),0)
+            
+        except Exception as ex:
+            print(f"Wikidata test failed {ex}")
 
     def testCityManagerFromJSONBackup(self):
         '''
@@ -238,7 +243,7 @@ class TestLocationHierarchy(unittest.TestCase):
         '''
         tests the loading of the RegionManager from wikidata query results
         '''
-        return  # wikidata query results are unreliable
+        # wikidata query results are unreliable
         regionList = RegionManager.fromWikidata()
         #check amount of regions
         self.assertTrue(len(regionList.regions)>3500)

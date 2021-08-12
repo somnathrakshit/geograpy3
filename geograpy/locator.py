@@ -70,17 +70,17 @@ class LocationManager(EntityManager):
             filterInvalidListTypes(bool): True if invalidListTypes should be deleted
             debug(boolean): override debug setting when default of config is used via config=None
         '''
-        super(LocationManager, self).__init__(name=name,
-                                              entityName=entityName,
-                                              entityPluralName=entityPluralName,
-                                              listName=listName,
-                                              clazz=clazz,
-                                              tableName=name,
-                                              primaryKey=primaryKey,
-                                              config=config,
-                                              handleInvalidListTypes=handleInvalidListTypes,
-                                              filterInvalidListTypes=filterInvalidListTypes,
-                                              debug=debug)
+        super().__init__(name=name,
+                          entityName=entityName,
+                          entityPluralName=entityPluralName,
+                          listName=listName,
+                          clazz=clazz,
+                          tableName=name,
+                          primaryKey=primaryKey,
+                          config=config,
+                          handleInvalidListTypes=handleInvalidListTypes,
+                          filterInvalidListTypes=filterInvalidListTypes,
+                          debug=debug)
         self.balltree = None
         
     def getBallTuple(self, cache:bool=True):
