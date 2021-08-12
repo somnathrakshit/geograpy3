@@ -184,8 +184,12 @@ class TestLocationHierarchy(unittest.TestCase):
         Args:
             ex(Exception): the exception to handle - e.g. timeout
         '''
-        print(f"Wikidata test failed {ex}")
+        msg=str(ex)
+        print(f"Wikidata test failed {msg}")
         # only raise exception for real problems
+        if "HTTP Error 500" in msg:
+            print("test can not work if server has problems")
+            return
         raise ex
     
     def checkNoDuplicateWikidataIds(self,locationManager:LocationManager):
