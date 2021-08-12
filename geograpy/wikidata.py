@@ -146,12 +146,18 @@ PREFIX p: <http://www.wikidata.org/prop/>
 PREFIX ps: <http://www.wikidata.org/prop/statement/>
 PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
 # get City details with Country
-SELECT DISTINCT ?country ?countryLabel ?countryIsoCode ?countryPopulation ?countryGDP_perCapita ?countryCoord  WHERE {
+SELECT DISTINCT ?country ?countryLabel ?countryIsoCode  ?countryCoord  ?countryPopulation ?continent ?continentLabel
+WHERE {
   # instance of Country
   ?country wdt:P31/wdt:P279* wd:Q6256 .
   # VALUES ?country { wd:Q55}.
   # label for the country
   ?country rdfs:label ?countryLabel filter (lang(?countryLabel) = "en").
+  # get the continent (s)
+  #OPTIONAL {
+  #  ?country wdt:P30 ?continent.
+  #  ?continent rdfs:label ?continentLabel filter (lang(?continentLabel) = "en").
+  #}
   # get the coordinates
   OPTIONAL { 
       ?country wdt:P625 ?countryCoord.
@@ -159,10 +165,16 @@ SELECT DISTINCT ?country ?countryLabel ?countryIsoCode ?countryPopulation ?count
   # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
   ?country wdt:P297 ?countryIsoCode.
   # population of country   
-  ?country wdt:P1082 ?countryPopulation.
+  OPTIONAL
+  { 
+    SELECT ?country (max(?countryPopulationValue) as ?countryPopulation)
+    WHERE {
+      ?country wdt:P1082 ?countryPopulationValue
+    } group by ?country
+  }
   # https://www.wikidata.org/wiki/Property:P2132
   # nominal GDP per capita
-  OPTIONAL { ?country wdt:P2132 ?countryGDP_perCapita. }
+  # OPTIONAL { ?country wdt:P2132 ?countryGDP_perCapitaValue. }
 }
 ORDER BY ?countryIsoCode"""
         wd=SPARQL(self.endpoint)
