@@ -388,7 +388,8 @@ class CityManager(LocationManager):
                             entityName="city",
                             entityPluralName="cities",
                             clazz=City,
-                            primaryKey="wikidataid",
+                            primaryKey=None,
+                            #primaryKey="wikidataid",
                             config=config,
                             debug=debug
                         )

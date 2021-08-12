@@ -5,7 +5,7 @@ Created on 2021-06-09
 '''
 import unittest
 import numpy as np
-from geograpy.locator import Locator, CityManager, CountryManager, RegionManager, Country,  LocationContext
+from geograpy.locator import Locator, LocationManager,CityManager, CountryManager, RegionManager, Country,  LocationContext
 from sklearn.neighbors import BallTree
 
 from math import radians
@@ -183,7 +183,11 @@ class TestLocationHierarchy(unittest.TestCase):
         # only raise exception for real problems
         raise ex
     
-    def checkNoDuplicateWikidataIds(self,locationManager):
+    def checkNoDuplicateWikidataIds(self,locationManager:LocationManager):
+        '''
+        check that there are no duplicate Wikidata Q identifiers in the given
+        
+        '''
         locationsByWikiDataId,duplicates=locationManager.getLookup("wikidataid")
         if len(duplicates)>0:
             for i,duplicate in enumerate(duplicates):
@@ -251,17 +255,12 @@ class TestLocationHierarchy(unittest.TestCase):
         '''
         tests the loading and parsing of the cityList form the json backup file
         '''
-        cityList=CityManager().fromJSONBackup()
-        self.assertTrue('cities' in cityList.__dict__)
-        self.assertTrue(len(cityList.cities)>=50000)
+        cityManager=CityManager().fromJSONBackup()
+        self.assertTrue(hasattr(cityManager,'cities'))
+        self.assertTrue(len(cityManager.cities)>=400000)
         # check if Los Angeles is in the list (popular city should always be in the list)
-        la_present = False
-        for city in cityList.cities:
-            if hasattr(city,'wikidataid'):
-                if city.wikidataid == "Q65":
-                    la_present = True
-                    break
-        self.assertTrue(la_present)
+        citiesByWikiDataId=self.checkNoDuplicateWikidataIds(cityManager)
+        self.assertTrue("Q65" in citiesByWikiDataId)
 
     def testRegionManagerFromJSONBackup(self):
         '''
