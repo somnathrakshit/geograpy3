@@ -388,8 +388,7 @@ class CityManager(LocationManager):
                             entityName="city",
                             entityPluralName="cities",
                             clazz=City,
-                            primaryKey=None,
-                            #primaryKey="wikidataid",
+                            primaryKey="wikidataid",
                             config=config,
                             debug=debug
                         )
@@ -499,7 +498,12 @@ class CityManager(LocationManager):
         backupFile = LocationManager.downloadBackupFile(url, fileName)
         jsonStr = LocationManager.getFileContent(backupFile)
         lod = json.loads(jsonStr)['cities']
-        return lod
+        # FILTER duplicates
+        seen = set()
+        seen_add = seen.add
+        uniqueLod=[city for city in lod if not (city['wikidataid'] in seen or seen_add(city['wikidataid']))]
+        return uniqueLod
+        
 
     
 class Earth:

@@ -28,12 +28,16 @@ class TestLocationHierarchy(unittest.TestCase):
     def setUp(self):
         self.debug=False
         self.testWikidata=False
-        #self.locationContext=LocationContext.fromJSONBackup()
+        self.locationContext=None
         pass
 
     def tearDown(self):
         pass
 
+    def getLocationContext(self):
+        if self.locationContext is None:
+            self.locationContext=LocationContext.fromJSONBackup()
+            
     def testDistance(self):
         '''
         test calculcating the distance of two points using the haversine function
@@ -311,7 +315,8 @@ class TestLocationHierarchy(unittest.TestCase):
         '''
 
         # test interlinking of city with region and country
-        cities=self.locationContext.getCities('Los Angeles')
+        locationContext=self.getLocationContext()
+        cities=locationContext.getCities('Los Angeles')
         la=[x for x in cities if x.wikidataid =="Q65"][0]
         self.assertEqual(la.name, 'Los Angeles')
         ca=la.region
@@ -324,6 +329,7 @@ class TestLocationHierarchy(unittest.TestCase):
         '''
         test LocationContext locateLocation
         '''
+        locationContext=self.getLocationContext()
         printPretty=lambda records:print([str(record) for record in records])
         pl1=self.locationContext.locateLocation("Berlin", "USA")
         self.assertEqual("Germany", pl1[0].country.name)
