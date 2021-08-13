@@ -26,6 +26,7 @@ class TestLocationHierarchy(Geograpy3Test):
     def getLocationContext(self):
         if self.locationContext is None:
             self.locationContext = LocationContext.fromCache()
+            self.locationContext.load()
         return self.locationContext
             
     def testDistance(self):
@@ -166,23 +167,6 @@ class TestLocationHierarchy(Geograpy3Test):
         cm.restoreFromJsonStr(samples)
         countriesByWikiDataId, _dup = cm.getLookup("wikidataid")
         self.assertTrue("Q30" in countriesByWikiDataId)
-        
-    def handleWikidataException(self, ex):
-        '''
-        handle a Wikidata exception
-        Args:
-            ex(Exception): the exception to handle - e.g. timeout
-        '''
-        msg = str(ex)
-        print(f"Wikidata test failed {msg}")
-        # only raise exception for real problems
-        if "HTTP Error 500" in msg:
-            print("test can not work if server has problems")
-            return
-        raise ex
-    
-   
-
     
 
     def test_getLocationByID(self):

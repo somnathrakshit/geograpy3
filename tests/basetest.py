@@ -33,6 +33,20 @@ class Geograpy3Test(TestCase):
         publicCI = getpass.getuser() in ["travis", "runner"] 
         jenkins = "JENKINS_HOME" in os.environ;
         return publicCI or jenkins
+    
+    def handleWikidataException(self, ex):
+        '''
+        handle a Wikidata exception
+        Args:
+            ex(Exception): the exception to handle - e.g. timeout
+        '''
+        msg = str(ex)
+        print(f"Wikidata test failed {msg}")
+        # only raise exception for real problems
+        if "HTTP Error 500" in msg:
+            print("test can not work if server has problems")
+            return
+        raise ex
   
 class Profiler:
     '''

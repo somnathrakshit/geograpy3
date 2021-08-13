@@ -931,9 +931,18 @@ class LocationContext(object):
             region = self._regionLookup.get(getattr(city, 'region_wikidataid'))
             if region is not None and isinstance(region, Region):
                 city.region = region
+                
+    def load(self,forceUpdate:bool=False,warnOnDuplicates:bool=False):
+        '''
+        load my data
+        '''
+        for manager in self.countryManager,self.regionManager,self.cityManager:
+            manager.fromCache(force=forceUpdate, getListOfDicts=manager.getLocationLodFromJsonBackup)
+        self.interlinkLocations(warnOnDuplicates=warnOnDuplicates)
+    
 
     @classmethod
-    def fromCache(cls, config:StorageConfig=None, forceUpdate:bool=False):
+    def fromCache(cls, config:StorageConfig=None):
         '''
         Inits a LocationContext form Cache if existent otherwise init cache
         '''
@@ -942,8 +951,6 @@ class LocationContext(object):
         cityManager = CityManager("cities", config=config)
         regionManager = RegionManager("regions", config=config)
         countryManager = CountryManager("countries", config=config)
-        for manager in countryManager,regionManager,cityManager:
-            manager.fromCache(force=forceUpdate, getListOfDicts=manager.getLocationLodFromJsonBackup)
         locationContext = LocationContext(countryManager, regionManager, cityManager)
         return locationContext
 
