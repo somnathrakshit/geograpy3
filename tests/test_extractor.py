@@ -1,19 +1,13 @@
 from geograpy.extraction import Extractor
 import geograpy
 import unittest
+from tests.basetest import Geograpy3Test
 
-class TestExtractor(unittest.TestCase):
+class TestExtractor(Geograpy3Test):
     '''
     test Extractor
     '''
-
-    def setUp(self):
-        self.debug=True
-        pass
-
-
-    def tearDown(self):
-        pass
+    
     
     def check(self,places,expectedList):
         '''
@@ -159,7 +153,8 @@ class TestExtractor(unittest.TestCase):
         examples={2: 'Socialist Republic of Alachua', 3: 'Hérault, France', 4: 'Gwalior, India', 5: 'Zaragoza,España', 6:'Zaragoza, Spain', 7: 'amsterdam ', 8: 'Evesham', 9: 'Rochdale'}  
         for index,text in examples.items():
             places=geograpy.get_geoPlace_context(text=text)
-            print("example %d: %s" % (index,places.countries))
+            if self.debug:
+                print("example %d: %s" % (index,places.countries))
         
     def testStackoverflow43322567(self):
         '''
@@ -169,7 +164,8 @@ class TestExtractor(unittest.TestCase):
         e=Extractor(url=url)
         places=e.find_geoEntities()
         self.check(places,['Alabama','Virginia','New York'])
-        print(places)
+        if self.debug:
+            print(places)
         
     def testStackoverflow54712198(self):
         '''
@@ -200,7 +196,8 @@ class TestExtractor(unittest.TestCase):
         text='I live in Kadawatha a suburb of Colombo  Sri Lanka'
         e=Extractor(text=text)
         e.find_entities()
-        print(e.places)
+        if self.debug:
+            print(e.places)
         
     def testStackoverflow55548116(self):
         '''

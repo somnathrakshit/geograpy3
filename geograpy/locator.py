@@ -51,7 +51,6 @@ from argparse import RawDescriptionHelpFormatter
 from lodstorage.jsonable import JSONAble
 from math import radians, cos, sin, asin, sqrt
 
-
 class LocationManager(EntityManager):
     '''
     a list of locations
@@ -177,7 +176,10 @@ class LocationManager(EntityManager):
         
         listName(str): the listName used in the json file
         '''
-        fileName=f"{listName}_geograpy3.json",
+        fileName=f"{listName}_geograpy3.json"
+        # Date is downloaded from the github wiki - to modify the data clone the wiki
+        # as documented in https://github.com/somnathrakshit/geograpy3/wiki
+        # git clone https://github.com/somnathrakshit/geograpy3.wiki.git
         url = f"https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/{fileName}.gz"
         backupFile = LocationManager.downloadBackupFile(url, fileName)
         jsonStr = LocationManager.getFileContent(backupFile)
@@ -218,6 +220,7 @@ class CountryManager(LocationManager):
                             entityPluralName="countries",
                             clazz=Country,
                             primaryKey="wikidataid",
+                            tableName="countries_wikidata",
                             config=config,
                             debug=debug
                             )
@@ -279,7 +282,7 @@ class CountryManager(LocationManager):
         return countryManager
 
     @classmethod
-    def fromJSONBackup(cls, config:StorageConfig=None):
+    def fromJSONBackup(cls, config:StorageConfig=None,forceUpdate:bool=False):
         '''
         get country list from json backup (json backup is based on wikidata query results)
 
@@ -287,7 +290,7 @@ class CountryManager(LocationManager):
             CountryList based on the json backup
         '''
         countryManager = CountryManager(name="countries_json", config=config)
-        countryManager.fromCache(force=True, getListOfDicts=cls.getLocationLodFromJsonBackup)
+        countryManager.fromCache(force=forceUpdate, getListOfDicts=cls.getLocationLodFromJsonBackup)
         return countryManager
 
     @classmethod
@@ -306,6 +309,7 @@ class RegionManager(LocationManager):
                             entityPluralName="regions",
                             clazz=Region,
                             primaryKey="wikidataid",
+                            tableName="regions_wikidata",
                             config=config,
                             debug=debug
                         )
@@ -365,7 +369,7 @@ class RegionManager(LocationManager):
         return regionManager
 
     @classmethod
-    def fromJSONBackup(cls, config:StorageConfig=None):
+    def fromJSONBackup(cls, config:StorageConfig=None,forceUpdate:bool=False):
         '''
         get region list from json backup (json backup is based on wikidata query results)
 
@@ -373,7 +377,7 @@ class RegionManager(LocationManager):
             RegionList based on the json backup
         '''
         regionManager = RegionManager(name="regions_json", config=config)
-        regionManager.fromCache(force=True, getListOfDicts=cls.getLocationLodFromJsonBackup)
+        regionManager.fromCache(force=forceUpdate, getListOfDicts=cls.getLocationLodFromJsonBackup)
         return regionManager
 
     @classmethod
@@ -393,6 +397,7 @@ class CityManager(LocationManager):
                             entityPluralName="cities",
                             clazz=City,
                             primaryKey="wikidataid",
+                            tableName="cities_wikidata",
                             config=config,
                             debug=debug
                         )
@@ -481,7 +486,7 @@ class CityManager(LocationManager):
             self.getList().append(city)
 
     @classmethod
-    def fromJSONBackup(cls, config:StorageConfig=None):
+    def fromJSONBackup(cls, config:StorageConfig=None,forceUpdate=False):
         '''
         get city list from json backup (json backup is based on wikidata query results)
 
@@ -492,7 +497,7 @@ class CityManager(LocationManager):
             CityList based on the json backup
         '''
         cityManager = CityManager(name="cities_json", config=config)
-        cityManager.fromCache(force=True, getListOfDicts=cls.getLocationLodFromJsonBackup)
+        cityManager.fromCache(force=forceUpdate, getListOfDicts=cls.getLocationLodFromJsonBackup)
         return cityManager
 
     @classmethod
@@ -870,15 +875,25 @@ class LocationContext(object):
         self.countryManager = countryManager
         self.regionManager = regionManager
         self.cityManager = cityManager
-        self._countryLookup, _dup = countryManager.getLookup("wikidataid")
-        self._regionLookup, _dup = regionManager.getLookup("wikidataid")
-        self._cityLookup, _dup = cityManager.getLookup("wikidataid")
-        self.interlinkLocations()
 
-    def interlinkLocations(self):
+    def interlinkLocations(self,warnOnDuplicates:bool=True):
         '''
         Interlinks locations by adding the hierarchy references to the locations
+        
+        Args:
+            warnOnDuplicates(bool): if there are duplicates warn 
         '''
+        duplicates=[]
+        self._countryLookup, _dup = self.countryManager.getLookup("wikidataid")
+        duplicates.extend(_dup)
+        self._regionLookup, _dup = self.regionManager.getLookup("wikidataid")
+        duplicates.extend(_dup)
+        self._cityLookup, _dup = self.cityManager.getLookup("wikidataid")
+        duplicates.extend(_dup)
+        if len(duplicates)>0 and warnOnDuplicates:
+            print(f"There are {len(duplicates)} duplicate wikidataids in the country,region and city managers used")
+            if self.debug:
+                print(duplicates)
         # interlink region with country
         for region in self.regions:
             country = self._countryLookup.get(getattr(region, 'country_wikidataid'))
@@ -904,7 +919,7 @@ class LocationContext(object):
         cityManager = CityManager("cities", config=config)
         regionManager = RegionManager("regions", config=config)
         countryManager = CountryManager("countries", config=config)
-        for manager in cityManager, regionManager, countryManager:
+        for manager in countryManager,regionManager,cityManager:
             manager.fromCache(force=forceUpdate, getListOfDicts=manager.getLocationLodFromJsonBackup)
         locationContext = LocationContext(countryManager, regionManager, cityManager)
         return locationContext
@@ -916,14 +931,17 @@ class LocationContext(object):
         
         Args:
             config(StorageConfig): the storage Configuration to use
+            withStore(bool): if True store the managers
         '''
         if config is None:
             config = cls.getDefaultConfig()
         countryList = CountryManager.fromJSONBackup(config=config)
         regionList = RegionManager.fromJSONBackup(config=config)
         cityList = CityManager.fromJSONBackup(config=config)
-        for manager in countryList, regionList, cityList:
-            manager.store()
+        # TODO awkward restoring - superfluous?
+        if withStore:
+            for manager in countryList, regionList, cityList:
+                manager.store()
         locationContext = LocationContext(countryList, regionList, cityList)
         return locationContext
 
@@ -1276,10 +1294,17 @@ class Locator(object):
         cities = self.readCSV("GeoLite2-City-Locations-en.csv")
         return cities
     
-    def readCSV(self, fileName):
+    def readCSV(self, fileName:str):
+        '''
+        read the given CSV file
+        
+        Args:
+            fileName(str): the filename to read
+        
+        '''
         records = []
         cur_dir = os.path.dirname(os.path.realpath(__file__))
-        csvfile = "%s/data/%s" % (cur_dir, fileName)
+        csvfile = f"{cur_dir}/data/{fileName}" 
         with open(csvfile) as info:
             reader = csv.DictReader(info)
             for row in reader:
@@ -1318,7 +1343,7 @@ class Locator(object):
                 with open(self.db_file, 'wb') as unzipped:
                     shutil.copyfileobj(gzipped, unzipped)
         if not os.path.isfile(self.db_file):
-            raise("could not create lookup database %s" % self.db_file)
+            raise(f"could not create lookup database {self.db_file}")
             
     def populate_Version(self, sqlDB):
         '''

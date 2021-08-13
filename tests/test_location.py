@@ -9,36 +9,23 @@ from geograpy.locator import Locator, LocationManager, CityManager, CountryManag
 from sklearn.neighbors import BallTree
 
 from math import radians
-import getpass
-import os
+from tests.basetest import Geograpy3Test
 
-
-class TestLocationHierarchy(unittest.TestCase):
+class TestLocationHierarchy(Geograpy3Test):
     '''
     tests for the location hierarchy
     '''
 
-    @staticmethod
-    def inCI():
-        '''
-        are we running in a Continuous Integration Environment?
-        '''
-        publicCI = getpass.getuser() in ["travis", "runner"] 
-        jenkins = "JENKINS_HOME" in os.environ;
-        return publicCI or jenkins
-
     def setUp(self):
-        self.debug = False
+        super().setUp()
         self.testWikidata = False
         self.locationContext = None
         pass
 
-    def tearDown(self):
-        pass
 
     def getLocationContext(self):
         if self.locationContext is None:
-            self.locationContext = LocationContext.fromJSONBackup()
+            self.locationContext = LocationContext.fromCache()
         return self.locationContext
             
     def testDistance(self):
@@ -194,115 +181,9 @@ class TestLocationHierarchy(unittest.TestCase):
             return
         raise ex
     
-    def checkNoDuplicateWikidataIds(self, locationManager:LocationManager):
-        '''
-        check that there are no duplicate Wikidata Q identifiers in the given
-        
-        '''
-        locationsByWikiDataId, duplicates = locationManager.getLookup("wikidataid")
-        if len(duplicates) > 0:
-            for i, duplicate in enumerate(duplicates):
-                    print(f"{i}:{duplicate}")
-        self.assertEqual(len(duplicates), 0)
-        return locationsByWikiDataId
-        
-    def testCountryManagerFromWikidata(self):
-        '''
-        tests if the CountryManager id correctly loaded from Wikidata query result
-        '''
-        # wikidata query results are unreliable
-        if TestLocationHierarchy.inCI() or self.testWikidata:
-            try:
-                countryManager = CountryManager.fromWikidata()
-                self.assertTrue(len(countryManager.countries) >= 190)
-                countriesByWikiDataId = self.checkNoDuplicateWikidataIds(countryManager)
-                self.assertTrue("Q40" in countriesByWikiDataId)
-                
-            except Exception as ex:
-                self.handleWikidataException(ex)
-                
-    def test_RegionManagerFromWikidata(self):
-        '''
-        tests the loading of the RegionManager from wikidata query results
-        '''
-        # wikidata query results are unreliable
-        if TestLocationHierarchy.inCI() or self.testWikidata:
-            try:
-                regionManager = RegionManager.fromWikidata()
-                # check amount of regions
-                self.assertTrue(len(regionManager.regions) > 3500)
-                regionsByWikiDataId = self.checkNoDuplicateWikidataIds(regionManager)
-                # check if california is present
-                self.assertTrue("Q99" in regionsByWikiDataId)
-                ca = regionManager.getLocationByID("Q99")
-                self.assertIsNotNone(ca)
-                self.assertEqual(ca.name, "California")
-            except Exception as ex:
-                self.handleWikidataException(ex)
+   
 
-    def test_CityManagerFromWikidata(self):
-        '''
-        tests the loading of the RegionManager from wikidata query results
-        '''
-        # wikidata query results are unreliable
-        self.testWikidata = True
-        if TestLocationHierarchy.inCI() or self.testWikidata:
-            try:
-                regions = ["Q1198"]
-                cityManager = CityManager.fromWikidata(regionIDs=regions, fromBackup=False)
-                # check amount of regions
-                self.assertTrue(len(cityManager.cities) > 1300)
-                citiesByWikiDataId = self.checkNoDuplicateWikidataIds(cityManager)
-                self.assertTrue("Q1017" in citiesByWikiDataId)
-                # check if NRW is present (region of Germany)
-                aachen = cityManager.getLocationByID("Q1017")
-                self.assertIsNotNone(aachen)
-                self.assertEqual(aachen.name, "Aachen")
-            except Exception as ex:
-                self.handleWikidataException(ex)
-
-    def testCityManagerFromJSONBackup(self):
-        '''
-        tests the loading and parsing of the cityList form the json backup file
-        '''
-        cityManager = CityManager().fromJSONBackup()
-        self.assertTrue(hasattr(cityManager, 'cities'))
-        self.assertTrue(len(cityManager.cities) >= 400000)
-        # check if Los Angeles is in the list (popular city should always be in the list)
-        citiesByWikiDataId = self.checkNoDuplicateWikidataIds(cityManager)
-        self.assertTrue("Q65" in citiesByWikiDataId)
-
-    def testRegionManagerFromJSONBackup(self):
-        '''
-        tests the loading and parsing of the RegionManager form the json backup file
-        '''
-        regionList = RegionManager.fromJSONBackup()
-        self.assertTrue('regions' in regionList.__dict__)
-        self.assertTrue(len(regionList.regions) >= 1000)
-        # check if California is in the list
-        ca_present = False
-        for region in regionList.regions:
-            if 'wikidataid' in region.__dict__:
-                if region.wikidataid == "Q99":
-                    ca_present = True
-                    break
-        self.assertTrue(ca_present)
-
-    def testCountryManagerFromJSONBackup(self):
-        '''
-        tests the loading and parsing of the RegionManager form the json backup file
-        '''
-        countryList = CountryManager.fromJSONBackup()
-        self.assertTrue('countries' in countryList.__dict__)
-        self.assertTrue(len(countryList.countries) >= 180)
-        # check if California is in the list
-        us_present = False
-        for country in countryList.countries:
-            if 'wikidataid' in country.__dict__:
-                if country.wikidataid == "Q30":
-                    us_present = True
-                    break
-        self.assertTrue(us_present)
+    
 
     def test_getLocationByID(self):
         '''
