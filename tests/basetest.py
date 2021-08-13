@@ -19,6 +19,8 @@ class Geograpy3Test(TestCase):
         '''
         TestCase.setUp(self)
         self.debug=False
+        # actively test Wikidata tests?
+        self.testWikidata = False
         msg=f"test {self._testMethodName}, debug={self.debug}"
         self.profile=Profiler(msg)
         

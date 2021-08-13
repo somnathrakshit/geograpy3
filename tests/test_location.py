@@ -18,7 +18,6 @@ class TestLocationHierarchy(Geograpy3Test):
 
     def setUp(self):
         super().setUp()
-        self.testWikidata = False
         self.locationContext = None
         pass
 
