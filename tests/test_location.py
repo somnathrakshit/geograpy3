@@ -336,15 +336,15 @@ class TestLocationHierarchy(unittest.TestCase):
         '''
         locationContext=self.getLocationContext()
         printPretty=lambda records:print([str(record) for record in records])
-        pl1=self.locationContext.locateLocation("Berlin", "USA")
+        pl1=locationContext.locateLocation("Berlin", "USA")
         self.assertEqual("Germany", pl1[0].country.name)
         if self.debug:
             printPretty(pl1)
-        pl2=self.locationContext.locateLocation("Los Angeles, CA")
+        pl2=locationContext.locateLocation("Los Angeles, CA")
         if self.debug:
             printPretty(pl2)
         self.assertEqual("California", pl2[0].region.name)
-        pl3 = self.locationContext.locateLocation("Germany, Aachen")
+        pl3 = locationContext.locateLocation("Germany, Aachen")
         if self.debug:
             printPretty(pl3)
         self.assertEqual("Aachen", pl3[0].name)
