@@ -157,7 +157,13 @@ class LocationManager(EntityManager):
         backupDirectory = LocationManager.getBackupDirectory()
         extractTo = f"{backupDirectory}/{fileName}"
         # we might want to check whether a new version is available
-        if not os.path.isfile(extractTo) or force:
+        if not os.path.isfile(extractTo):
+            needDownload=True
+        else:
+            stats=os.stat(extractTo)
+            size=stats.st_size
+            needDownload=force or size==0
+        if needDownload:
             if not os.path.isdir(backupDirectory):
                 os.makedirs(backupDirectory)
             zipped = f"{extractTo}.gz"
@@ -172,6 +178,24 @@ class LocationManager(EntityManager):
         return extractTo
     
     @classmethod
+    def downloadBackupFileFromGitHub(cls,fileName:str):
+        '''
+        download the given fileName from the github data directory
+        
+        Args:
+            fileName(str): the filename to download
+        
+        Return:
+            str: the local file
+        '''
+        # Data is downloaded from the github wiki - to modify the data clone the wiki
+        # as documented in https://github.com/somnathrakshit/geograpy3/wiki
+        # git clone https://github.com/somnathrakshit/geograpy3.wiki.git
+        url = f"https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/{fileName}.gz"
+        backupFile = LocationManager.downloadBackupFile(url, fileName) 
+        return backupFile
+    
+    @classmethod
     def getMyLocationLodFromJsonBackup(cls,listName:str):
         '''
         get my List of Dicts from a Json Backup 
@@ -179,11 +203,7 @@ class LocationManager(EntityManager):
         listName(str): the listName used in the json file
         '''
         fileName=f"{listName}_geograpy3.json"
-        # Date is downloaded from the github wiki - to modify the data clone the wiki
-        # as documented in https://github.com/somnathrakshit/geograpy3/wiki
-        # git clone https://github.com/somnathrakshit/geograpy3.wiki.git
-        url = f"https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/{fileName}.gz"
-        backupFile = LocationManager.downloadBackupFile(url, fileName)
+        backupFile=cls.downloadBackupFileFromGitHub(fileName)
         jsonStr = LocationManager.getFileContent(backupFile)
         lod = json.loads(jsonStr)[listName]
         return lod
@@ -864,6 +884,7 @@ class LocationContext(object):
     '''
     Holds LocationManagers of all hierarchy levels and provides methods to traverse through the levels
     '''
+    db_filename="locations.db"
 
     def __init__(self, countryManager:CountryManager, regionManager:RegionManager, cityManager:CityManager):
         '''
@@ -954,7 +975,7 @@ class LocationContext(object):
         '''
         config = StorageConfig(cacheDirName="geograpy3")
         cachedir = config.getCachePath()
-        config.cacheFile = f"{cachedir}/locations.db"
+        config.cacheFile = f"{cachedir}/{LocationContext.db_filename}"
         return config
 
     @property
@@ -1063,7 +1084,7 @@ class Locator(object):
         self.view = "GeoLite2CityLookup"
         self.sqlDB = SQLDB(self.db_file, errorDebug=True)
         self.getAliases()
-        self.dbVersion = "2020-09-27 16:48:09"
+        self.dbVersion = "2021-08-13 14:49:00"
         
     @staticmethod
     def resetInstance():
@@ -1337,14 +1358,7 @@ class Locator(object):
             self.populate_Version(self.sqlDB)
     
         elif not hasData:
-            url = "https://github.com/somnathrakshit/geograpy3/releases/download/0.1.27/locs.db.gz"
-            zipped = self.db_file + ".gz"
-            print("Downloading %s from %s ... this might take a few seconds" % (zipped, url))
-            urllib.request.urlretrieve(url, zipped)
-            print("unzipping %s from %s" % (self.db_file, zipped))
-            with gzip.open(zipped, 'rb') as gzipped:
-                with open(self.db_file, 'wb') as unzipped:
-                    shutil.copyfileobj(gzipped, unzipped)
+            LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename)
         if not os.path.isfile(self.db_file):
             raise(f"could not create lookup database {self.db_file}")
             
@@ -1576,9 +1590,9 @@ FROM citiesWithPopulation
             boolean: True if the cities table exists and has more than one record
         '''
         tableList = self.sqlDB.getTableList()
-        hasCities = self.db_recordCount(tableList, "citiesWithPopulation") > 10000
-        hasCountries = self.db_recordCount(tableList, "countries") > 100
-        hasRegions = self.db_recordCount(tableList, "regions") > 1000
+        hasCities = (self.db_recordCount(tableList, "citiesWithPopulation") > 10000) and self.db_recordCount(tableList,"cities_wikidata")>400000
+        hasCountries = (self.db_recordCount(tableList, "countries") > 100) and (self.db_recordCount(tableList,"countries_wikidata") > 190)
+        hasRegions = (self.db_recordCount(tableList, "regions") > 1000) and (self.db_recordCount(tableList,"regions_wikidata") > 3000)
         hasVersion = self.db_recordCount(tableList, "Version") == 1
         versionOk = False
         if hasVersion:

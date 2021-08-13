@@ -32,6 +32,7 @@ class TestLocator(Geograpy3Test):
         '''
         check has data and populate functionality
         '''
+        # TODO test this in a different backup directory
         loc=Locator()
         if os.path.isfile(loc.db_file):
             os.remove(loc.db_file)

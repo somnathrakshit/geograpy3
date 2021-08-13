@@ -4,13 +4,21 @@ Created on 2021-08-13
 @author: wf
 '''
 import unittest
+
 from tests.basetest import Geograpy3Test
-from geograpy.locator import LocationManager,CityManager,RegionManager,CountryManager
+from lodstorage.storageconfig import StorageConfig
+from geograpy.locator import LocationContext,LocationManager,CityManager,RegionManager,CountryManager
 
 class TestLocationContext(Geograpy3Test):
     '''
     test the location Context - these are potentially long running tests
     '''
+    
+    def getStorageConfig(self):
+        
+        config=StorageConfig.getDefault()
+        #config=LocationContext.getDefaultConfig()
+        return config
     
     def checkNoDuplicateWikidataIds(self, locationManager:LocationManager):
         '''
@@ -28,7 +36,7 @@ class TestLocationContext(Geograpy3Test):
         '''
         tests the loading and parsing of the cityList form the json backup file
         '''
-        cityManager = CityManager().fromJSONBackup()
+        cityManager = CityManager.fromJSONBackup(config=self.getStorageConfig())
         self.assertTrue(hasattr(cityManager, 'cities'))
         self.assertTrue(len(cityManager.cities) >= 400000)
         # check if Los Angeles is in the list (popular city should always be in the list)
@@ -39,7 +47,7 @@ class TestLocationContext(Geograpy3Test):
         '''
         tests the loading and parsing of the RegionManager form the json backup file
         '''
-        regionManager = RegionManager.fromJSONBackup()
+        regionManager = RegionManager.fromJSONBackup(config=self.getStorageConfig())
         self.assertTrue(hasattr(regionManager,'regions'))
         self.assertTrue(len(regionManager.regions) >= 1000)
         regionsByWikidataId = self.checkNoDuplicateWikidataIds(regionManager)
@@ -49,7 +57,7 @@ class TestLocationContext(Geograpy3Test):
         '''
         tests the loading and parsing of the RegionManager form the json backup file
         '''
-        countryManager = CountryManager.fromJSONBackup()
+        countryManager = CountryManager.fromJSONBackup(config=self.getStorageConfig())
         self.assertTrue(hasattr(countryManager,'countries'))
         self.assertTrue(len(countryManager.countries) >= 190)
         # check if California is in the list
