@@ -169,6 +169,20 @@ class LocationManager(EntityManager):
             if not os.path.isfile(extractTo):
                 raise (f"could not extract {fileName} from {zipped}")
         return extractTo
+    
+    @classmethod
+    def getMyLocationLodFromJsonBackup(cls,listName:str):
+        '''
+        get my List of Dicts from a Json Backup 
+        
+        listName(str): the listName used in the json file
+        '''
+        fileName=f"{listName}_geograpy3.json",
+        url = f"https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/{fileName}.gz"
+        backupFile = LocationManager.downloadBackupFile(url, fileName)
+        jsonStr = LocationManager.getFileContent(backupFile)
+        lod = json.loads(jsonStr)[listName]
+        return lod
 
     def getByName(self, name:str):
         '''
@@ -179,20 +193,19 @@ class LocationManager(EntityManager):
         Returns:
             Returns locations that match the given name
         '''
+        res = []
         if self.config.mode is StoreMode.SQL:
             sqlDB = self.getSQLDB(self.config.cacheFile)
             queryResult = sqlDB.query(f"SELECT wikidataid "
                                     f"FROM {self.tableName} "
                                     f"WHERE name LIKE '{name}' ")
-            res = []
             for record in queryResult:
                 if 'wikidataid' in record:
                     location = [location for location in self.getList() if location.wikidataid == record['wikidataid']]
-                    res.extend(location)
-            return res
+                    res.extend(location)    
         else:
-            return [city for city in self.getList() if city.name == name]
-
+            res=[city for city in self.getList() if city.name == name]
+        return res
 
 class CountryManager(LocationManager):
     '''
@@ -279,13 +292,8 @@ class CountryManager(LocationManager):
 
     @classmethod
     def getLocationLodFromJsonBackup(cls):
-        fileName = "countries_geograpy3.json"
-        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/countries_geograpy3.json.gz"
-        backupFile = LocationManager.downloadBackupFile(url, fileName)
-        jsonStr = LocationManager.getFileContent(backupFile)
-        lod = json.loads(jsonStr)['countries']
+        lod=LocationManager.getMyLocationLodFromJsonBackup(listName="countries")
         return lod
-
 
 class RegionManager(LocationManager):
     '''
@@ -370,11 +378,7 @@ class RegionManager(LocationManager):
 
     @classmethod
     def getLocationLodFromJsonBackup(cls):
-        fileName = "regions_geograpy3.json"
-        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/regions_geograpy3.json.gz"
-        backupFile = LocationManager.downloadBackupFile(url, fileName)
-        jsonStr = LocationManager.getFileContent(backupFile)
-        lod = json.loads(jsonStr)['regions']
+        lod=LocationManager.getMyLocationLodFromJsonBackup(listName="regions")
         return lod
 
 
@@ -493,18 +497,12 @@ class CityManager(LocationManager):
 
     @classmethod
     def getLocationLodFromJsonBackup(cls):
-        fileName = "cities_geograpy3.json"
-        url = "https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/cities_geograpy3.json.gz"
-        backupFile = LocationManager.downloadBackupFile(url, fileName)
-        jsonStr = LocationManager.getFileContent(backupFile)
-        lod = json.loads(jsonStr)['cities']
+        lod=LocationManager.getMyLocationLodFromJsonBackup(listName="cities")
         # FILTER duplicates
         seen = set()
         seen_add = seen.add
         uniqueLod=[city for city in lod if not (city['wikidataid'] in seen or seen_add(city['wikidataid']))]
         return uniqueLod
-        
-
     
 class Earth:
     radius = 6371.000  # radius of earth in km
@@ -912,9 +910,12 @@ class LocationContext(object):
         return locationContext
 
     @classmethod
-    def fromJSONBackup(cls, config:StorageConfig=None):
+    def fromJSONBackup(cls, config:StorageConfig=None,withStore:bool=False):
         '''
         Inits a LocationContext form the JSON backup
+        
+        Args:
+            config(StorageConfig): the storage Configuration to use
         '''
         if config is None:
             config = cls.getDefaultConfig()
