@@ -12,6 +12,7 @@ from lodstorage.uml import UML
 import os
 import re
 from tests.basetest import Geograpy3Test
+
 class TestLocator(Geograpy3Test):
     '''
     test the Locator class from the location module
@@ -32,15 +33,17 @@ class TestLocator(Geograpy3Test):
         '''
         check has data and populate functionality
         '''
-        # TODO test this in a different backup directory
-        loc=Locator()
-        if os.path.isfile(loc.db_file):
-            os.remove(loc.db_file)
-        # reinit sqlDB
-        loc=Locator()
-        self.assertFalse(loc.db_has_data())
-        loc.populate_db()
-        self.assertTrue(loc.db_has_data())
+        testDownload=False
+        # TODO test this in a different backup directory 
+        if self.inCI() or testDownload:
+            loc=Locator()
+            if os.path.isfile(loc.db_file):
+                os.remove(loc.db_file)
+            # reinit sqlDB
+            loc=Locator()
+            self.assertFalse(loc.db_has_data())
+            loc.populate_db()
+            self.assertTrue(loc.db_has_data())
         
     def testIsoRegexp(self):
         '''
@@ -112,11 +115,11 @@ select distinct regionIsoCode as isocode from regions
         tableList=loc.sqlDB.getTableList()
         uml=UML()
         title="""geograpy Tables
-2020-09-26
+2021-08-13
 [[https://github.com/somnathrakshit/geograpy3 © 2020-2021 geograpy3 project]]"""
         plantUml=uml.tableListToPlantUml(tableList,title=title, packageName="geograpy3")
-        showUml=True
-        if showUml:
+        showUml=False
+        if showUml or self.debug:
             print (plantUml)
             
     def checkExamples(self,examples,countries,debug=False,check=True):
@@ -177,7 +180,8 @@ select distinct regionIsoCode as isocode from regions
                   'Newark','Rome']
         for example in examples:
             city=geograpy.locateCity(example,debug=False)
-            print(city)
+            if self.debug:
+                print(city)
             
     def testStackOverflow64418919(self):
         '''
@@ -221,7 +225,8 @@ February 3-5, 2020''']
             loc.sqlDB.execute(ddl)
         query="SELECT name from allNames"
         nameRecords=loc.sqlDB.query(query)
-        print("found %d name records" % len(nameRecords))
+        if self.debug:
+            print("found %d name records" % len(nameRecords))
         ordC=Counter()
         for nameRecord in nameRecords:
             name=nameRecord["name"]
@@ -231,7 +236,8 @@ February 3-5, 2020''']
                     ordC[code]+=1
         for index,countT in enumerate(ordC.most_common(10)):
             code,count=countT
-            print ("%d: %d %s -> %d" % (index,code,chr(code),count))
+            if self.debug:
+                print ("%d: %d %s -> %d" % (index,code,chr(code),count))
     
     
     def testIssue22(self):  
