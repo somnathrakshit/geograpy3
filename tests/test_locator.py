@@ -198,9 +198,11 @@ San Diego, CA, USA,
 February 3-5, 2020''']
         for example in examples:
             places = geograpy.get_place_context(text=example) 
-            print(places)
+            if self.debug:
+                print(places)
             city=geograpy.locateCity(example,debug=False)
-            print(city)
+            if self.debug:
+                print(city)
         
         
     def testDelimiters(self):

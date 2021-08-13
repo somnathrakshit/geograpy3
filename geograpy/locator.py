@@ -1057,8 +1057,9 @@ class Locator(object):
         '''
         self.debug = debug
         self.correctMisspelling = correctMisspelling
-        self.db_path = os.path.dirname(os.path.realpath(__file__)) 
-        self.db_file = db_file or self.db_path + "/locs.db"
+        self.storageConfig=LocationContext.getDefaultConfig()
+        self.db_path = self.storageConfig.getCachePath()
+        self.db_file = self.storageConfig.cacheFile
         self.view = "GeoLite2CityLookup"
         self.sqlDB = SQLDB(self.db_file, errorDebug=True)
         self.getAliases()
