@@ -221,12 +221,13 @@ class LocationManager(EntityManager):
         res = []
         if self.config.mode is StoreMode.SQL:
             sqlDB = self.getSQLDB(self.config.cacheFile)
-            queryResult = sqlDB.query(f"SELECT wikidataid "
-                                    f"FROM {self.tableName} "
-                                    f"WHERE name LIKE '{name}' ")
-            for record in queryResult:
-                if 'wikidataid' in record:
-                    location = [location for location in self.getList() if location.wikidataid == record['wikidataid']]
+            query = f'SELECT wikidataid FROM {self.tableName} WHERE name LIKE (?)'
+            params = (name,)
+            locationRecords = sqlDB.query(query, params)
+            for locationRecord in locationRecords:
+                if 'wikidataid' in locationRecord:
+                    # TODO avoid loop over potentially 400.000 records
+                    location = [location for location in self.getList() if location.wikidataid == locationRecord['wikidataid']]
                     res.extend(location)    
         else:
             res=[city for city in self.getList() if city.name == name]
@@ -1318,7 +1319,7 @@ class Locator(object):
         if not self.db_has_data():
             self.populate_db()
         view = self.getView()
-        query = 'SELECT * FROM %s WHERE %s = (?)' % (view, columnName)
+        query = f'SELECT * FROM {view} WHERE {columnName} = (?)'
         params = (placeName,)
         cities = self.sqlDB.query(query, params)
         return cities
