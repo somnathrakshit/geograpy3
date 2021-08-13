@@ -64,6 +64,19 @@ class TestLocationContext(Geograpy3Test):
         countriesByWikidataId=self.checkNoDuplicateWikidataIds(countryManager)
         self.assertTrue("Q30" in countriesByWikidataId)
         
+    def testLocationContextFromCache(self):
+        '''
+        test loading LocationContext from cache
+        '''
+        testCache=False
+        if self.inCI() or testCache:
+            locationContext = LocationContext.fromCache()
+            locationContext.load()
+            self.assertTrue(len(locationContext.countries) > 180)
+            locationContext = LocationContext.fromCache()
+            locationContext.load(forceUpdate=True)
+            self.assertTrue(len(locationContext.countries) > 180)
+        
     def testCountryManagerFromWikidata(self):
         '''
         tests if the CountryManager id correctly loaded from Wikidata query result

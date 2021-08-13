@@ -50,6 +50,7 @@ from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 from lodstorage.jsonable import JSONAble
 from math import radians, cos, sin, asin, sqrt
+from geograpy.utils import Profiler
 
 class LocationManager(EntityManager):
     '''
@@ -899,13 +900,14 @@ class LocationContext(object):
         self.regionManager = regionManager
         self.cityManager = cityManager
 
-    def interlinkLocations(self,warnOnDuplicates:bool=True):
+    def interlinkLocations(self,warnOnDuplicates:bool=True,profile=True):
         '''
         Interlinks locations by adding the hierarchy references to the locations
         
         Args:
             warnOnDuplicates(bool): if there are duplicates warn 
         '''
+        profile=Profiler("interlinking Locations", profile=profile) 
         duplicates=[]
         self._countryLookup, _dup = self.countryManager.getLookup("wikidataid")
         duplicates.extend(_dup)
@@ -931,6 +933,8 @@ class LocationContext(object):
             region = self._regionLookup.get(getattr(city, 'region_wikidataid'))
             if region is not None and isinstance(region, Region):
                 city.region = region
+        elapsed=profile.time()
+  
                 
     def load(self,forceUpdate:bool=False,warnOnDuplicates:bool=False):
         '''
@@ -1025,6 +1029,7 @@ class LocationContext(object):
         '''
         if locations is None or locations is (None):
             return
+        
         possibleLocations = {
             self.cityManager.name:set(),
             self.regionManager.name: set(),
@@ -1086,8 +1091,11 @@ class Locator(object):
         self.debug = debug
         self.correctMisspelling = correctMisspelling
         self.storageConfig=LocationContext.getDefaultConfig()
-        self.db_path = self.storageConfig.getCachePath()
-        self.db_file = self.storageConfig.cacheFile
+        if db_file is None:
+            self.db_path = self.storageConfig.getCachePath()
+            self.db_file = self.storageConfig.cacheFile
+        else:
+            self.db_file=db_file
         self.view = "GeoLite2CityLookup"
         self.sqlDB = SQLDB(self.db_file, errorDebug=True)
         self.getAliases()
