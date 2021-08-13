@@ -56,7 +56,7 @@ class LocationManager(EntityManager):
     a list of locations
     '''
     
-    def __init__(self, name:str, entityName:str, entityPluralName:str, listName:str=None, clazz=None, primaryKey:str=None, config:StorageConfig=None, handleInvalidListTypes=True, filterInvalidListTypes=False, debug=False):
+    def __init__(self, name:str, entityName:str, entityPluralName:str, listName:str=None, tableName:str=None,clazz=None, primaryKey:str=None, config:StorageConfig=None, handleInvalidListTypes=True, filterInvalidListTypes=False, debug=False):
         '''
         construct me
 
@@ -64,6 +64,8 @@ class LocationManager(EntityManager):
             name(string): name of this LocationManager
             entityName(string): entityType to be managed e.g. Country
             entityPluralName(string): plural of the the entityType e.g. Countries
+            listName(str): the name of the list to hold
+            tableName(str): the name of the table to use
             config(StorageConfig): the configuration to be used if None a default configuration will be used
             handleInvalidListTypes(bool): True if invalidListTypes should be converted or filtered
             filterInvalidListTypes(bool): True if invalidListTypes should be deleted
@@ -74,7 +76,7 @@ class LocationManager(EntityManager):
                           entityPluralName=entityPluralName,
                           listName=listName,
                           clazz=clazz,
-                          tableName=name,
+                          tableName=tableName,
                           primaryKey=primaryKey,
                           config=config,
                           handleInvalidListTypes=handleInvalidListTypes,

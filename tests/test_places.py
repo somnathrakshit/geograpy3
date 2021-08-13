@@ -1,15 +1,16 @@
 from geograpy.places import PlaceContext
 from geograpy.locator import Locator
 import unittest
+from tests.basetest import Geograpy3Test
 
-class TestPlaces(unittest.TestCase):
+class TestPlaces(Geograpy3Test):
     '''
     test Places 
     '''
 
 
     def setUp(self):
-        self.debug=True
+        super().setUp()
         Locator.resetInstance()
         pass
 

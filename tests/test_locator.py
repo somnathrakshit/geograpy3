@@ -11,17 +11,11 @@ from collections import Counter
 from lodstorage.uml import UML
 import os
 import re
-
-class TestLocator(unittest.TestCase):
+from tests.basetest import Geograpy3Test
+class TestLocator(Geograpy3Test):
     '''
     test the Locator class from the location module
-    '''
-    def setUp(self):
-        self.debug=False
-        pass
-
-    def tearDown(self):
-        pass
+    '''   
 
     def testGeolite2Cities(self):
         '''

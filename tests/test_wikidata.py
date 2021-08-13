@@ -10,19 +10,12 @@ import urllib
 
 import getpass
 import time
+from tests.basetest import Geograpy3Test
 
-class TestWikidata(unittest.TestCase):
+class TestWikidata(Geograpy3Test):
     '''
     test the wikidata access for cities
     '''
-
-    def setUp(self):
-        self.debug=True
-        pass
-
-
-    def tearDown(self):
-        pass
 
     def testLocatorWithWikiData(self):
         '''
