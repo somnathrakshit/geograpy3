@@ -239,13 +239,14 @@ class LocationManager(EntityManager):
             Returns True if at least one record is present.
         '''
         sqlDb=self.getSQLDB(self.config.cacheFile)
-        query = f'SELECT COUNT(*) AS count  FROM {self.tableName}'
-        countResult = sqlDb.query(query)
-        count = countResult[0]['count']
-        if count > 0:
-            return True
-        else:
-            return False
+        tableList = sqlDb.getTableList()
+        if self.tableName in tableList:
+            query = f'SELECT COUNT(*) AS count  FROM {self.tableName}'
+            countResult = sqlDb.query(query)
+            count = countResult[0]['count']
+            if count > 0:
+                return True
+        return False
 
     def populateDb(self):
         '''
