@@ -119,7 +119,7 @@ class LocationManager(EntityManager):
             Location object
         '''
         for location in self.getList():
-            if 'wikidataid' in location.__dict__:
+            if hasattr(location,'wikidataid'):
                 if location.wikidataid == wikidataID:
                     return location
         return None
@@ -143,19 +143,23 @@ class LocationManager(EntityManager):
         return path
 
     @staticmethod
-    def downloadBackupFile(url:str, fileName:str, force:bool=False):
+    def downloadBackupFile(url:str, fileName:str, targetDirectory:str=None, force:bool=False):
         '''
         Downloads from the given url the zip-file and extracts the file corresponding to the given fileName.
 
         Args:
             url: url linking to a downloadable gzip file
             fileName: Name of the file that should be extracted from gzip file
+            targetDirectory(str): download the file this directory
             force (bool): True if the download should be forced
 
         Returns:
             Name of the extracted file with path to the backup directory
         '''
-        backupDirectory = LocationManager.getBackupDirectory()
+        if targetDirectory is None:
+            backupDirectory=LocationManager.getBackupDirectory()
+        else:
+            backupDirectory=targetDirectory
         extractTo = f"{backupDirectory}/{fileName}"
         # we might want to check whether a new version is available
         if not os.path.isfile(extractTo):
@@ -179,12 +183,13 @@ class LocationManager(EntityManager):
         return extractTo
     
     @classmethod
-    def downloadBackupFileFromGitHub(cls,fileName:str):
+    def downloadBackupFileFromGitHub(cls,fileName:str, targetDirectory:str=None):
         '''
         download the given fileName from the github data directory
         
         Args:
             fileName(str): the filename to download
+            targetDirectory(str): download the file this directory
         
         Return:
             str: the local file
@@ -193,7 +198,7 @@ class LocationManager(EntityManager):
         # as documented in https://github.com/somnathrakshit/geograpy3/wiki
         # git clone https://github.com/somnathrakshit/geograpy3.wiki.git
         url = f"https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/{fileName}.gz"
-        backupFile = LocationManager.downloadBackupFile(url, fileName) 
+        backupFile = LocationManager.downloadBackupFile(url, fileName, targetDirectory)
         return backupFile
     
     @classmethod
@@ -218,20 +223,85 @@ class LocationManager(EntityManager):
         Returns:
             Returns locations that match the given name
         '''
-        res = []
-        if self.config.mode is StoreMode.SQL:
-            sqlDB = self.getSQLDB(self.config.cacheFile)
-            query = f'SELECT wikidataid FROM {self.tableName} WHERE name LIKE (?)'
-            params = (name,)
-            locationRecords = sqlDB.query(query, params)
-            for locationRecord in locationRecords:
-                if 'wikidataid' in locationRecord:
-                    # TODO avoid loop over potentially 400.000 records
-                    location = [location for location in self.getList() if location.wikidataid == locationRecord['wikidataid']]
-                    res.extend(location)    
+        if not self.dbHasData():
+            self.populateDb()
+        sqlDB = self.getSQLDB(self.config.cacheFile)
+        query = f'SELECT wikidataid FROM {self.tableName} WHERE name LIKE (?)'
+        params = (name,)
+        locationRecords = sqlDB.query(query, params)
+        wikidataIds=[record['wikidataid'] for record in locationRecords if 'wikidataid' in record]
+        return wikidataIds
+
+    def dbHasData(self):
+        '''
+        Checks whether the db has records for this EntityManager
+        Returns:
+            Returns True if at least one record is present.
+        '''
+        sqlDb=self.getSQLDB(self.config.cacheFile)
+        query = f'SELECT COUNT(*) AS count  FROM {self.tableName}'
+        countResult = sqlDb.query(query)
+        count = countResult[0]['count']
+        if count > 0:
+            return True
         else:
-            res=[city for city in self.getList() if city.name == name]
-        return res
+            return False
+
+    def populateDb(self):
+        '''
+        populate locations db which contains records of this EntityManager
+        '''
+        LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename, self.config.getCachePath())
+
+    def getLocationByWikidataId(self, wikidataId:str):
+        '''
+
+        Args:
+            wikidataId: wikidataId of the location that should be returned
+
+        Returns:
+            Location object identified by the given wikidataId
+        '''
+        if wikidataId is None:
+            return None
+        if not self.dbHasData():
+            self.populateDb()
+        sqlDB = self.getSQLDB(self.config.cacheFile)
+        query = f'SELECT * FROM {self.tableName} WHERE wikidataid LIKE (?)'
+        params = (wikidataId,)
+        records = sqlDB.query(query, params)
+        if records:
+            location=self.clazz()
+            location.fromDict(records[0])
+            return location
+        return None
+
+    def getLocationByIsoCode(self, isoCode:str):
+        '''
+        Get possible locations matching the given isoCode
+        Args:
+            isoCode: isoCode of possible Locations
+
+        Returns:
+            List of wikidata ids of locations matching the given isoCode
+        '''
+        if isinstance(self, RegionManager) or isinstance(self, CountryManager):
+            if not self.dbHasData():
+                self.populateDb()
+            sqlDb = self.getSQLDB(self.config.cacheFile)
+            if isinstance(self, RegionManager):
+                query = f"SELECT wikidataid FROM {self.tableName} WHERE iso LIKE (?) OR iso LIKE (?)"
+                params = (f"%-{isoCode}", isoCode,)
+            else:
+                query = f"SELECT wikidataid FROM {self.tableName} WHERE iso LIKE (?)"
+                params = (isoCode,)
+            qres = sqlDb.query(query, params)
+            locationIds = [record['wikidataid'] for record in qres if 'wikidataid' in record]
+            return locationIds
+        else:
+            return []
+
+
 
 class CountryManager(LocationManager):
     '''
@@ -292,7 +362,7 @@ class CountryManager(LocationManager):
         wikidata = Wikidata()
 
         wikidata.getCountries()
-        if 'countryList' in wikidata.__dict__:
+        if hasattr(wikidata, 'countryList'):
             for countryRecord in wikidata.countryList:
                 country = Country()
                 country.wikidataid = Wikidata.getWikidataId(countryRecord['country'])
@@ -467,7 +537,7 @@ class CityManager(LocationManager):
             # city already in the cityList -> merge
             # current assumption is that only population and label are duplicates
             if 'labels' in cityRecord:
-                if 'labels' in city.__dict__:
+                if hasattr(city, 'labels'):
                     if isinstance(city.labels, list):
                         if cityRecord['labels'] in city.labels:
                             city.labels.append(cityRecord['labels'])
@@ -477,10 +547,10 @@ class CityManager(LocationManager):
                         labels.append(cityRecord['labels'])
                         city.labels = labels
                 else:
-                    city.__dict__['labels'] = [cityRecord['labels']]
+                    setattr(city, 'labels', [cityRecord['labels']])
             if 'cityPop' in cityRecord:
                 population = None
-                if 'population' in city.__dict__ and city.population is not None:
+                if hasattr(city, 'population' ) and city.population is not None:
                     if cityRecord['cityPop'] is None:
                         population = city.population
                     else:
@@ -543,7 +613,8 @@ class Location(JSONAble):
     '''
 
     def __init__(self, **kwargs):
-        self.__dict__ = kwargs
+        for key in kwargs.keys():
+            setattr(self, key, kwargs[key])
         
     @classmethod
     def getSamples(cls):
@@ -660,10 +731,10 @@ class Location(JSONAble):
             True if the given name is either the name of the location or present in the labels of the location
         '''
         isKnown = False
-        if 'labels' in self.__dict__:
+        if hasattr(self, 'labels'):
             if name in self.labels:
                 isKnown = True
-        if 'name' in self.__dict__:
+        if hasattr(self, 'name'):
             if name == self.name:
                 isKnown = True
         return isKnown
@@ -676,10 +747,10 @@ class City(Location):
 
     def __init__(self, **kwargs):
         super(City, self).__init__(**kwargs)
-        if 'level' not in self.__dict__:
-            self.__dict__['level'] = 5
-        if 'locationKind' not in self.__dict__:
-            self.__dict__['locationKind'] = "City"
+        if not hasattr(self, 'level'):
+            setattr(self, 'level', 5)
+        if not hasattr(self, 'locationKind'):
+            setattr(self, 'locationKind', "City")
         self._country = None
         self._region = None
 
@@ -717,7 +788,7 @@ class City(Location):
             value = record[name]
         else:
             value = None
-        self.__dict__[name] = value
+        setattr(self, name, value)
             
     @staticmethod
     def fromGeoLite2(record):
@@ -755,10 +826,10 @@ class Region(Location):
 
     def __init__(self, **kwargs):
         super(Region, self).__init__(**kwargs)
-        if 'level' not in self.__dict__:
-            self.__dict__['level'] = 4
-        if 'locationKind' not in self.__dict__:
-            self.__dict__['locationKind'] = "Region"
+        if not hasattr(self, 'level'):
+            setattr(self, 'level', 4)
+        if not hasattr(self, 'locationKind'):
+            setattr(self,'locationKind', "Region")
         self._country = None
 
     @classmethod
@@ -833,10 +904,10 @@ class Country(Location):
         coonstruct me
         '''
         super(Country, self).__init__(**kwargs)
-        if 'level' not in self.__dict__:
-            self.__dict__['level'] = 3
-        if 'locationKind' not in self.__dict__:
-            self.__dict__['locationKind'] = "Country"
+        if not hasattr(self, 'level'):
+            setattr(self, 'level', 3)
+        if not hasattr(self, 'locationKind'):
+            setattr(self, 'locationKind', "Country")
 
     @classmethod
     def getSamples(cls):
@@ -888,7 +959,7 @@ class LocationContext(object):
     '''
     db_filename="locations.db"
 
-    def __init__(self, countryManager:CountryManager, regionManager:RegionManager, cityManager:CityManager):
+    def __init__(self, countryManager:CountryManager, regionManager:RegionManager, cityManager:CityManager, config:StorageConfig):
         '''
         construct me
         
@@ -900,6 +971,7 @@ class LocationContext(object):
         self.countryManager = countryManager
         self.regionManager = regionManager
         self.cityManager = cityManager
+        self.locator=Locator(storageConfig=config)
 
     def interlinkLocations(self,warnOnDuplicates:bool=True,profile=True):
         '''
@@ -956,7 +1028,7 @@ class LocationContext(object):
         cityManager = CityManager("cities", config=config)
         regionManager = RegionManager("regions", config=config)
         countryManager = CountryManager("countries", config=config)
-        locationContext = LocationContext(countryManager, regionManager, cityManager)
+        locationContext = LocationContext(countryManager, regionManager, cityManager, config)
         return locationContext
 
     @classmethod
@@ -973,11 +1045,7 @@ class LocationContext(object):
         countryList = CountryManager.fromJSONBackup(config=config)
         regionList = RegionManager.fromJSONBackup(config=config)
         cityList = CityManager.fromJSONBackup(config=config)
-        # TODO awkward restoring - superfluous?
-        if withStore:
-            for manager in countryList, regionList, cityList:
-                manager.store()
-        locationContext = LocationContext(countryList, regionList, cityList)
+        locationContext = LocationContext(countryList, regionList, cityList, config)
         return locationContext
 
     @staticmethod
@@ -1004,26 +1072,34 @@ class LocationContext(object):
 
     def getCountries(self, name:str):
         '''Returns all countries that are known under the given name'''
-        countries = self.countryManager.getByName(name)
+        wikidataIds = self.countryManager.getByName(name)
+        countries = [self.countryManager.getLocationByWikidataId(id) for id in wikidataIds]
         return countries
 
     def getRegions(self, name:str):
         '''Returns all regions that are known under the given name'''
-        regions = self.regionManager.getByName(name)
+        wikidataIds = self.regionManager.getByName(name)
+        regions = [self.regionManager.getLocationByWikidataId(id) for id in wikidataIds]
+        for region in regions:
+            self._completeLocationHierarchy(region)
         return regions
 
     def getCities(self, name:str):
         '''Returns all cities that are known under the given name'''
-        cities = self.cityManager.getByName(name)
+        wikidataIds = self.cityManager.getByName(name)
+        cities=[self.cityManager.getLocationByWikidataId(id) for id in wikidataIds]
+        for city in cities:
+            self._completeLocationHierarchy(city)
         return cities
 
-    def locateLocation(self, *locations):
+    def locateLocation(self, *locations, verbose:bool=False):
         '''
         Get possible locations for the given location names.
         Current prioritization of the results is city(ordered by population)→region→country
         ToDo: Extend the ranking of the results e.g. matching of multiple location parts increase ranking
         Args:
             *locations:
+            verbose(bool): If True combinations of locations names are used to improve the search results. (Increases lookup time)
 
         Returns:
 
@@ -1041,36 +1117,62 @@ class LocationContext(object):
             if location is not None:
                 for locationPart in location.split(','):
                     locationParts.append(locationPart)
+        # Split locationParts even further
+        lp=[]
+        for locationPart in locationParts:
+            parts=locationPart.split(' ')
+            lp.extend(parts)
+            # Spliting by space breakes the look up for cities such as 'Los Angeles'
+            if verbose:
+                numberParts=len(parts)
+                if numberParts>1:
+                    lp.extend([f"{parts[i]} {parts[i+1]}" for i in range(numberParts-1)])
+                # if numberParts > 2:
+                #     lp.extend([f"{parts[i]} {parts[i + 1]} {parts[i + 2]}" for i in range(numberParts - 2)])
+        locationParts.extend(lp)
+        locationParts=list(set(locationParts))   # remove duplicates
         for location in locationParts:
             location = location.strip()
             for manager in self.cityManager, self.regionManager, self.countryManager:
                 possibleLocation = []
                 if Locator.isISO(location):
-                    pl = [l for l in manager.getList() if hasattr(l, 'iso') and l.iso == location]
-                    possibleLocation.extend(pl)
+                    locationIds=manager.getLocationByIsoCode(location)
+                    possibleLocation.extend(locationIds)
                 possibleLocation.extend(manager.getByName(location))
-                # search in location labels → currently not supported in sql backup (n:m relation)
-                # pl=[l for l in manager.getList() if l.isKnownAs(location)]
-                # possibleLocation.extend(pl)
                 possibleLocations[manager.name] = possibleLocations[manager.name].union(set(possibleLocation))
         # reduce possible Locations e.g. remove regions and countries already identified by a city
-        for city in possibleLocations[self.cityManager.name]:
-            if city.region in possibleLocations[self.regionManager.name]:
-                possibleLocations[self.regionManager.name].remove(city.region)
-            if city.country in possibleLocations[self.countryManager.name]:
-                possibleLocations[self.countryManager.name].remove(city.country)
-        for region in possibleLocations[self.regionManager.name]:
-            if region.country in possibleLocations[self.countryManager.name]:
-                possibleLocations[self.countryManager.name].remove(region.country)
+        cities=[self.cityManager.getLocationByWikidataId(id) for id in possibleLocations[self.cityManager.name]]
+        for city in cities:
+            if city.region_wikidataid in possibleLocations[self.regionManager.name]:
+                possibleLocations[self.regionManager.name].remove(city.region_wikidataid)
+            if city.country_wikidataid in possibleLocations[self.countryManager.name]:
+                possibleLocations[self.countryManager.name].remove(city.country_wikidataid)
+        regions=[self.regionManager.getLocationByWikidataId(id) for id in possibleLocations[self.regionManager.name]]
+        for region in regions:
+            if region.country_wikidataid in possibleLocations[self.countryManager.name]:
+                possibleLocations[self.countryManager.name].remove(region.country_wikidataid)
+        countries=[self.countryManager.getLocationByWikidataId(id) for id in possibleLocations[self.countryManager.name]]
         # build final result in the order city→region→country
-        cities = list(possibleLocations[self.cityManager.name])
         cities.sort(key=lambda c: int(getattr(c, 'population', 0)) if getattr(c, 'population') is not None else 0, reverse=True)
-        res = []
-        res.extend(cities)
-        res.extend(list(possibleLocations[self.regionManager.name]))
-        res.extend(list(possibleLocations[self.countryManager.name]))
+        res = [*cities, *regions, *countries]
+        # Enhance location objects
+        for location in res:
+            self._completeLocationHierarchy(location)
         return res
 
+    def _completeLocationHierarchy(self, location:Location):
+        '''
+        Completes the location hierarchy of the given location by linking to locations in the hierarchy of the given location.
+        E.g. for a given city adding the region and country object
+        Args:
+            location: location for which the hierarchy should be looked up
+        '''
+        if hasattr(location, 'region_wikidataid') and getattr(location, 'region_wikidataid') is not None:
+            location.region = self.regionManager.getLocationByWikidataId(location.region_wikidataid)
+        if hasattr(location, 'country_wikidataid') and getattr(location, 'country_wikidataid') is not None:
+            location.country = self.countryManager.getLocationByWikidataId(location.country_wikidataid)
+            if hasattr(location, 'region') and location.region is not None:
+                location.region.country = location.country
 
 class Locator(object):
     '''
@@ -1080,18 +1182,21 @@ class Locator(object):
     # singleton instance
     locator = None
 
-    def __init__(self, db_file=None, correctMisspelling=False, debug=False):
+    def __init__(self, db_file=None, correctMisspelling=False, storageConfig:StorageConfig=None, debug=False):
         '''
         Constructor
         
         Args:
             db_file(str): the path to the database file
             correctMispelling(bool): if True correct typical misspellings
+            storageConfig(StorageConfig): the storage Configuration to use
             debug(bool): if True show debug information
         '''
         self.debug = debug
         self.correctMisspelling = correctMisspelling
-        self.storageConfig=LocationContext.getDefaultConfig()
+        if storageConfig is None:
+            storageConfig=LocationContext.getDefaultConfig()
+        self.storageConfig=storageConfig
         if db_file is None:
             self.db_path = self.storageConfig.getCachePath()
             self.db_file = self.storageConfig.cacheFile
@@ -1374,7 +1479,7 @@ class Locator(object):
             self.populate_Version(self.sqlDB)
     
         elif not hasData:
-            LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename)
+            LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename, self.storageConfig.getCachePath())
         if not os.path.isfile(self.db_file):
             raise(f"could not create lookup database {self.db_file}")
             

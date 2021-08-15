@@ -119,16 +119,15 @@ class TestLocationContext(Geograpy3Test):
         self.testWikidata = True
         if self.inCI() or self.testWikidata:
             try:
-                regions = ["Q1198"]
+                regions = ["Q1201"]
                 cityManager = CityManager.fromWikidata(regionIDs=regions, fromBackup=False)
                 # check amount of regions
-                self.assertTrue(len(cityManager.cities) > 1300)
+                self.assertTrue(len(cityManager.cities) > 50)
                 citiesByWikiDataId = self.checkNoDuplicateWikidataIds(cityManager)
-                self.assertTrue("Q1017" in citiesByWikiDataId)
-                # check if NRW is present (region of Germany)
-                aachen = cityManager.getLocationByID("Q1017")
-                self.assertIsNotNone(aachen)
-                self.assertEqual(aachen.name, "Aachen")
+                self.assertTrue("Q1724" in citiesByWikiDataId)
+                city = cityManager.getLocationByID("Q1724")
+                self.assertIsNotNone(city)
+                self.assertEqual(city.name, "Saarbrücken")
             except Exception as ex:
                 self.handleWikidataException(ex)
 
