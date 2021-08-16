@@ -37,30 +37,23 @@ class TestWikidata(Geograpy3Test):
         try:
             wikidata.getCountries()
             self.assertTrue(len(wikidata.countryList)>=190)
-        except urllib.error.HTTPError as err:
-            # urllib.error.HTTPError: HTTP Error 500: Internal Server Error
-            print("Couldn't run Wikidata test due to upstream error - probably 500 %s" % err )
+        except Exception as ex:
+            self.handleWikidataException(ex)
             pass
 
     def testWikidataCities(self):
         '''
         test getting city information from wikidata
         
-1372    Singapore
-749    Beijing, China
-704    Paris, France
-649    Barcelona, Spain
-625    Rome, Italy
-616    Hong Kong
-575    Bangkok, Thailand
-502    Vienna, Austria
-497    Athens, Greece
-483    Shanghai, China
         '''
         # Wikidata time outs in CI environment need to be avoided
-        return 
         if getpass.getuser()!="wf":
             return
+        # use 2018 wikidata copy
+        # wikidata.endpoint="http://blazegraph.bitplan.com/sparql"
+        # use 2020 wikidata copy
+        wikidata=Wikidata()
+        wikidata.endpoint="http://jena.bitplan.com/wdhs/sparql"
         regions=[
             {"name": "Singapore", "country": "Q334", "region": None, "cities":46},
             {"name": "Beijing", "country": None, "region": "Q956", "cities":25},
@@ -68,28 +61,27 @@ class TestWikidata(Geograpy3Test):
             {"name": "Barcelona","country": None, "region": "Q5705", "cities":1242},
             {"name": "Rome","country": None, "region": "Q1282", "cities":1242}
         ]
-        wikidata=Wikidata()
-        if getpass.getuser()=="wf":
-            # use 2018 wikidata copy
-            wikidata.endpoint="http://blazegraph.bitplan.com/sparql"
-            # use 2020 wikidata copy
-            #wikidata.endpoint="http://jena.zeus.bitplan.com/wikidata"
-        for region in regions:
-            starttime=time.time()
-            print("searching cities for %s" % region["name"])
-            cityList=wikidata.getCities(country=region["country"], region=region["region"])
-            print("Found %d cities for %s in %5.1f s" % (len(cityList),region["name"],time.time()-starttime))
-            if self.debug:
-                print(cityList[:10])
-            #self.assertEqual(region['cities'],len(cityList))
-            pass
+        limit=1000000 if self.inCI() else 100
+        expected=200000 if self.inCI() else limit
+        cityList=wikidata.getAllCities(limit=limit)
+        self.assertTrue(len(cityList)>=expected)
+       
+        #for region in regions:
+        #    starttime=time.time()
+        #    regionName=region["name"]
+        #    print(f"searching cities for {regionName}" )
+        #    cityList=wikidata.getCities(country=region["country"], region=region["region"])
+        #    print("Found %d cities for %s in %5.1f s" % (len(cityList),region["name"],time.time()-starttime))
+        #    if self.debug:
+        #        print(cityList[:10])
+        #    #self.assertEqual(region['cities'],len(cityList))
+        #    pass
 
     def testGetCitiesOfRegion(self):
         '''
         Test getting cities based on region wikidata id
         '''
         # Wikidata time outs in CI environment need to be avoided
-        return 
         if getpass.getuser()!="wf":
             return
         wikidata = Wikidata()

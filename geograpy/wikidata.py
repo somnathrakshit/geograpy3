@@ -231,7 +231,59 @@ WHERE
 } ORDER BY ?regionIsoCode"""
         wd=SPARQL(self.endpoint)
         results=wd.query(queryString)
-        self.regionList=wd.asListOfDicts(results)
+        regionList=wd.asListOfDicts(results)
+        return regionList
+        
+    def getAllCities(self,limit=1000000):
+        '''
+        get all cities
+        '''
+        queryString="""PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+SELECT ?city ?cityLabel
+WHERE {
+  # instance of human settlement https://www.wikidata.org/wiki/Q486972
+  wd:Q486972 ^wdt:P279*/^wdt:P31 ?city .
+ 
+  # label of the City
+  ?city rdfs:label ?cityLabel filter (lang(?cityLabel) = "en").
+  
+  # geoName Identifier
+  OPTIONAL {
+      ?city wdt:P1566 ?geoNameId.
+  }
+
+  # GND-ID
+  OPTIONAL { 
+      ?city wdt:P227 ?gndId. 
+  }
+  
+  # population of city
+  OPTIONAL { 
+    SELECT ?city (max(?cityPopulationValue) as ?cityPop)
+    WHERE {
+      ?city wdt:P1082 ?cityPopulationValue
+    } group by ?city
+  }
+  # region this city belongs to
+  OPTIONAL {
+    ?city wdt:P131 ?region .     
+  }
+
+  # country this city belongs to
+  OPTIONAL {
+      ?city wdt:P17 ?country .
+  }
+}
+"""
+        limitedQuery=f"{queryString} LIMIT {limit}"
+        wd=SPARQL(self.endpoint)
+        results=wd.query(limitedQuery)
+        cityList=wd.asListOfDicts(results)
+        return cityList
+        
+        
 
     def getCitiesOfRegion(self, regionWikidataId: str, limit:int):
         """
