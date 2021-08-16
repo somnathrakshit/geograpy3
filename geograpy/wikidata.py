@@ -37,8 +37,30 @@ class Wikidata(object):
             limitedQuery=f"{queryString} LIMIT {limit}"
         results=wd.query(limitedQuery)
         lod=wd.asListOfDicts(results)
+        for record in lod:
+            for key in record.keys():
+                value=record[key]
+                if isinstance(value,str):
+                    if value.startswith("http://www.wikidata.org/"):
+                        record[key]=self.getWikidataId(value)
         profile.time()
         return lod
+    
+    def store2DB(self,lod,tableName:str,primaryKey:str=None,sqlDB=None):
+        '''
+        store the given list of dicts to the database
+        
+        Args:
+            lod(list): the list of dicts
+            tableName(str): the table name to use
+            primaryKey(str): primary key (if any)
+            sqlDB(SQLDB): target SQL database
+        '''
+        msg=f"Storing {tableName}"
+        profile=Profiler(msg,profile=self.profile)
+        entityInfo = sqlDB.createTable(lod, entityName=tableName, primaryKey=primaryKey, withDrop=True)
+        sqlDB.store(lod, entityInfo, fixNone=True)
+        profile.time()
         
     def getCountries(self,limit=None):
         '''
@@ -88,7 +110,7 @@ WHERE {
   # OPTIONAL { ?country wdt:P2132 ?countryGDP_perCapitaValue. }
 }
 ORDER BY ?countryIsoCode"""
-        msg="Getting countries from wikidata"
+        msg="Getting countries from wikidata ETA 10s"
         countryList=self.query(msg, queryString,limit=limit)
         return countryList
 
@@ -140,7 +162,7 @@ WHERE
     ?country wdt:P297 ?countryIsoCode. 
   }
 } ORDER BY ?regionIsoCode"""
-        msg="Getting regions from wikidata"
+        msg="Getting regions from wikidata ETA 15s"
         regionList=self.query(msg, queryString,limit=limit)
         return regionList
 
@@ -149,17 +171,23 @@ WHERE
         '''
         get all human settlements as list of dict with duplicates for label, region, country ...
         '''
-        queryString="""
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        queryString="""PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX wd: <http://www.wikidata.org/entity/>
-SELECT ?city ?cityLabel ?geoNameId ?gndId ?cityPop ?cityCoord ?region ?country
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?city ?cityLabel ?altLabel ?geoNameId ?gndId ?cityPop ?cityCoord ?region ?country
 WHERE {
   # instance of human settlement https://www.wikidata.org/wiki/Q486972
   wd:Q486972 ^wdt:P279*/^wdt:P31 ?city .
  
   # label of the City
   ?city rdfs:label ?cityLabel filter (lang(?cityLabel) = "en").
+  
+  OPTIONAL {
+     ?city skos:altLabel ?altLabel .
+     FILTER (lang(?altLabel) = "en")
+  }
   
   # geoName Identifier
   OPTIONAL {
@@ -195,7 +223,7 @@ WHERE {
   
 }
 """
-        msg="Getting cities (human settlements) from wikidata"
+        msg="Getting cities (human settlements) from wikidata ETA 50 s"
         citiesList=self.query(msg, queryString,limit=limit)
         return citiesList
         

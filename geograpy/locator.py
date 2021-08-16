@@ -1440,32 +1440,6 @@ class Locator(object):
         cities = self.sqlDB.query(query, params)
         return cities
     
-    def getGeolite2Cities(self):
-        '''
-        get the Geolite2 City-Locations as a list of Dicts
-        
-        Returns:
-            list: a list of Geolite2 City-Locator dicts
-        '''
-        cities = self.readCSV("GeoLite2-City-Locations-en.csv")
-        return cities
-    
-    def readCSV(self, fileName:str):
-        '''
-        read the given CSV file
-        
-        Args:
-            fileName(str): the filename to read
-        
-        '''
-        records = []
-        cur_dir = os.path.dirname(os.path.realpath(__file__))
-        csvfile = f"{cur_dir}/data/{fileName}" 
-        with open(csvfile) as info:
-            reader = csv.DictReader(info)
-            for row in reader:
-                records.append(row)
-        return records
      
     def recreateDatabase(self):
         '''
@@ -1483,9 +1457,9 @@ class Locator(object):
         '''
         hasData = self.db_has_data()
         if force:
+            self.populate_Countries(self.sqlDB)
+            self.populate_Regions(self.sqlDB)
             self.populate_Cities(self.sqlDB)
-            self.populateFromWikidata(self.sqlDB)
-            self.getWikidataCityPopulation(self.sqlDB)
             self.createViews(self.sqlDB)
             self.populate_Version(self.sqlDB)
     
@@ -1505,6 +1479,23 @@ class Locator(object):
         entityInfo = sqlDB.createTable(versionList, "Version", "version", withDrop=True)
         sqlDB.store(versionList, entityInfo)
         
+    def readCSV(self, fileName:str):
+        '''
+        read the given CSV file
+        
+        Args:
+            fileName(str): the filename to read
+        
+        '''
+        records = []
+        cur_dir = os.path.dirname(os.path.realpath(__file__))
+        csvfile = f"{cur_dir}/data/{fileName}" 
+        with open(csvfile) as info:
+            reader = csv.DictReader(info)
+            for row in reader:
+                records.append(row)
+        return records
+        
     def getAliases(self):
         '''
         get the aliases hashTable
@@ -1514,36 +1505,6 @@ class Locator(object):
         for alias in aliases:
             self.aliases[alias['name']] = alias['alias']
         
-    def populateFromWikidata(self, sqlDB):
-        '''
-        populate countries and regions from Wikidata
-        
-        Args:
-            sqlDB(SQLDB): target SQL database
-        '''
-        self.populate_Countries(sqlDB)
-        self.populate_Regions(sqlDB)
-        return
-        # ignore the following code as of 2020-09-26
-        self.populate_Cities_FromWikidata(sqlDB)
-        viewDDLs = ["DROP VIEW IF EXISTS WikidataCityLookup", """
-CREATE VIEW WikidataCityLookup AS
-SELECT 
-  name AS name,
-  regionLabel as regionName,
-  regionIsoCode as regionIsoCode,
-  countryLabel as countryName,
-  countryIsoCode as countryIsoCode,
-  cityPopulation as population,
-  countryGDP_perCapita as gdp
-FROM City_wikidata
-"""]
-#                  subdivision_1_name AS regionName,
-#  subdivision_1_iso_code as regionIsoCode,
-#  country_name AS countryName,
-#  country_iso_code as countryIsoCode
-        for viewDDL in viewDDLs:
-            self.sqlDB.execute(viewDDL)
            
     def populate_Countries(self, sqlDB):
         '''
@@ -1552,12 +1513,10 @@ FROM City_wikidata
         Args:
             sqlDB(SQLDB): target SQL database
         '''
-        print("retrieving Country data from wikidata ... (this might take a few seconds)")
         wikidata = Wikidata()
-        wikidata.getCountries()
-        entityInfo = sqlDB.createTable(wikidata.countryList, "countries", None, withDrop=True, sampleRecordCount=200)
-        sqlDB.store(wikidata.countryList, entityInfo, fixNone=True)
-
+        countryList=wikidata.getCountries()
+        wikidata.store2DB(countryList, "countries",primaryKey=None,sqlDB=sqlDB)
+ 
     def populate_Regions(self, sqlDB):
         '''
         populate database with regions from wikiData
@@ -1565,113 +1524,22 @@ FROM City_wikidata
         Args:
             sqlDB(SQLDB): target SQL database
         '''
-        print("retrieving Region data from wikidata ... (this might take a minute)")
         wikidata = Wikidata()
-        wikidata.getRegions()
-        entityInfo = sqlDB.createTable(wikidata.regionList[:5000], "regions", primaryKey=None, withDrop=True)
-        sqlDB.store(wikidata.regionList, entityInfo, fixNone=True)
+        regionList=wikidata.getRegions()
+        wikidata.store2DB(regionList, "regions", primaryKey=None, sqlDB=sqlDB)
    
-    def populate_Cities_FromWikidata(self, sqlDB):
+    def populate_Cities(self, sqlDB):
         '''
         populate the given sqlDB with the Wikidata Cities
         
         Args:
             sqlDB(SQLDB): target SQL database
         '''
-        dbFile = self.db_path + "/City_wikidata.db"
-        if not os.path.exists(dbFile):
-            print("Downloading %s ... this might take a few seconds" % dbFile)
-            dbUrl = "https://github.com/somnathrakshit/geograpy3/releases/download/0.1.27/City_wikidata.db"
-            urllib.request.urlretrieve(dbUrl, dbFile)
-        wikiCitiesDB = SQLDB(dbFile)
-        wikiCitiesDB.copyTo(sqlDB)
+        wikidata = Wikidata()
+        wikidata.endpoint="https://confident.dbis.rwth-aachen.de/jena/wdhs/sparql"
+        cityList=wikidata.getCities()
+        wikidata.store2DB(cityList, "cities",primaryKey=None,sqlDB=sqlDB)
         
-    def getWikidataCityPopulation(self, sqlDB, endpoint=None):
-        '''
-        Args:
-            sqlDB(SQLDB): target SQL database
-            endpoint(str): url of the wikidata endpoint or None if default should be used
-        '''
-        dbFile = self.db_path + "/city_wikidata_population.db"
-        rawTableName = "cityPops"
-        # is the wikidata population database available?
-        if not os.path.exists(dbFile):
-            # shall we created it from a wikidata query?
-            if endpoint is not None:
-                wikidata = Wikidata()
-                wikidata.endpoint = endpoint
-                cityList = wikidata.getCityPopulations()
-                wikiCitiesDB = SQLDB(dbFile) 
-                entityInfo = wikiCitiesDB.createTable(cityList[:300], rawTableName, primaryKey=None, withDrop=True)
-                wikiCitiesDB.store(cityList, entityInfo, fixNone=True)
-            else:
-                # just download a copy 
-                print("Downloading %s ... this might take a few seconds" % dbFile)
-                dbUrl = "https://github.com/somnathrakshit/geograpy3/releases/download/0.1.27/city_wikidata_population.db"
-                urllib.request.urlretrieve(dbUrl, dbFile)
-        # (re) open the database
-        wikiCitiesDB = SQLDB(dbFile) 
-          
-        # check whether the table is populated
-        tableList = sqlDB.getTableList()        
-        tableName = "citiesWithPopulation"     
-      
-        if self.db_recordCount(tableList, tableName) < 10000:
-            # check that database is writable
-            # https://stackoverflow.com/a/44707371/1497139
-            sqlDB.execute("pragma user_version=0")
-            # makes sure both tables are in target sqlDB
-            wikiCitiesDB.copyTo(sqlDB)
-            # create joined table
-            sqlQuery = """
-              select 
-    geoname_id,
-    city_name,
-    cp.cityLabel,
-    country_iso_code,
-    country_name,
-    subdivision_1_iso_code,
-    subdivision_1_name,
-    cp.city as wikidataurl,
-    cp.cityPop 
-  from cities c 
-  join cityPops cp 
-  on c.geoname_id=cp.geoNameId 
-union  
-  select 
-    geoNameId as geoname_id,
-    null as city_name,
-    cityLabel,
-    countryIsoCode as country_iso_code,
-    countryLabel as country_name,
-    null as subdivision_1_iso_code,
-    null as subdivision_1_name,
-    city as wikidataurl,
-    cityPop 
-  from cityPops 
-  where cityPop is not Null
-group by geoNameId
-order by cityPop desc
-            """
-            cityList = sqlDB.query(sqlQuery) 
-            entityInfo = sqlDB.createTable(cityList, tableName, primaryKey=None, withDrop=True, sampleRecordCount=500)
-            sqlDB.store(cityList, entityInfo, fixNone=True)
-            # remove raw Table
-            # sqlCmd="DROP TABLE %s " %rawTableName
-            # sqlDB.execute(sqlCmd)
-     
-    def populate_Cities(self, sqlDB):
-        '''
-        populate the given sqlDB with the Geolite2 Cities
-        
-        Args:
-            sqlDB(SQLDB): the SQL database to use
-        '''
-        cities = self.getGeolite2Cities()
-        entityName = "cities"
-        primaryKey = "geoname_id"
-        entityInfo = sqlDB.createTable(cities[:100], entityName, primaryKey, withDrop=True)
-        sqlDB.store(cities, entityInfo, executeMany=False)
         
     def createViews(self, sqlDB):
         viewDDLs = ["DROP VIEW IF EXISTS GeoLite2CityLookup", """
@@ -1722,9 +1590,9 @@ FROM citiesWithPopulation
             boolean: True if the cities table exists and has more than one record
         '''
         tableList = self.sqlDB.getTableList()
-        hasCities = (self.db_recordCount(tableList, "citiesWithPopulation") > 10000) and self.db_recordCount(tableList,"cities_wikidata")>400000
-        hasCountries = (self.db_recordCount(tableList, "countries") > 100) and (self.db_recordCount(tableList,"countries_wikidata") > 190)
-        hasRegions = (self.db_recordCount(tableList, "regions") > 1000) and (self.db_recordCount(tableList,"regions_wikidata") > 3000)
+        hasCities = self.db_recordCount(tableList,"cities")>200000
+        hasCountries = self.db_recordCount(tableList, "countries") > 200
+        hasRegions = self.db_recordCount(tableList, "regions") > 3000
         hasVersion = self.db_recordCount(tableList, "Version") == 1
         versionOk = False
         if hasVersion:
