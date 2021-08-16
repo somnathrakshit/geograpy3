@@ -38,12 +38,19 @@ class Wikidata(object):
         results=wd.query(limitedQuery)
         lod=wd.asListOfDicts(results)
         for record in lod:
-            for key in record.keys():
+            for key in list(record.keys()):
                 value=record[key]
                 if isinstance(value,str):
                     if value.startswith("http://www.wikidata.org/"):
                         record[key]=self.getWikidataId(value)
-        profile.time()
+                    if key.endswith("Coord"):
+                        lat, lon = Wikidata.getCoordinateComponents(value)
+                        record["lat"]=lat
+                        record["lon"]=lon
+                        record.pop(key)
+            
+                        
+        profile.time(f"({len(lod)})")
         return lod
     
     def store2DB(self,lod,tableName:str,primaryKey:str=None,sqlDB=None):
@@ -58,7 +65,7 @@ class Wikidata(object):
         '''
         msg=f"Storing {tableName}"
         profile=Profiler(msg,profile=self.profile)
-        entityInfo = sqlDB.createTable(lod, entityName=tableName, primaryKey=primaryKey, withDrop=True)
+        entityInfo = sqlDB.createTable(lod, entityName=tableName, primaryKey=primaryKey, withDrop=True,sampleRecordCount=-1)
         sqlDB.store(lod, entityInfo, fixNone=True)
         profile.time()
         
@@ -79,13 +86,17 @@ PREFIX p: <http://www.wikidata.org/prop/>
 PREFIX ps: <http://www.wikidata.org/prop/statement/>
 PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
 # get City details with Country
-SELECT DISTINCT ?country ?countryLabel ?countryIsoCode  ?countryCoord  ?countryPopulation ?continent ?continentLabel
+SELECT DISTINCT ?countryId ?country ?countryIsoCode  ?countryCoord  ?countryPopulation 
 WHERE {
+  BIND (?countryQ AS ?countryId)
+
   # instance of Country
-  ?country wdt:P31/wdt:P279* wd:Q6256 .
+  # inverse path see https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/query_optimization#Inverse_property_paths
+  wd:Q6256 ^wdt:P279*/^wdt:P31 ?countryQ .
+  
   # VALUES ?country { wd:Q55}.
   # label for the country
-  ?country rdfs:label ?countryLabel filter (lang(?countryLabel) = "en").
+  ?countryQ rdfs:label ?country filter (lang(?country) = "en").
   # get the continent (s)
   #OPTIONAL {
   #  ?country wdt:P30 ?continent.
@@ -93,17 +104,17 @@ WHERE {
   #}
   # get the coordinates
   OPTIONAL { 
-      ?country wdt:P625 ?countryCoord.
+      ?countryQ wdt:P625 ?countryCoord.
   } 
   # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
-  ?country wdt:P297 ?countryIsoCode.
+  ?countryQ wdt:P297 ?countryIsoCode.
   # population of country   
   OPTIONAL
   { 
-    SELECT ?country (max(?countryPopulationValue) as ?countryPopulation)
+    SELECT ?countryQ (max(?countryPopulationValue) as ?countryPopulation)
     WHERE {
-      ?country wdt:P1082 ?countryPopulationValue
-    } group by ?country
+      ?countryQ wdt:P1082 ?countryPopulationValue
+    } group by ?countryQ
   }
   # https://www.wikidata.org/wiki/Property:P2132
   # nominal GDP per capita
@@ -127,39 +138,36 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX wikibase: <http://wikiba.se/ontology#>
-SELECT DISTINCT ?country ?countryLabel ?countryIsoCode ?region ?regionLabel ?regionIsoCode ?regionPopulation ?location
+SELECT DISTINCT ?countryId (?regionQ as ?regionId) ?region ?regionIsoCode ?regionPopulation ?regionCoord
 WHERE
 {
   # administrative unit of first order
-  ?region wdt:P31/wdt:P279* wd:Q10864048.
+  ?regionQ wdt:P31/wdt:P279* wd:Q10864048.
   OPTIONAL {
-     ?region rdfs:label ?regionLabel filter (lang(?regionLabel) = "en").
+     ?regionQ rdfs:label ?region filter (lang(?region) = "en").
   }
   # isocode state/province (mandatory - filters historic regions while at it ...)
   # filter historic regions
   # FILTER NOT EXISTS {?region wdt:P576 ?end}
   { 
-    SELECT ?region (max(?regionAlpha2) as ?regionIsoCode) (max(?regionPopulationValue) as ?regionPopulation) (max(?locationValue) as ?location)
+    SELECT ?regionQ (max(?regionAlpha2) as ?regionIsoCode) (max(?regionPopulationValue) as ?regionPopulation) (max(?locationValue) as ?regionCoord)
     WHERE {
-      ?region wdt:P300 ?regionAlpha2.
+      ?regionQ wdt:P300 ?regionAlpha2.
       # get the population
       # https://www.wikidata.org/wiki/Property:P1082
       OPTIONAL {
-        ?region wdt:P1082 ?regionPopulationValue
+        ?regionQ wdt:P1082 ?regionPopulationValue
       } 
-      # get he location
+      # get the location
       # https://www.wikidata.org/wiki/Property:P625
       OPTIONAL {
-        ?region wdt:P625 ?locationValue. 
+        ?regionQ wdt:P625 ?locationValue. 
        }
-    } GROUP BY ?region
+    } GROUP BY ?regionQ
   }
   # # https://www.wikidata.org/wiki/Property:P297
   OPTIONAL { 
-    ?region wdt:P17 ?country.
-    # label for the country
-    ?country rdfs:label ?countryLabel filter (lang(?countryLabel) = "en").
-    ?country wdt:P297 ?countryIsoCode. 
+    ?regionQ wdt:P17 ?countryId.
   }
 } ORDER BY ?regionIsoCode"""
         msg="Getting regions from wikidata ETA 15s"
@@ -176,49 +184,51 @@ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
-SELECT ?city ?cityLabel ?altLabel ?geoNameId ?gndId ?cityPop ?cityCoord ?region ?country
+SELECT DISTINCT (?cityQ as ?cityId) ?city ?altLabel ?geoNameId ?gndId ?cityPopulation ?cityCoord ?regionId ?countryId
 WHERE {
   # instance of human settlement https://www.wikidata.org/wiki/Q486972
-  wd:Q486972 ^wdt:P279*/^wdt:P31 ?city .
+  wd:Q486972 ^wdt:P279*/^wdt:P31 ?cityQ .
+  # Values
+  # VALUES  ?cityQ { wd:Q656 }
  
   # label of the City
-  ?city rdfs:label ?cityLabel filter (lang(?cityLabel) = "en").
+  ?cityQ rdfs:label ?city filter (lang(?city) = "en").
   
   OPTIONAL {
-     ?city skos:altLabel ?altLabel .
+     ?cityQ skos:altLabel ?altLabel .
      FILTER (lang(?altLabel) = "en")
   }
   
   # geoName Identifier
   OPTIONAL {
-      ?city wdt:P1566 ?geoNameId.
+      ?cityQ wdt:P1566 ?geoNameId.
   }
 
   # GND-ID
   OPTIONAL { 
-      ?city wdt:P227 ?gndId. 
+      ?cityQ wdt:P227 ?gndId. 
   }
   
   # population of city
   OPTIONAL { 
-    SELECT ?city (max(?cityPopulationValue) as ?cityPop)
+    SELECT ?cityQ (max(?cityPopulationValue) as ?cityPopulation)
     WHERE {
-      ?city wdt:P1082 ?cityPopulationValue
-    } group by ?city
+      ?cityQ wdt:P1082 ?cityPopulationValue
+    } group by ?cityQ
   }
   
   OPTIONAL{
-     ?city wdt:P625 ?cityCoord .
+     ?cityQ wdt:P625 ?cityCoord .
   }
   
   # region this city belongs to
   OPTIONAL {
-    ?city wdt:P131 ?region .     
+    ?cityQ wdt:P131 ?regionId .     
   }
 
   # country this city belongs to
   OPTIONAL {
-      ?city wdt:P17 ?country .
+      ?cityQ wdt:P17 ?countryId .
   }
   
 }
@@ -226,6 +236,63 @@ WHERE {
         msg="Getting cities (human settlements) from wikidata ETA 50 s"
         citiesList=self.query(msg, queryString,limit=limit)
         return citiesList
+    
+    def getCitiesForRegion(self,regionId,msg):
+        '''
+        get the cities for the given Region
+        '''
+        queryString="""# get cities by region for geograpy3
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+SELECT distinct (?cityQ as ?cityId) ?city ?geoNameId ?gndId ?regionId ?countryId ?cityCoord ?cityPopulation WHERE { 
+  VALUES ?hsType {
+      wd:Q1549591 wd:Q3957 wd:Q5119 wd:Q15284 wd:Q62049 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972 wd:Q532
+  }
+  
+  VALUES ?region {
+         wd:%s
+  }
+  
+  # region the city should be in
+  ?cityQ wdt:P131* ?region.
+  # type of human settlement to try
+  ?hsType ^wdt:P279*/^wdt:P31 ?cityQ.
+  
+  # label of the City
+  ?cityQ rdfs:label ?city filter (lang(?city) = "en").
+   
+  # geoName Identifier
+  OPTIONAL {
+      ?cityQ wdt:P1566 ?geoNameId.
+  }
+
+  # GND-ID
+  OPTIONAL { 
+      ?cityQ wdt:P227 ?gndId. 
+  }
+  
+  OPTIONAL{
+     ?cityQ wdt:P625 ?cityCoord .
+  }
+  
+  # region this city belongs to
+  OPTIONAL {
+    ?cityQ wdt:P131 ?regionId .     
+  }
+  
+  OPTIONAL {
+     ?cityQ wdt:P1082 ?cityPopulation
+  }
+
+  # country this city belongs to
+  OPTIONAL {
+      ?cityQ wdt:P17 ?countryId .
+  }
+}""" % regionId            
+        regionCities=self.query(msg, queryString)
+        return regionCities
         
 
     @staticmethod
