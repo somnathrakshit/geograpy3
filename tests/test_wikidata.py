@@ -34,13 +34,25 @@ class TestWikidata(Geograpy3Test):
         '''
         wikidata=Wikidata()
         try:
-            wikidata.getCountries()
-            self.assertTrue(len(wikidata.countryList)>=190)
+            countryList=wikidata.getCountries()
+            self.assertTrue(len(countryList)>=190)
+        except Exception as ex:
+            self.handleWikidataException(ex)
+            pass
+        
+    def testWikidataRegions(self):
+        '''
+        test getting region information from wikidata
+        '''
+        wikidata=Wikidata()
+        try:
+            regionList=wikidata.getRegions()
+            self.assertTrue(len(regionList)>=3000)
         except Exception as ex:
             self.handleWikidataException(ex)
             pass
 
-    def testGetAllWikidataCities(self):
+    def testWikidataCities(self):
         '''
         test getting city information from wikidata
         
@@ -65,13 +77,13 @@ class TestWikidata(Geograpy3Test):
             {"name": "Barcelona","country": None, "region": "Q5705", "cities":1242},
             {"name": "Rome","country": None, "region": "Q1282", "cities":1242}
         ]
-        limit=1000000 if self.inCI() else 100
-        expected=200000 if self.inCI() else limit
-        cityList=wikidata.getAllCities(limit=limit)
-        self.assertTrue(len(cityList)>=expected)
+        limit=1000000 #if self.inCI() else 100
+        cityList=wikidata.getCities(limit=limit)
         sqlDB=SQLDB(config.cacheFile)
         entityInfo=sqlDB.createTable(cityList,"hs",withDrop=True)
         sqlDB.store(cityList, entityInfo,fixNone=True)
+        expected=200000 # if self.inCI() else limit
+        self.assertTrue(len(cityList)>=expected)
         #for region in regions:
         #    starttime=time.time()
         #    regionName=region["name"]
