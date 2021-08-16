@@ -3,10 +3,14 @@ Created on 2020-09-19
 
 @author: wf
 '''
+import tempfile
 import unittest
+
+from lodstorage.storageconfig import StorageConfig
+
 import geograpy
 import getpass
-from geograpy.locator import Locator, CountryManager, Location
+from geograpy.locator import Locator, CountryManager, Location, LocationContext
 from collections import Counter
 from lodstorage.uml import UML
 import os
@@ -34,16 +38,18 @@ class TestLocator(Geograpy3Test):
         check has data and populate functionality
         '''
         testDownload=False
-        # TODO test this in a different backup directory 
         if self.inCI() or testDownload:
-            loc=Locator()
-            if os.path.isfile(loc.db_file):
-                os.remove(loc.db_file)
-            # reinit sqlDB
-            loc=Locator()
-            self.assertFalse(loc.db_has_data())
-            loc.populate_db()
-            self.assertTrue(loc.db_has_data())
+            with tempfile.TemporaryDirectory() as cacheRootDir:
+                config=StorageConfig(cacheRootDir=cacheRootDir, cacheDirName='geograpy3')
+                config.cacheFile = f"{config.getCachePath()}/{LocationContext.db_filename}"
+                loc=Locator(storageConfig=config)
+                if os.path.isfile(loc.db_file):
+                    os.remove(loc.db_file)
+                # reinit sqlDB
+                loc=Locator(storageConfig=config)
+                self.assertFalse(loc.db_has_data())
+                loc.populate_db()
+                self.assertTrue(loc.db_has_data())
         
     def testIsoRegexp(self):
         '''
