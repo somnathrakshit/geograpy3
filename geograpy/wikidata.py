@@ -64,69 +64,6 @@ WHERE {
         if profile:
             print("Found %d cities  in %5.1f s" % (len(cityList),time.time()-starttime))
         return cityList
-         
-        
-    def getCities(self,region=None, country=None):
-        '''
-        get the cities from Wikidata
-
-        Args:
-            region: List of countryWikiDataIDs. Limits the returned cities to the given countries
-            country: List of regionWikiDataIDs. Limits the returned cities to the given regions
-        '''
-        values=""
-        if region is not None:
-
-            values+=Wikidata.getValuesClause("region", region)
-        if country is not None:
-            values+=Wikidata.getValuesClause("country", country)
-        queryString="""# get a list of cities for the given region
-# for geograpy3 library
-# see https://github.com/somnathrakshit/geograpy3/issues/15
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-PREFIX wd: <http://www.wikidata.org/entity/>
-SELECT DISTINCT ?city ?cityLabel ?geoNameId ?cityPop ?cityCoord ?region ?regionLabel ?regionIsoCode ?country ?countryLabel ?countryIsoCode ?countryPopulation ?countryGdpPerCapita
-WHERE {  
-  # administrative unit of first order
-  # example DE-NW Q1198
-  %s
-  #?region wdt:P31/wdt:P279* wd:Q10864048.
-  ?region rdfs:label ?regionLabel filter (lang(?regionLabel) = "en").
-  # isocode state/province
-  OPTIONAL { ?region wdt:P300 ?regionIsoCode. }
-  # country this region belongs to
-  ?region wdt:P17 ?country .
-  # label for the country
-  ?country rdfs:label ?countryLabel filter (lang(?countryLabel) = "en").
-  # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
-  ?country wdt:P297 ?countryIsoCode.
-  # population of country
-  ?country wdt:P1082 ?countryPopulation.
-  OPTIONAL {
-     ?country wdt:P2132 ?countryGdpPerCapita.
-  }
-  # located in administrative territory
-  # https://www.wikidata.org/wiki/Property:P131
-  ?city wdt:P131* ?region.
-  # label of the City
-  ?city rdfs:label ?cityLabel filter (lang(?cityLabel) = "en").
-  # instance of human settlement https://www.wikidata.org/wiki/Q486972
-  ?city wdt:P31/wdt:P279* wd:Q486972 .
-  # geoName Identifier
-  ?city wdt:P1566 ?geoNameId.
-  # population of city
-  OPTIONAL { ?city wdt:P1082 ?cityPop.}
-   # get the coordinates
-  OPTIONAL { 
-      ?city wdt:P625 ?cityCoord.
-  } 
-} 
-ORDER BY ?cityLabel""" % values
-        wd=SPARQL(self.endpoint)
-        results=wd.query(queryString)
-        cityList=wd.asListOfDicts(results)
-        return cityList
                 
         
     def getCountries(self):
@@ -236,12 +173,13 @@ WHERE
         
     def getAllCities(self,limit=1000000):
         '''
-        get all cities
+        get all cities as list of dict with duplicates for label, region, country ...
         '''
-        queryString="""PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        queryString="""
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX wd: <http://www.wikidata.org/entity/>
-SELECT ?city ?cityLabel
+SELECT ?city ?cityLabel ?geoNameId ?gndId ?cityPop ?cityCoord ?region ?country
 WHERE {
   # instance of human settlement https://www.wikidata.org/wiki/Q486972
   wd:Q486972 ^wdt:P279*/^wdt:P31 ?city .
@@ -266,6 +204,11 @@ WHERE {
       ?city wdt:P1082 ?cityPopulationValue
     } group by ?city
   }
+  
+  OPTIONAL{
+     ?city wdt:P625 ?cityCoord .
+  }
+  
   # region this city belongs to
   OPTIONAL {
     ?city wdt:P131 ?region .     
@@ -275,6 +218,7 @@ WHERE {
   OPTIONAL {
       ?city wdt:P17 ?country .
   }
+  
 }
 """
         limitedQuery=f"{queryString} LIMIT {limit}"
@@ -283,81 +227,6 @@ WHERE {
         cityList=wd.asListOfDicts(results)
         return cityList
         
-        
-
-    def getCitiesOfRegion(self, regionWikidataId: str, limit:int):
-        """
-        Queries the cities of the given region. If the region is a city state the region is returned as city.
-        The cities are ordered by population and can be limited by the given limit attribute.
-
-        Args:
-            regionWikidataId: wikidata id of the region the cities should be queried for
-            limit: Limits the amount of returned cities
-
-        Returns:
-            Returns list of cities of the given region ordered by population
-        """
-        query = """
-SELECT distinct ?city ?cityLabel ?cityPop ?cityCoord
-WHERE {
-  VALUES ?possibleCityID {wd:Q1549591 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972}
-  wd:%s  (^wdt:P131|^wdt:P131/^wdt:P131|^wdt:P131/^wdt:P131/^wdt:P131|^wdt:P131/^wdt:P131/^wdt:P131/^wdt:P131) ?city .
-  {
-    ?city wdt:P31 ?x .
-    ?x wdt:P279 ?possibleCityID .
-  }UNION{
-    ?city wdt:P31 ?possibleCityID .
-  }
-  OPTIONAL{
-     ?city rdfs:label ?cityLabel .
-    FILTER(lang(?cityLabel)="en")
-  }
-  OPTIONAL{
-     ?city wdt:P1082 ?cityPop .
-  }
-  OPTIONAL{
-     ?city wdt:P625 ?cityCoord .
-  }
-
-}
-ORDER BY DESC(?cityPop)
-LIMIT %s
-    """ % (regionWikidataId, limit)
-        askIfCity = """
-SELECT *
-WHERE{
-  VALUES ?possibleCityID {wd:Q1549591 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972 wd:Q133442}
-  wd:%s  wdt:P31 ?possibleCityID .
-}
-    """ % (regionWikidataId)
-        wd = SPARQL(self.endpoint)
-        cities = []
-        ids = []
-        # check if region is city (city-state)
-        try:
-            isCityResult = wd.query(askIfCity)
-            isCity = wd.asListOfDicts(isCityResult)
-            if isCity:
-                # TODO: return region as city once city class is refactored
-                pass
-            else:
-                pass
-        except Exception as e:
-            print(e)
-            pass
-
-        try:
-            queryRes = wd.query(query)
-            cityLoD=wd.asListOfDicts(queryRes)
-            res=[]
-            # [{'city': 'http://www.wikidata.org/entity/Q1050826', 'citylabel': 'Greater Los Angeles Area', 'population': 18550288.0, 'coordinates': 'Point(-118.25 35.05694444)'}]
-            for cityRecord in cityLoD:
-                res.append(cityRecord)
-            return res
-        except Exception as  e:
-            print(e)
-            pass
-        return cities
 
     @staticmethod
     def getCoordinateComponents(coordinate:str) -> (float, float):

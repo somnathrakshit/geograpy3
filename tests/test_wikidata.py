@@ -6,11 +6,10 @@ Created on 2020-09-23
 import unittest
 from geograpy.wikidata import Wikidata
 from geograpy.locator import Locator
-import urllib
-
 import getpass
-import time
 from tests.basetest import Geograpy3Test
+from lodstorage.sql import SQLDB
+from lodstorage.storageconfig import StorageConfig
 
 class TestWikidata(Geograpy3Test):
     '''
@@ -41,7 +40,7 @@ class TestWikidata(Geograpy3Test):
             self.handleWikidataException(ex)
             pass
 
-    def testWikidataCities(self):
+    def testGetAllWikidataCities(self):
         '''
         test getting city information from wikidata
         
@@ -49,11 +48,16 @@ class TestWikidata(Geograpy3Test):
         # Wikidata time outs in CI environment need to be avoided
         if getpass.getuser()!="wf":
             return
+        config=StorageConfig.getSQL(debug=self.debug)
+        config.cacheRootDir="/tmp/wdhs"
+        cachedir=config.getCachePath()
+        config.cacheFile=f"{cachedir}/hs.db"
         # use 2018 wikidata copy
         # wikidata.endpoint="http://blazegraph.bitplan.com/sparql"
         # use 2020 wikidata copy
         wikidata=Wikidata()
-        wikidata.endpoint="http://jena.bitplan.com/wdhs/sparql"
+        wikidata.endpoint="https://confident.dbis.rwth-aachen.de/jena/wdhs/sparql"
+        #wikidata.endpoint="http://jena.bitplan.com/wdhs/sparql"
         regions=[
             {"name": "Singapore", "country": "Q334", "region": None, "cities":46},
             {"name": "Beijing", "country": None, "region": "Q956", "cities":25},
@@ -65,7 +69,9 @@ class TestWikidata(Geograpy3Test):
         expected=200000 if self.inCI() else limit
         cityList=wikidata.getAllCities(limit=limit)
         self.assertTrue(len(cityList)>=expected)
-       
+        sqlDB=SQLDB(config.cacheFile)
+        entityInfo=sqlDB.createTable(cityList,"hs",withDrop=True)
+        sqlDB.store(cityList, entityInfo,fixNone=True)
         #for region in regions:
         #    starttime=time.time()
         #    regionName=region["name"]
@@ -77,25 +83,6 @@ class TestWikidata(Geograpy3Test):
         #    #self.assertEqual(region['cities'],len(cityList))
         #    pass
 
-    def testGetCitiesOfRegion(self):
-        '''
-        Test getting cities based on region wikidata id
-        '''
-        # Wikidata time outs in CI environment need to be avoided
-        if getpass.getuser()!="wf":
-            return
-        wikidata = Wikidata()
-        californiaWikidataId="Q99"
-        cities=wikidata.getCitiesOfRegion(californiaWikidataId, 1)
-        if self.debug:
-            print(cities)
-        # [{'city': 'http://www.wikidata.org/entity/Q1050826', 'cityLabel': 'Greater Los Angeles Area', 'cityPop': 18550288.0, 'cityCoord': 'Point(-118.25 35.05694444)'}]
-        wikidataURL="http://www.wikidata.org/entity/Q1050826"
-        if cities and len(cities)>0:
-            biggestCity=cities[0]
-            self.assertEqual(biggestCity['city'], wikidataURL)
-        else:
-            self.fail("California should have at least one city")
 
     def testGetWikidataId(self):
         '''

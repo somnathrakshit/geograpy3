@@ -110,6 +110,7 @@ class TestLocationContext(Geograpy3Test):
                 self.assertEqual(ca.name, "California")
             except Exception as ex:
                 self.handleWikidataException(ex)
+                
 
     def test_CityManagerFromWikidata(self):
         '''
@@ -119,13 +120,11 @@ class TestLocationContext(Geograpy3Test):
         self.testWikidata = True
         if self.inCI() or self.testWikidata:
             try:
-<<<<<<< HEAD
                 limit=100
                 expected=limit
                 cityManager = CityManager.fromWikidata(fromBackup=False,limit=limit)
                 # check amount of regions
                 self.assertTrue(len(cityManager.cities) >= expected)
-=======
                 regions = ["Q1201"]
                 cityManager = CityManager.fromWikidata(regionIDs=regions, fromBackup=False)
                 # check amount of regions
