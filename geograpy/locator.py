@@ -314,8 +314,6 @@ class LocationManager(EntityManager):
         else:
             return []
 
-
-
 class CountryManager(LocationManager):
     '''
     a list of countries
@@ -326,27 +324,14 @@ class CountryManager(LocationManager):
                             entityName="country",
                             entityPluralName="countries",
                             clazz=Country,
-                            primaryKey="wikidataid",
-                            tableName="countries_wikidata",
+                            primaryKey="countryId",
+                            tableName="countries",
                             config=config,
                             debug=debug
                             )
+        self.wd=Wikidata()
+        self.getListOfDicts=self.wd.getCountries
        
-    @classmethod
-    def from_sqlDb(cls, sqlDB):
-        countryManager = CountryManager(name="countries_sql")
-        query = "select * from countries"
-        countryLod = sqlDB.query(query)
-        for countryRecord in countryLod:
-            country = Country()
-            country.name = countryRecord["countryLabel"]
-            country.iso = countryRecord["countryIsoCode"]
-            # TODO Fix table to supply lat/lon directly
-            coordStr = countryRecord["countryCoord"]
-            country.lat, country.lon = Wikidata.getCoordinateComponents(coordStr)
-            countryManager.getList().append(country)
-        return countryManager
-
     @classmethod
     def fromErdem(cls):
         '''
@@ -366,45 +351,7 @@ class CountryManager(LocationManager):
 
         return countryManager
 
-    @classmethod
-    def fromWikidata(cls):
-        '''
-        get country list form wikidata
-        '''
-        countryManager = CountryManager(name="countries_wikidata")
-        wikidata = Wikidata()
-
-        wikidata.getCountries()
-        if hasattr(wikidata, 'countryList'):
-            for countryRecord in wikidata.countryList:
-                country = Country()
-                country.wikidataid = Wikidata.getWikidataId(countryRecord['country'])
-                country.name = countryRecord['countryLabel']
-                country.iso = countryRecord['countryIsoCode']
-                lon, lat = Wikidata.getCoordinateComponents(countryRecord['countryCoord'])
-                country.lat = lat
-                country.lon = lon
-                country.population = countryRecord['countryPopulation']
-                countryManager.getList().append(country)
-        return countryManager
-
-    @classmethod
-    def fromJSONBackup(cls, config:StorageConfig=None,forceUpdate:bool=False):
-        '''
-        get country list from json backup (json backup is based on wikidata query results)
-
-        Returns:
-            CountryList based on the json backup
-        '''
-        countryManager = CountryManager(name="countries_json", config=config)
-        countryManager.fromCache(force=forceUpdate, getListOfDicts=cls.getLocationLodFromJsonBackup)
-        return countryManager
-
-    @classmethod
-    def getLocationLodFromJsonBackup(cls):
-        lod=LocationManager.getMyLocationLodFromJsonBackup(listName="countries")
-        return lod
-
+  
 class RegionManager(LocationManager):
     '''
     a list of regions
@@ -415,83 +362,14 @@ class RegionManager(LocationManager):
                             entityName="region",
                             entityPluralName="regions",
                             clazz=Region,
-                            primaryKey="wikidataid",
-                            tableName="regions_wikidata",
+                            primaryKey="regionId",
+                            tableName="regions",
                             config=config,
                             debug=debug
                         )
-        
-    @classmethod
-    def from_sqlDb(cls, sqlDB, config:StorageConfig=None):
-        regionManager = RegionManager(name="regions_sql", config=config)
-        query = "select * from regions"
-        regionsLod = sqlDB.query(query)
-        for regionRecord in regionsLod:
-            region = Region()
-            region.name = regionRecord["regionLabel"]
-            region.iso = regionRecord["regionIsoCode"]
-            # TODO Fix table to supply lat/lon directly
-            coordStr = regionRecord["location"]
-            region.lat, region.lon = Wikidata.getCoordinateComponents(coordStr)
-            regionManager.getList().append(region)
-        return regionManager
-
-    @classmethod
-    def fromWikidata(cls, config:StorageConfig=None):
-        '''
-        get region list form wikidata
-        '''
-        regionManager = RegionManager(name="regions_wikidata", config=config)
-        regionIDs = []
-        wikidata = Wikidata()
-        wikidata.getRegions()
-        for regionRecord in wikidata.regionList:
-            if 'region' in regionRecord:
-                wikidataid = Wikidata.getWikidataId(regionRecord['region'])
-                # handle duplicates ...
-                if wikidataid in regionIDs:
-                    # complete existing region entry
-                    region = regionManager.getLocationByID(wikidataid)
-                    # current assumption is that only countries are duplicates
-                    # TODO handle case later e.g. Sewastopol UA/RU 
-                    # for the time being simply ignore
-                else:
-                    # add new region to the regionList
-                    region = Region()
-                    region.wikidataid = wikidataid
-                    region.name = regionRecord['regionLabel']
-                    region.iso = regionRecord['regionIsoCode']
-                    if 'location' in regionRecord:
-                        lon, lat = Wikidata.getCoordinateComponents(regionRecord['location'])
-                        region.lat = lat
-                        region.lon = lon
-                    if 'regionPopulation' in regionRecord:
-                        region.population = regionRecord['regionPopulation']
-                    if 'country' in regionRecord:
-                        country = regionRecord['country']
-                        country_wikidataid = Wikidata.getWikidataId(country)
-                        region.country_wikidataid = country_wikidataid
-                    regionIDs.append(wikidataid)
-                    regionManager.add(region)
-        return regionManager
-
-    @classmethod
-    def fromJSONBackup(cls, config:StorageConfig=None,forceUpdate:bool=False):
-        '''
-        get region list from json backup (json backup is based on wikidata query results)
-
-        Returns:
-            RegionList based on the json backup
-        '''
-        regionManager = RegionManager(name="regions_json", config=config)
-        regionManager.fromCache(force=forceUpdate, getListOfDicts=cls.getLocationLodFromJsonBackup)
-        return regionManager
-
-    @classmethod
-    def getLocationLodFromJsonBackup(cls):
-        lod=LocationManager.getMyLocationLodFromJsonBackup(listName="regions")
-        return lod
-
+        self.wd=Wikidata()
+        self.getListOfDicts=self.wd.getRegions
+   
 
 class CityManager(LocationManager):
     '''
@@ -503,116 +381,13 @@ class CityManager(LocationManager):
                             entityName="city",
                             entityPluralName="cities",
                             clazz=City,
-                            primaryKey="wikidataid",
-                            tableName="cities_wikidata",
+                            primaryKey=None,
+                            tableName="cities",
                             config=config,
                             debug=debug
                         )
-
-    @classmethod
-    def fromWikidata(cls, fromBackup:bool=True, limit:int=None, config:StorageConfig=None):
-        '''
-        get city list form wikidata
-
-        Args:
-            fromBackup(bool): If True instead of querying wikidata a backup of the wikidata results is used to create the city list. Otherwise wikidata is queried for the city data. Default is True
-            limit(int): limit the number of cities to be returned (e.g. for test purposes)
-        Returns:
-            CityList based wikidata query results
-        '''
-        if fromBackup:
-            cityList = cls.fromJSONBackup(config=config)
-            return cityList
-        cityManager = CityManager(name="cities_wikidata", config=config)
-        wikidata = Wikidata()
-        cityLOD = wikidata.getAllCities(limit=limit)
-        for cityRecord in cityLOD:
-            if 'city' in cityRecord:
-                wikidataid = Wikidata.getWikidataId(cityRecord['city'])
-                cityManager.updateCity(wikidataid, cityRecord)
-        return cityManager
-
-    def updateCity(self, wikidataid:str, cityRecord:dict):
-        '''
-        Updates the city corresponding to the given city with the given data.
-        If the city does not exist a new city object is created and added to this CityList
-        Args:
-            wikidataid(str): wikidata id of the city that should be updated/added
-            cityRecord(dict): data of the given city that should be updated/added
-
-        Returns:
-            Nothing
-        '''
-        city = self.getLocationByID(wikidataid)
-        if city is not None:
-            # city already in the cityList -> merge
-            # current assumption is that only population and label are duplicates
-            if 'labels' in cityRecord:
-                if hasattr(city, 'labels'):
-                    if isinstance(city.labels, list):
-                        if cityRecord['labels'] in city.labels:
-                            city.labels.append(cityRecord['labels'])
-                    else:
-                        labels = []
-                        labels.append(city.labels)
-                        labels.append(cityRecord['labels'])
-                        city.labels = labels
-                else:
-                    setattr(city, 'labels', [cityRecord['labels']])
-            if 'cityPop' in cityRecord:
-                population = None
-                if hasattr(city, 'population' ) and city.population is not None:
-                    if cityRecord['cityPop'] is None:
-                        population = city.population
-                    else:
-                        population = max(float(cityRecord['cityPop']), float(city.population))
-                else:
-                    population = cityRecord['cityPop']
-                city.population = population
-        else:
-            # add new city to list
-            city = City()
-            city.wikidataid = wikidataid
-            city.name = cityRecord['cityLabel']
-            if 'countryCoord' in cityRecord:
-                lon, lat = Wikidata.getCoordinateComponents(cityRecord['cityCoord'])
-                city.lat = lat
-                city.lon = lon
-            if 'country' in cityRecord:
-                country = cityRecord['country']
-                country_wikidataid = Wikidata.getWikidataId(country)
-                city.country_wikidataid = country_wikidataid
-            if 'region' in cityRecord:
-                region = cityRecord['region']
-                region_wikidataid = Wikidata.getWikidataId(region)
-                city.region_wikidataid = region_wikidataid
-            if 'cityPop' in cityRecord:
-                city.population = cityRecord['cityPop']
-            self.getList().append(city)
-
-    @classmethod
-    def fromJSONBackup(cls, config:StorageConfig=None,forceUpdate=False):
-        '''
-        get city list from json backup (json backup is based on wikidata query results)
-
-        Args:
-            jsonStr(str): JSON string the CityList should be loaded from. If None json backup is loaded. Default is None
-
-        Returns:
-            CityList based on the json backup
-        '''
-        cityManager = CityManager(name="cities_json", config=config)
-        cityManager.fromCache(force=forceUpdate, getListOfDicts=cls.getLocationLodFromJsonBackup)
-        return cityManager
-
-    @classmethod
-    def getLocationLodFromJsonBackup(cls):
-        lod=LocationManager.getMyLocationLodFromJsonBackup(listName="cities")
-        # FILTER duplicates
-        seen = set()
-        seen_add = seen.add
-        uniqueLod=[city for city in lod if not (city['wikidataid'] in seen or seen_add(city['wikidataid']))]
-        return uniqueLod
+        self.wd=Wikidata()
+        self.getListOfDicts=self.wd.getCities
     
 class Earth:
     radius = 6371.000  # radius of earth in km
@@ -861,7 +636,7 @@ class Region(Location):
         return samplesLOD
     
     def __str__(self):
-        text = f"{self.iso}({self.name})" 
+        text = f"{self.regionIsoCode}({self.region})" 
         return text
     
     @staticmethod
@@ -1542,19 +1317,12 @@ class Locator(object):
         
         
     def createViews(self, sqlDB):
-        viewDDLs = ["DROP VIEW IF EXISTS GeoLite2CityLookup", """
-CREATE VIEW GeoLite2CityLookup AS
-SELECT 
-  city_name AS name,
-  cityLabel AS wikidataName,
-  wikidataurl,
-  cityPop,
-  subdivision_1_name AS regionName,
-  subdivision_1_iso_code as regionIsoCode,
-  country_name AS countryName,
-  country_iso_code as countryIsoCode
-
-FROM citiesWithPopulation
+        viewDDLs = ["DROP VIEW IF EXISTS CityLookup", """
+CREATE VIEW CityLookup AS
+select ci.*,r.region,r.regionIsoCode,r.regionPopulation,co.country,co.countryIsoCode
+from cities ci
+join regions r on ci.regionId=r.regionId 
+join countries co on ci.countryId=co.countryId 
 """]
         for viewDDL in viewDDLs:
             sqlDB.execute(viewDDL)

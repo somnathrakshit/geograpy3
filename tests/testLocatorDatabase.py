@@ -28,12 +28,13 @@ class TestLocatorDatabase(Geograpy3Test):
         '''
         Locator.resetInstance()
         loc=Locator.getInstance()
-        forceUpdate=True
+        #forceUpdate=True
+        forceUpdate=False
         loc.populate_db(force=forceUpdate)
         tableList=loc.sqlDB.getTableList()
         self.assertTrue(loc.db_recordCount(tableList,"countries")>=190)
         self.assertTrue(loc.db_recordCount(tableList,"regions")>=3000)
-        self.assertTrue(loc.db_recordCount(tableList,"cities")>=100000)
+        self.assertTrue(loc.db_recordCount(tableList,"cities")>=200000)
 
 
     def testHasData(self):
