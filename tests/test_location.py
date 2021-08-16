@@ -24,7 +24,6 @@ class TestLocationHierarchy(Geograpy3Test):
     def getLocationContext(self):
         if self.locationContext is None:
             self.locationContext = LocationContext.fromCache()
-            self.locationContext.load()
         return self.locationContext
             
     def testDistance(self):
@@ -173,7 +172,7 @@ class TestLocationHierarchy(Geograpy3Test):
         '''
         countryList = CountryManager.fromJSONBackup()
         country = countryList.getLocationByID("Q30")  # wikidataid of USA
-        self.assertTrue('iso' in country.__dict__)
+        self.assertTrue(hasattr(country, 'iso'))
         self.assertEqual(country.iso, 'US')
 
     def test_LocationContext(self):
@@ -245,7 +244,7 @@ class TestLocationHierarchy(Geograpy3Test):
         failures = []
         for locationText in exampleLocations.keys():
             expectedLocationId = exampleLocations[locationText] 
-            locations = locationContext.locateLocation(locationText)
+            locations = locationContext.locateLocation(locationText, verbose=True)
             if len(locations) < 1:
                 failures.append(locationText)
             else:
