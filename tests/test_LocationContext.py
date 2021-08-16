@@ -25,9 +25,13 @@ class TestLocationContext(Geograpy3Test):
         
         '''
         locationsByWikiDataId, duplicates = locationManager.getLookup(primaryKey)
+        showLimit=10
         if len(duplicates) > 0:
             for i, duplicate in enumerate(duplicates):
+                if i<showLimit:
                     print(f"{i}:{duplicate}")
+                else:
+                    break
         self.assertTrue(len(duplicates)<= expectedDuplicates)
         return locationsByWikiDataId
     
@@ -64,7 +68,8 @@ class TestLocationContext(Geograpy3Test):
         self.assertTrue(hasattr(cityManager, 'cities'))
         self.assertTrue(len(cityManager.cities) >= 200000)
         # check if Los Angeles is in the list (popular city should always be in the list)
-        citiesByWikiDataId = self.checkNoDuplicateWikidataIds(cityManager,"cityId")
+        _citiesByWikiDataIdNoDuplicates = self.checkNoDuplicateWikidataIds(cityManager,"cityId",19750)
+        citiesByWikiDataId=cityManager.getLookup("cityId", withDuplicates=True)
         self.assertTrue("Q65" in citiesByWikiDataId)
         
     def testLocationContextFromCache(self):

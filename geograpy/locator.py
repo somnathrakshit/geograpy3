@@ -558,7 +558,7 @@ class City(Location):
         return samplesLOD
     
     def __str__(self):
-        text = f"{self.name} ({self.region} - {self.country})"
+        text = f"{self.city} ({self.regionId} - {self.countryId})"
         return text
     
     def setValue(self, name, record):
