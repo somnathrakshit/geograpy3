@@ -10,7 +10,7 @@ from geograpy.wikidata import Wikidata
 import json
 import os
 import getpass
-from aniso8601.builders import Limit
+
 class TestCachingCitiesByRegion(Geograpy3Test):
 
 
