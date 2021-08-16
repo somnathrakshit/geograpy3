@@ -341,7 +341,7 @@ class CountryManager(LocationManager):
             # TODO Fix table to supply lat/lon directly
             coordStr = countryRecord["countryCoord"]
             country.lat, country.lon = Wikidata.getCoordinateComponents(coordStr)
-            countryManager.getList().append(country)
+            countryManager.add(country)
         return countryManager
 
     @classmethod
@@ -359,7 +359,7 @@ class CountryManager(LocationManager):
                 country.iso = jsonCountry['country_code']
                 country.lat = jsonCountry['latlng'][0]
                 country.lon = jsonCountry['latlng'][1]
-                countryManager.getList().append(country)
+                countryManager.add(country)
 
         return countryManager
 
@@ -382,7 +382,7 @@ class CountryManager(LocationManager):
                 country.lat = lat
                 country.lon = lon
                 country.population = countryRecord['countryPopulation']
-                countryManager.getList().append(country)
+                countryManager.add(country)
         return countryManager
 
     @classmethod
@@ -395,6 +395,8 @@ class CountryManager(LocationManager):
         '''
         countryManager = CountryManager(name="countries_json", config=config)
         countryManager.fromCache(force=forceUpdate, getListOfDicts=cls.getLocationLodFromJsonBackup)
+        for country in countryManager.getList():
+            countryManager.add(country)
         return countryManager
 
     @classmethod
@@ -430,7 +432,7 @@ class RegionManager(LocationManager):
             # TODO Fix table to supply lat/lon directly
             coordStr = regionRecord["location"]
             region.lat, region.lon = Wikidata.getCoordinateComponents(coordStr)
-            regionManager.getList().append(region)
+            regionManager.add(region)
         return regionManager
 
     @classmethod
@@ -439,14 +441,13 @@ class RegionManager(LocationManager):
         get region list form wikidata
         '''
         regionManager = RegionManager(name="regions_wikidata", config=config)
-        regionIDs = []
         wikidata = Wikidata()
-        wikidata.getRegions()
-        for regionRecord in wikidata.regionList:
+        regionList=wikidata.getRegions()
+        for regionRecord in regionList:
             if 'region' in regionRecord:
                 wikidataid = Wikidata.getWikidataId(regionRecord['region'])
                 # handle duplicates ...
-                if wikidataid in regionIDs:
+                if wikidataid in regionManager.locationByWikidataID:
                     # complete existing region entry
                     region = regionManager.getLocationByID(wikidataid)
                     # current assumption is that only countries are duplicates
@@ -468,7 +469,6 @@ class RegionManager(LocationManager):
                         country = regionRecord['country']
                         country_wikidataid = Wikidata.getWikidataId(country)
                         region.country_wikidataid = country_wikidataid
-                    regionIDs.append(wikidataid)
                     regionManager.add(region)
         return regionManager
 
@@ -482,6 +482,8 @@ class RegionManager(LocationManager):
         '''
         regionManager = RegionManager(name="regions_json", config=config)
         regionManager.fromCache(force=forceUpdate, getListOfDicts=cls.getLocationLodFromJsonBackup)
+        for region in regionManager.getList():
+            regionManager.add(region)
         return regionManager
 
     @classmethod
@@ -585,7 +587,7 @@ class CityManager(LocationManager):
                 city.region_wikidataid = region_wikidataid
             if 'cityPop' in cityRecord:
                 city.population = cityRecord['cityPop']
-            self.getList().append(city)
+            self.add(city)
 
     @classmethod
     def fromJSONBackup(cls, config:StorageConfig=None,forceUpdate=False):
@@ -600,6 +602,8 @@ class CityManager(LocationManager):
         '''
         cityManager = CityManager(name="cities_json", config=config)
         cityManager.fromCache(force=forceUpdate, getListOfDicts=cls.getLocationLodFromJsonBackup)
+        for city in cityManager.getList():
+            cityManager.add(city)
         return cityManager
 
     @classmethod
