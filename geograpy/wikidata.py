@@ -252,7 +252,7 @@ SELECT distinct (?cityQ as ?cityId) ?city ?geoNameId ?gndId ?regionId ?countryId
   }
   
   VALUES ?region {
-         wd:Q228
+         wd:%s
   }
   
   # region the city should be in

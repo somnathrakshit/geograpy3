@@ -28,13 +28,15 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         regionManager.fromCache()
         regionList=regionManager.getList()   
         total=len(regionList) 
-        cachePath=config.getCachePath()
+        cachePath=f"{config.getCachePath()}/regions"
+        if not os.path.exists(cachePath):
+                os.makedirs(cachePath)
         for index,region in enumerate(regionList):
             if index>=limit:
                 break
             regionId=region.regionId
             msg=f"{index+1:4d}/{total:4d}:getting cities for {region.region}{region.regionIsoCode}"
-            jsonFileName=f"{cachePath}/regions/{region.regionIsoCode}.json"
+            jsonFileName=f"{cachePath}/{region.regionIsoCode}.json"
             if os.path.isfile(jsonFileName):
                 print(msg)
             else:
