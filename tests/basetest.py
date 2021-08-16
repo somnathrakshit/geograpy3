@@ -6,6 +6,7 @@ Created on 2021-08-13
 from unittest import TestCase
 import getpass
 import os
+import json
 from geograpy.utils import Profiler
 
 class Geograpy3Test(TestCase):
@@ -47,6 +48,9 @@ class Geograpy3Test(TestCase):
         # only raise exception for real problems
         if "HTTP Error 500" in msg:
             print("test can not work if server has problems")
+            return
+        if isinstance(ex,json.decoder.JSONDecodeError):
+            print("potential SPARQLWrapper issue")
             return
         raise ex
   
