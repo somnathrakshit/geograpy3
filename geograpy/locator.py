@@ -128,6 +128,9 @@ class LocationManager(EntityManager):
     def add(self,location):
         '''
         add the given location to me 
+        
+        Args:
+            location(object): the location to be added and put in my hash map
         '''
         self.getList().append(location)
         if hasattr(location,"wikidataid"):
@@ -1468,7 +1471,7 @@ class Locator(object):
         '''
         recreate my lookup database
         '''
-        print("recreating database ... %s" % self.db_file)
+        print(f"recreating database ... {self.db_file}")
         self.populate_db(force=True)
                 
     def populate_db(self, force=False):

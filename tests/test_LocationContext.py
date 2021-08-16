@@ -129,7 +129,6 @@ class TestLocationContext(Geograpy3Test):
                 cityManager = CityManager.fromWikidata(regionIDs=regions, fromBackup=False)
                 # check amount of regions
                 self.assertTrue(len(cityManager.cities) > 50)
->>>>>>> 10c9f4c9072559799a9ca13b52964ebd87f091a0
                 citiesByWikiDataId = self.checkNoDuplicateWikidataIds(cityManager)
                 self.assertTrue("Q1724" in citiesByWikiDataId)
                 city = cityManager.getLocationByID("Q1724")
