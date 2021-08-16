@@ -241,15 +241,27 @@ WHERE {
         '''
         get the cities for the given Region
         '''
-        queryString="""SELECT distinct (?cityQ as ?cityId) (?cityQLabel as ?city) ?geoNameId ?gndId ?regionId ?countryId ?cityCoord ?cityPopulation WHERE { 
+        queryString="""# get cities by region for geograpy3
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+
+SELECT distinct (?cityQ as ?cityId) ?city ?geoNameId ?gndId ?regionId ?countryId ?cityCoord ?cityPopulation WHERE { 
   VALUES ?hsType {
       wd:Q1549591 wd:Q3957 wd:Q5119 wd:Q15284 wd:Q62049 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972 wd:Q532
   }
+  
   VALUES ?region {
-         wd:%s
-  }  
+         wd:Q228
+  }
+  
+  # region the city should be in
   ?cityQ wdt:P131* ?region.
+  # type of human settlement to try
   ?hsType ^wdt:P279*/^wdt:P31 ?cityQ.
+  
+  # label of the City
+  ?cityQ rdfs:label ?city filter (lang(?city) = "en").
    
   # geoName Identifier
   OPTIONAL {
@@ -278,7 +290,6 @@ WHERE {
   OPTIONAL {
       ?cityQ wdt:P17 ?countryId .
   }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
 }""" % regionId            
         regionCities=self.query(msg, queryString)
         return regionCities
