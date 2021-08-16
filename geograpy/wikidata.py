@@ -50,7 +50,7 @@ class Wikidata(object):
                         record.pop(key)
             
                         
-        profile.time()
+        profile.time(f"({len(lod)})")
         return lod
     
     def store2DB(self,lod,tableName:str,primaryKey:str=None,sqlDB=None):
