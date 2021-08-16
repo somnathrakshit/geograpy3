@@ -84,6 +84,7 @@ class LocationManager(EntityManager):
                           filterInvalidListTypes=filterInvalidListTypes,
                           debug=debug)
         self.balltree = None
+        self.locationByWikidataID={}
         
     def getBallTuple(self, cache:bool=True):
         '''
@@ -107,6 +108,7 @@ class LocationManager(EntityManager):
                     validList.append(location)
             self.ballTuple = BallTree(coordinatesrad, metric='haversine'), validList
         return self.ballTuple
+    
 
     def getLocationByID(self, wikidataID:str):
         '''
@@ -118,11 +120,18 @@ class LocationManager(EntityManager):
         Returns:
             Location object
         '''
-        for location in self.getList():
-            if 'wikidataid' in location.__dict__:
-                if location.wikidataid == wikidataID:
-                    return location
-        return None
+        location=None
+        if wikidataID in self.locationByWikidataID:
+            location=self.locationByWikidataID[wikidataID]
+        return location
+    
+    def add(self,location):
+        '''
+        add the given location to me 
+        '''
+        self.getList().append(location)
+        if hasattr(location,"wikidataid"):
+            self.locationByWikidataID[location.wikidataid]=location
 
     @staticmethod
     def getURLContent(url:str):
@@ -389,7 +398,7 @@ class RegionManager(LocationManager):
                         country_wikidataid = Wikidata.getWikidataId(country)
                         region.country_wikidataid = country_wikidataid
                     regionIDs.append(wikidataid)
-                    regionManager.getList().append(region)
+                    regionManager.add(region)
         return regionManager
 
     @classmethod
@@ -427,15 +436,13 @@ class CityManager(LocationManager):
                         )
 
     @classmethod
-    def fromWikidata(cls, fromBackup:bool=True, countryIDs:list=None, regionIDs:list=None , config:StorageConfig=None):
+    def fromWikidata(cls, fromBackup:bool=True, limit:int=None, config:StorageConfig=None):
         '''
         get city list form wikidata
 
         Args:
             fromBackup(bool): If True instead of querying wikidata a backup of the wikidata results is used to create the city list. Otherwise wikidata is queried for the city data. Default is True
-            countryIDs(list): List of countryWikiDataIDs. Limits the returned cities to the given countries
-            regionIDs(list): List of regionWikiDataIDs. Limits the returned cities to the given regions
-
+            limit(int): limit the number of cities to be returned (e.g. for test purposes)
         Returns:
             CityList based wikidata query results
         '''
@@ -444,7 +451,7 @@ class CityManager(LocationManager):
             return cityList
         cityManager = CityManager(name="cities_wikidata", config=config)
         wikidata = Wikidata()
-        cityLOD = wikidata.getCities(region=regionIDs, country=countryIDs)
+        cityLOD = wikidata.getAllCities(limit=limit)
         for cityRecord in cityLOD:
             if 'city' in cityRecord:
                 wikidataid = Wikidata.getWikidataId(cityRecord['city'])
