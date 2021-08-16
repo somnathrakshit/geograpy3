@@ -792,7 +792,7 @@ class LocationContext(object):
             region = self._regionLookup.get(getattr(city, 'region_wikidataid'))
             if region is not None and isinstance(region, Region):
                 city.region = region
-        elapsed=profile.time()
+        _elapsed=profile.time()
   
                 
     def load(self,forceUpdate:bool=False,warnOnDuplicates:bool=False):
@@ -800,7 +800,7 @@ class LocationContext(object):
         load my data
         '''
         for manager in self.countryManager,self.regionManager,self.cityManager:
-            manager.fromCache(force=forceUpdate, getListOfDicts=manager.getLocationLodFromJsonBackup)
+            manager.fromCache(force=forceUpdate)
         self.interlinkLocations(warnOnDuplicates=warnOnDuplicates)
     
 
