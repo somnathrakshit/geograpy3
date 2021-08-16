@@ -236,6 +236,52 @@ WHERE {
         msg="Getting cities (human settlements) from wikidata ETA 50 s"
         citiesList=self.query(msg, queryString,limit=limit)
         return citiesList
+    
+    def getCitiesForRegion(self,regionId,msg):
+        '''
+        get the cities for the given Region
+        '''
+        queryString="""SELECT distinct (?cityQ as ?cityId) (?cityQLabel as ?city) ?geoNameId ?gndId ?regionId ?countryId ?cityCoord ?cityPopulation WHERE { 
+  VALUES ?hsType {
+      wd:Q1549591 wd:Q3957 wd:Q5119 wd:Q15284 wd:Q62049 wd:Q515 wd:Q1637706 wd:Q1093829 wd:Q486972 wd:Q532
+  }
+  VALUES ?region {
+         wd:%s
+  }  
+  ?cityQ wdt:P131* ?region.
+  ?hsType ^wdt:P279*/^wdt:P31 ?cityQ.
+   
+  # geoName Identifier
+  OPTIONAL {
+      ?cityQ wdt:P1566 ?geoNameId.
+  }
+
+  # GND-ID
+  OPTIONAL { 
+      ?cityQ wdt:P227 ?gndId. 
+  }
+  
+  OPTIONAL{
+     ?cityQ wdt:P625 ?cityCoord .
+  }
+  
+  # region this city belongs to
+  OPTIONAL {
+    ?cityQ wdt:P131 ?regionId .     
+  }
+  
+  OPTIONAL {
+     ?cityQ wdt:P1082 ?cityPopulation
+  }
+
+  # country this city belongs to
+  OPTIONAL {
+      ?cityQ wdt:P17 ?countryId .
+  }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+}""" % regionId            
+        regionCities=self.query(msg, queryString)
+        return regionCities
         
 
     @staticmethod
