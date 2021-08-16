@@ -16,18 +16,6 @@ class TestWikidata(Geograpy3Test):
     test the wikidata access for cities
     '''
 
-    def testLocatorWithWikiData(self):
-        '''
-        test Locator 
-        '''
-        Locator.resetInstance()
-        loc=Locator.getInstance()
-        loc.populate_db()
-        tableList=loc.sqlDB.getTableList()
-        self.assertTrue(loc.db_recordCount(tableList,"countries")>=190)
-        self.assertTrue(loc.db_recordCount(tableList,"regions")>=3000)
-        self.assertTrue(loc.db_recordCount(tableList,"cities")>=100000)
-
     def testWikidataCountries(self):
         '''
         test getting country information from wikidata

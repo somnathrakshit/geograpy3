@@ -3,17 +3,15 @@ Created on 2020-09-19
 
 @author: wf
 '''
-import tempfile
+
 import unittest
 
-from lodstorage.storageconfig import StorageConfig
 
 import geograpy
 import getpass
 from geograpy.locator import Locator, CountryManager, Location, LocationContext
 from collections import Counter
 from lodstorage.uml import UML
-import os
 import re
 from tests.basetest import Geograpy3Test
 
@@ -21,35 +19,6 @@ class TestLocator(Geograpy3Test):
     '''
     test the Locator class from the location module
     '''   
-
-    def testGeolite2Cities(self):
-        '''
-        test the locs.db cache for cities
-        '''
-        loc=Locator()
-        cities=loc.getGeolite2Cities()
-        if self.debug:
-            print("Found %d cities " % len(cities)) 
-        self.assertEqual(121223,len(cities))
-        pass
-    
-    def testHasData(self):
-        '''
-        check has data and populate functionality
-        '''
-        testDownload=False
-        if self.inCI() or testDownload:
-            with tempfile.TemporaryDirectory() as cacheRootDir:
-                config=StorageConfig(cacheRootDir=cacheRootDir, cacheDirName='geograpy3')
-                config.cacheFile = f"{config.getCachePath()}/{LocationContext.db_filename}"
-                loc=Locator(storageConfig=config)
-                if os.path.isfile(loc.db_file):
-                    os.remove(loc.db_file)
-                # reinit sqlDB
-                loc=Locator(storageConfig=config)
-                self.assertFalse(loc.db_has_data())
-                loc.populate_db()
-                self.assertTrue(loc.db_has_data())
         
     def testIsoRegexp(self):
         '''
@@ -97,34 +66,23 @@ select distinct regionIsoCode as isocode from regions
         if self.debug:
             print ("most common 20: %s" % wc.most_common(20))
         
-    def testPopulation(self):
+    def testUML(self):
         '''
         test adding population data from wikidata to GeoLite2 information
         '''
         Locator.resetInstance()
         loc=Locator.getInstance()  
         loc.populate_db()
-        endpoint=None
         user=getpass.getuser()
         if self.debug:
             print ("current user is %s" % user)
-        # uncomment to refresh using wikidata
-        # please note https://github.com/RDFLib/sparqlwrapper/issues/163 hits as of 2020-09
-        # endpoint='https://query.wikidata.org/sparql'
-        # uncomment to use your own wikidata copy as an endpoint
-        # if user=="wf":
-            # use 2020 Apache Jena based wikidata copy
-            #endpoint="http://jena.zeus.bitplan.com/wikidata"
-            # use 2018 Blazegraph based wikidata copy
-            #endpoint="http://blazegraph.bitplan.com/sparql"
-        loc.getWikidataCityPopulation(loc.sqlDB,endpoint)
         tableList=loc.sqlDB.getTableList()
         uml=UML()
         title="""geograpy Tables
 2021-08-13
 [[https://github.com/somnathrakshit/geograpy3 © 2020-2021 geograpy3 project]]"""
         plantUml=uml.tableListToPlantUml(tableList,title=title, packageName="geograpy3")
-        showUml=False
+        showUml=True
         if showUml or self.debug:
             print (plantUml)
             
