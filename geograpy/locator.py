@@ -29,6 +29,7 @@ Created on 2020-09-18
 @author: wf
 '''
 import os
+import glob
 import urllib
 import re
 import csv
@@ -387,6 +388,22 @@ class CityManager(LocationManager):
                         )
         self.wd=Wikidata()
         self.getListOfDicts=self.wd.getCities
+       
+    @classmethod    
+    def getJsonFiles(cls,config:StorageConfig) -> list: 
+        '''
+        get the list of the json files that have my data
+        
+        Return:
+            list: a list of json file names
+        
+        '''
+        jsondir=f"{config.getCachePath()}/regions"
+        if not os.path.exists(jsondir):
+                os.makedirs(jsondir)
+        jsonFiles = sorted(glob.glob(f"{jsondir}/*.json"), key=lambda path:int(re.findall(r'\d+', path)[0]))
+        return jsonFiles
+        
     
 class Earth:
     radius = 6371.000  # radius of earth in km
@@ -987,7 +1004,7 @@ class Locator(object):
             self.db_file = self.storageConfig.cacheFile
         else:
             self.db_file=db_file
-        self.view = "GeoLite2CityLookup"
+        self.view = "CityLookup"
         self.sqlDB = SQLDB(self.db_file, errorDebug=True)
         self.getAliases()
         self.dbVersion = "2021-08-13 14:49:00"
@@ -1318,10 +1335,10 @@ class Locator(object):
     def createViews(self, sqlDB):
         viewDDLs = ["DROP VIEW IF EXISTS CityLookup", """
 CREATE VIEW CityLookup AS
-select ci.*,r.region,r.regionIsoCode,r.regionPopulation,co.country,co.countryIsoCode
+select ci.*,r.name as regionName,r.iso as regionIso,r.pop as regionPop,co.name as countryName,co.iso as countryIso
 from cities ci
-join regions r on ci.regionId=r.regionId 
-join countries co on ci.countryId=co.countryId 
+join regions r on ci.regionId=r.wikidataid
+join countries co on ci.countryId=co.wikidataid
 """]
         for viewDDL in viewDDLs:
             sqlDB.execute(viewDDL)

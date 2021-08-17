@@ -5,8 +5,9 @@ Created on 16.08.2021
 '''
 import unittest
 from tests.basetest import Geograpy3Test
-from geograpy.locator import RegionManager,LocationContext
+from geograpy.locator import City,CityManager,CountryManager,RegionManager,LocationContext
 from geograpy.wikidata import Wikidata
+from geograpy.utils import Profiler
 import json
 import os
 import getpass
@@ -24,6 +25,8 @@ class TestCachingCitiesByRegion(Geograpy3Test):
     def cacheRegionCities2Json(self,limit,showDone=False):
         wd=Wikidata()
         config=LocationContext.getDefaultConfig()
+        countryManager= CountryManager(config=config)
+        countryManager.fromCache()
         regionManager = RegionManager(config=config)
         regionManager.fromCache()
         regionList=regionManager.getList()   
@@ -56,6 +59,29 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         '''
         limit=5000 if getpass.getuser()=="wf" else 50
         self.cacheRegionCities2Json(limit=limit)
+        
+    def testReadCachedCitiesByRegion(self):
+        '''
+        test reading the cached json Files
+        '''
+        config=LocationContext.getDefaultConfig()
+        jsonFiles=CityManager.getJsonFiles(config)
+        msg=f"reading {len(jsonFiles)} cached city by region JSON cache files"
+        self.assertTrue(len(jsonFiles)>2000)
+        profiler=Profiler(msg)
+        cityManager=CityManager(config=config)
+        cityManager.getList().clear()
+        for jsonFileName in jsonFiles:
+            with open(jsonFileName) as jsonFile:
+                cities4Region = json.load(jsonFile)
+                for city4Region in cities4Region:
+                    city=City()
+                    city.fromDict(city4Region)
+                    cityManager.add(city)
+                    pass
+        cityManager.store()
+        profiler.time()
+                
 
 
 
