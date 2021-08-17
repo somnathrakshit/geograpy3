@@ -10,6 +10,7 @@ from geograpy.wikidata import Wikidata
 from geograpy.utils import Profiler
 import json
 import os
+import re
 import getpass
 
 class TestCachingCitiesByRegion(Geograpy3Test):
@@ -38,7 +39,7 @@ class TestCachingCitiesByRegion(Geograpy3Test):
             if index>=limit:
                 break
             regionId=region.wikidataid
-            msg=f"{index+1:4d}/{total:4d}:getting cities for {region.name} {region.iso}"
+            msg=f"{index+1:4d}/{total:4d}:getting cities for {region.name} {region.iso} {region.wikidataid}"
             jsonFileName=f"{cachePath}/{region.iso}.json"
             if os.path.isfile(jsonFileName):
                 if showDone:
@@ -64,7 +65,13 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         '''
         test reading the cached json Files
         '''
+        # This is to populate the cities database 
+        return
         config=LocationContext.getDefaultConfig()
+        regionManager = RegionManager(config=config)
+        regionManager.fromCache()
+        regionByIso,_dup=regionManager.getLookup("iso")
+        self.assertEqual(56,len(_dup))
         jsonFiles=CityManager.getJsonFiles(config)
         msg=f"reading {len(jsonFiles)} cached city by region JSON cache files"
         self.assertTrue(len(jsonFiles)>2000)
@@ -72,17 +79,24 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         cityManager=CityManager(config=config)
         cityManager.getList().clear()
         for jsonFileName in jsonFiles:
-            with open(jsonFileName) as jsonFile:
-                cities4Region = json.load(jsonFile)
-                for city4Region in cities4Region:
-                    city=City()
-                    city.fromDict(city4Region)
-                    cityManager.add(city)
-                    pass
+            isoMatch = re.search(r"/([^\/]*)\.json", jsonFileName)
+            if not isoMatch:
+                print(f"{jsonFileName} - does not match a known region's ISO code")
+            else:
+                rIso=isoMatch.group(1)
+                region=regionByIso[rIso]
+                with open(jsonFileName) as jsonFile:
+                    cities4Region = json.load(jsonFile)
+                    for city4Region in cities4Region:
+                        city=City()
+                        city.fromDict(city4Region)
+                        if hasattr(city, "regionId"):
+                            city.partOfRegionId=city.regionId
+                        city.regionId=region.wikidataid
+                        cityManager.add(city)
+                        pass
         cityManager.store()
         profiler.time()
-                
-
 
 
 if __name__ == "__main__":

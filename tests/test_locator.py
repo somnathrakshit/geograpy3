@@ -100,6 +100,23 @@ select distinct regionIsoCode as isocode from regions
                 print("%3d: %22s->%s" % (index,example,city))
             if check:
                 self.assertEqual(countries[index],city.country.iso) 
+                
+    def testGetCountry(self):
+        '''
+        test getting a country by name or ISO
+        '''
+        locator=Locator()
+        debug=True
+        examples=[("DE","Germany"),("US","United States of America"),("USA",None)]
+        for name,expectedName in examples:
+            country=locator.getCountry(name)
+            if debug:
+                print(country)
+            if expectedName is None:
+                self.assertIsNone(country)
+            else:
+                self.assertIsNotNone(country)
+                self.assertEqual(expectedName,country.name)
             
     def testIssue15(self):
         '''

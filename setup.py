@@ -45,7 +45,6 @@ setup(name='geograpy3',
         'pylodstorage',
         'sphinx-rtd-theme',
         'scikit-learn',
-        'sqlalchemy',
         'pandas'
       ],
       scripts=['geograpy/bin/geograpy-nltk'],

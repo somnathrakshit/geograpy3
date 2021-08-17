@@ -241,6 +241,7 @@ WHERE {
         '''
         get the cities for the given Region
         '''
+        regionPath="?region ^wdt:P131/^wdt:P131/^wdt:P131 ?cityQ." if regionId in ["Q980","Q21"] else "?cityQ wdt:P131* ?region." 
         queryString="""# get cities by region for geograpy3
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
@@ -256,7 +257,8 @@ SELECT distinct (?cityQ as ?wikidataid) ?name ?geoNameId ?gndId ?regionId ?count
   }
   
   # region the city should be in
-  ?cityQ wdt:P131* ?region.
+  %s
+  
   # type of human settlement to try
   ?hsType ^wdt:P279*/^wdt:P31 ?cityQ.
   
@@ -290,7 +292,7 @@ SELECT distinct (?cityQ as ?wikidataid) ?name ?geoNameId ?gndId ?regionId ?count
   OPTIONAL {
       ?cityQ wdt:P17 ?countryId .
   }
-}""" % regionId            
+}""" % (regionId,regionPath)           
         regionCities=self.query(msg, queryString)
         return regionCities
         

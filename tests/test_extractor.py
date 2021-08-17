@@ -108,7 +108,7 @@ class TestExtractor(Geograpy3Test):
         for index,locality in enumerate(localities):
             city=geograpy.locateCity(locality,debug=False)
             if self.debug:
-                print("  %s" % city)
+                print(f"  {city}")
             self.assertEqual(expected[index]['iso'],city.country.iso)
        
     def testIssue10(self):

@@ -33,7 +33,6 @@ import glob
 import urllib
 import re
 import csv
-import pycountry
 import sys
 import gzip
 import shutil
@@ -563,19 +562,56 @@ class City(Location):
             "wikidataid": "Q65",
             "lat": 34.05223,
             "lon":-118.24368,
+            "geoNameId": "5368361",
+            "gndId": "4036361-2",
             "partOf": "US/CA",
             "level": 5,
             "locationKind": "City",
-            "comment": None,
-            "population": "3976322",
-            "region_wikidataid": "Q99",
-            "country_wikidataid": "Q30"
+            "pop": "3976322",
+            "regionId": "Q99",
+            "countryId": "Q30"
         }]
         return samplesLOD
     
     def __str__(self):
         text = f"{self.city} ({self.regionId} - {self.countryId})"
         return text
+    
+    @staticmethod 
+    def partialDict(record,clazz,keys=None):
+        if keys is None:
+            keys=clazz.getSamples()[0].keys()
+        pDict={k:v for k,v in record.items() if k in keys}
+        return pDict
+    
+    @staticmethod
+    def mappedDict(record,keyMapList:list):
+        keyMap={}
+        for mkey,mValue in keyMapList:
+            keyMap[mkey]=mValue
+        pDict={keyMap[k]:v for k,v in record.items() if k in keyMap.keys()}
+        return pDict
+    
+    @staticmethod
+    def fromCityLookup(cityLookupRecord:dict):
+        '''
+        Args:
+            cityRecord(dict): a map derived from the CityLookup view
+        '''
+        # we create city, region and country from scratch without true
+        # object relational mapping and lookup from the locationContext 
+        # this is only useful for small result sets that need no further interlinking
+        city=City()
+        # first take all params
+        cityRecord=City.partialDict(cityLookupRecord,City)
+        city.fromDict(cityRecord)
+        regionRecord=City.mappedDict(cityLookupRecord,[("regionId","wikidataid"),("regionName","name"),("regionIso","iso"),("regionPop","pop")])
+        city.region=Region()
+        city.region.fromDict(regionRecord)
+        countryRecord=City.mappedDict(cityLookupRecord,[("countryId","wikidataid"),("countryName","name"),("countryIso","iso")])
+        city.country=Country()
+        city.country.fromDict(countryRecord)
+        return city
     
     def setValue(self, name, record):
         '''
@@ -591,18 +627,6 @@ class City(Location):
         else:
             value = None
         setattr(self, name, value)
-            
-    @staticmethod
-    def fromGeoLite2(record):
-        city = City()
-        city.name = record['name']
-        if not city.name:
-            city.name = record['wikidataName']
-        city.setValue('population', record)
-        city.setValue('gdp', record)
-        city.region = Region.fromGeoLite2(record)
-        city.country = Country.fromGeoLite2(record)
-        return city
 
     @property
     def country(self):
@@ -656,22 +680,6 @@ class Region(Location):
         return text
     
     @staticmethod
-    def fromGeoLite2(record):
-        '''
-        create  a region from a Geolite2 record
-        
-        Args:
-            record(dict): the records as returned from a Query
-            
-        Returns:
-            Region: the corresponding region information
-        '''
-        region = Region()
-        region.name = record['regionName']
-        region.iso = "%s-%s" % (record['countryIsoCode'], record['regionIsoCode']) 
-        return region   
-    
-    @staticmethod
     def fromWikidata(record):
         '''
         create  a region from a Wikidata record
@@ -683,8 +691,7 @@ class Region(Location):
             Region: the corresponding region information
         '''
         region = Region()
-        region.name = record['regionLabel']
-        region.iso = record['regionIsoCode'] 
+        region.fromDict(record)
         return region
 
     @property
@@ -1007,7 +1014,7 @@ class Locator(object):
         self.view = "CityLookup"
         self.sqlDB = SQLDB(self.db_file, errorDebug=True)
         self.getAliases()
-        self.dbVersion = "2021-08-13 14:49:00"
+        self.dbVersion = "2021-08-18 16:15:00"
         
     @staticmethod
     def resetInstance():
@@ -1064,7 +1071,7 @@ class Locator(object):
         check if the given string is an ISO code
         
         Returns:
-            bool: True if the string is an ISO Code
+            bool: True if the string might be an ISO Code as per a regexp check
         '''
         m = re.search(r"^([A-Z]{1,2}\-)?[0-9A-Z]{1,3}$", s)
         result = m is not None
@@ -1124,10 +1131,9 @@ class Locator(object):
             a list of city records
         '''
         cities = []
-        for column in ['name', 'wikidataName']:
-            cityRecords = self.places_by_name(cityName, column)
-            for cityRecord in cityRecords:
-                cities.append(City.fromGeoLite2(cityRecord))
+        cityRecords = self.places_by_name(cityName, "name")
+        for cityRecord in cityRecords:
+            cities.append(City.fromCityLookup(cityRecord))
         return cities
 
     def regions_for_name(self, region_name):
@@ -1142,10 +1148,10 @@ class Locator(object):
         '''
         regions = []    
         if self.isISO(region_name):
-            columnName = "regionIsoCode"
+            columnName = "iso"
         else:
-            columnName = 'regionLabel'
-        query = "SELECT * from regions WHERE %s = (?)" % (columnName)
+            columnName = 'name'
+        query = f"SELECT * from regions WHERE {columnName} = (?)" 
         params = (region_name,)
         regionRecords = self.sqlDB.query(query, params)
         for regionRecord in regionRecords:
@@ -1190,20 +1196,19 @@ class Locator(object):
             country: the country if one was found or None if not
         '''
         if self.isISO(name):
-            pcountry = pycountry.countries.get(alpha_2=name)
+            query="SELECT * FROM countries WHERE iso = (?)"""
+            params=(name,)
         else:
             if self.correctMisspelling:
                 name = self.correct_country_misspelling(name)
-            pcountry = pycountry.countries.get(name=name)
+            query="SELECT * FROM  countries WHERE name = (?)"""
+            params=(name,)
         country = None
-        if pcountry is not None:
-            country = Country.fromPyCountry(pcountry)
-        # if country is None:
-        #    query="SELECT * FROM countries WHERE countryLabel = (?)"""
-        #    params=(name,)
-        #    countryRecords=self.sqlDB.query(query,params)
-        #    if len(countryRecords)>0:
-        #        pass
+        countryRecords=self.sqlDB.query(query,params)
+        if len(countryRecords)==1:
+            country=Country()
+            country.fromDict(countryRecords[0])
+            pass
         return country
     
     def getView(self):
@@ -1326,20 +1331,50 @@ class Locator(object):
         Args:
             sqlDB(SQLDB): target SQL database
         '''
-        wikidata = Wikidata()
-        wikidata.endpoint="https://confident.dbis.rwth-aachen.de/jena/wdhs/sparql"
-        cityList=wikidata.getCities()
-        wikidata.store2DB(cityList, "cities",primaryKey=None,sqlDB=sqlDB)
-        
+        #wikidata = Wikidata()
+        #wikidata.endpoint="https://confident.dbis.rwth-aachen.de/jena/wdhs/sparql"
+        #cityList=wikidata.getCities()
+        #wikidata.store2DB(cityList, "cities",primaryKey=None,sqlDB=sqlDB)
+        config=LocationContext.getDefaultConfig()
+        regionManager = RegionManager(config=config)
+        regionManager.fromCache()
+        regionByIso,_dup=regionManager.getLookup("iso")
+        jsonFiles=CityManager.getJsonFiles(config)
+        msg=f"reading {len(jsonFiles)} cached city by region JSON cache files"
+        profiler=Profiler(msg)
+        cityManager=CityManager(config=config)
+        cityManager.getList().clear()
+        for jsonFileName in jsonFiles:
+            isoMatch = re.search(r"/([^\/]*)\.json", jsonFileName)
+            if not isoMatch:
+                print(f"{jsonFileName} - does not match a known region's ISO code")
+            else:
+                rIso=isoMatch.group(1)
+                region=regionByIso[rIso]
+                with open(jsonFileName) as jsonFile:
+                    cities4Region = json.load(jsonFile)
+                    for city4Region in cities4Region:
+                        city=City()
+                        city.fromDict(city4Region)
+                        if hasattr(city, "regionId"):
+                            city.partOfRegionId=city.regionId
+                        city.regionId=region.wikidataid
+                        cityManager.add(city)
+                        pass
+        cityManager.store()
+        profiler.time()
         
     def createViews(self, sqlDB):
         viewDDLs = ["DROP VIEW IF EXISTS CityLookup", """
 CREATE VIEW CityLookup AS
-select ci.*,r.name as regionName,r.iso as regionIso,r.pop as regionPop,co.name as countryName,co.iso as countryIso
-from cities ci
-join regions r on ci.regionId=r.wikidataid
-join countries co on ci.countryId=co.wikidataid
-"""]
+SELECT ci.*,r.name as regionName,r.iso as regionIso,r.pop as regionPop,co.name as countryName,co.iso as countryIso
+FROM cities ci
+JOIN regions r on ci.regionId=r.wikidataid
+JOIN countries co on ci.countryId=co.wikidataid
+""", "DROP INDEX IF EXISTS cityByRegion",
+"CREATE INDEX cityByRegion ON cities (regionId)",
+"DROP INDEX IF EXISTS regionByCountry",
+"CREATE INDEX regionByCountry ON regions (countryId)"]
         for viewDDL in viewDDLs:
             sqlDB.execute(viewDDL)
     

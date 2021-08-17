@@ -3,8 +3,6 @@
 # https://pypi.org/project/newspaper/
 # https://pypi.org/project/newspaper3k/
 newspaper3k
-# https://pypi.org/project/pycountry/
-pycountry
 # https://pypi.org/project/nltk/
 nltk
 # https://pypi.org/project/jellyfish/
@@ -18,7 +16,5 @@ pylodstorage>=0.0.68
 sphinx-rtd-theme
 # https://pypi.org/project/scikit-learn/
 scikit-learn
-# https://pypi.org/project/SQLAlchemy/
-sqlalchemy
 # https://pypi.org/project/pandas/
 pandas
