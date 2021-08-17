@@ -323,14 +323,14 @@ class CountryManager(LocationManager):
                             entityName="country",
                             entityPluralName="countries",
                             clazz=Country,
-                            primaryKey="countryId",
+                            primaryKey="wikidataid",
                             tableName="countries",
                             config=config,
                             debug=debug
                             )
         self.wd=Wikidata()
         self.getListOfDicts=self.wd.getCountries
-       
+
     @classmethod
     def fromErdem(cls):
         '''
@@ -346,11 +346,11 @@ class CountryManager(LocationManager):
                 country.iso = jsonCountry['country_code']
                 country.lat = jsonCountry['latlng'][0]
                 country.lon = jsonCountry['latlng'][1]
-                countryManager.getList().append(country)
+                countryManager.add(country)
 
         return countryManager
 
-  
+
 class RegionManager(LocationManager):
     '''
     a list of regions
@@ -368,7 +368,7 @@ class RegionManager(LocationManager):
                         )
         self.wd=Wikidata()
         self.getListOfDicts=self.wd.getRegions
-   
+
 
 class CityManager(LocationManager):
     '''
@@ -574,7 +574,7 @@ class City(Location):
         return samplesLOD
     
     def __str__(self):
-        text = f"{self.city} ({self.regionId} - {self.countryId})"
+        text = f"{self.name} ({self.region} - {self.country})"
         return text
     
     @staticmethod 
@@ -676,7 +676,7 @@ class Region(Location):
         return samplesLOD
     
     def __str__(self):
-        text = f"{self.regionIsoCode}({self.region})" 
+        text = f"{self.iso}({self.name})" 
         return text
     
     @staticmethod
@@ -691,7 +691,6 @@ class Region(Location):
             Region: the corresponding region information
         '''
         region = Region()
-        region.fromDict(record)
         return region
 
     @property
@@ -745,7 +744,7 @@ class Country(Location):
         '''
         country = Country()
         country.name = record['countryName']
-        country.iso = record['countryIsoCode']
+        country.iso = record['countryIso']
         return country
     
     @staticmethod
@@ -815,7 +814,7 @@ class LocationContext(object):
             region = self._regionLookup.get(getattr(city, 'region_wikidataid'))
             if region is not None and isinstance(region, Region):
                 city.region = region
-        _elapsed=profile.time()
+        elapsed=profile.time()
   
                 
     def load(self,forceUpdate:bool=False,warnOnDuplicates:bool=False):
@@ -823,7 +822,7 @@ class LocationContext(object):
         load my data
         '''
         for manager in self.countryManager,self.regionManager,self.cityManager:
-            manager.fromCache(force=forceUpdate)
+            manager.fromCache(force=forceUpdate, getListOfDicts=manager.getLocationLodFromJsonBackup)
         self.interlinkLocations(warnOnDuplicates=warnOnDuplicates)
     
 
