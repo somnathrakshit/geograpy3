@@ -34,9 +34,9 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         for index,region in enumerate(regionList):
             if index>=limit:
                 break
-            regionId=region.regionId
-            msg=f"{index+1:4d}/{total:4d}:getting cities for {region.region} {region.regionIsoCode}"
-            jsonFileName=f"{cachePath}/{region.regionIsoCode}.json"
+            regionId=region.wikidataid
+            msg=f"{index+1:4d}/{total:4d}:getting cities for {region.name} {region.iso}"
+            jsonFileName=f"{cachePath}/{region.iso}.json"
             if os.path.isfile(jsonFileName):
                 if showDone:
                     print(msg)
