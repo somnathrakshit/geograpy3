@@ -49,9 +49,9 @@ class Geograpy3Test(TestCase):
         if "HTTP Error 500" in msg:
             print("test can not work if server has problems")
             return
-        if isinstance(ex,json.decoder.JSONDecodeError):
-            print("potential SPARQLWrapper issue")
-            return
+        #if isinstance(ex,json.decoder.JSONDecodeError):
+        #    print("potential SPARQLWrapper issue")
+        #    return
         raise ex
   
 

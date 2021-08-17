@@ -21,7 +21,7 @@ class TestCachingCitiesByRegion(Geograpy3Test):
     def tearDown(self):
         pass
     
-    def cacheRegionCities2Json(self,limit):
+    def cacheRegionCities2Json(self,limit,showDone=False):
         wd=Wikidata()
         config=LocationContext.getDefaultConfig()
         regionManager = RegionManager(config=config)
@@ -38,7 +38,8 @@ class TestCachingCitiesByRegion(Geograpy3Test):
             msg=f"{index+1:4d}/{total:4d}:getting cities for {region.region} {region.regionIsoCode}"
             jsonFileName=f"{cachePath}/{region.regionIsoCode}.json"
             if os.path.isfile(jsonFileName):
-                print(msg)
+                if showDone:
+                    print(msg)
             else:
                 try:
                     regionCities=wd.getCitiesForRegion(regionId, msg)
@@ -48,8 +49,6 @@ class TestCachingCitiesByRegion(Geograpy3Test):
                 except Exception as ex:
                     self.handleWikidataException(ex)
                     
-   
-
 
     def testGetCitiesByRegion(self):
         '''

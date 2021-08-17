@@ -108,7 +108,6 @@ class LocationManager(EntityManager):
                     validList.append(location)
             self.ballTuple = BallTree(coordinatesrad, metric='haversine'), validList
         return self.ballTuple
-    
 
     def getLocationByID(self, wikidataID:str):
         '''
