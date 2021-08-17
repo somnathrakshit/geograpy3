@@ -43,7 +43,7 @@ class Wikidata(object):
                 if isinstance(value,str):
                     if value.startswith("http://www.wikidata.org/"):
                         record[key]=self.getWikidataId(value)
-                    if key.endswith("Coord"):
+                    if key.lower().endswith("coord"):
                         lat, lon = Wikidata.getCoordinateComponents(value)
                         record["lat"]=lat
                         record["lon"]=lon
