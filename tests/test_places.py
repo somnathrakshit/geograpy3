@@ -12,6 +12,7 @@ class TestPlaces(Geograpy3Test):
     def setUp(self):
         super().setUp()
         Locator.resetInstance()
+        self.debug=True
         pass
 
 

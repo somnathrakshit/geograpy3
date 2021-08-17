@@ -113,7 +113,7 @@ class PlaceContext(Locator):
         if not self.db_has_data():
             self.populate_db()
         params=",".join("?" * len(self.places))
-        query="SELECT * FROM cities WHERE city_name IN (" + params + ")"
+        query="SELECT * FROM cities WHERE city IN (" + params + ")"
         cities=self.sqlDB.query(query,self.places)
 
         for city in cities:
