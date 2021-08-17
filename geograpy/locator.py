@@ -325,7 +325,7 @@ class CountryManager(LocationManager):
                             entityPluralName="countries",
                             clazz=Country,
                             primaryKey="wikidataid",
-                            tableName="countries_wikidata",
+                            tableName="countries",
                             config=config,
                             debug=debug
                             )
@@ -668,7 +668,7 @@ class Region(Location):
         '''
         region = Region()
         region.name = record['regionName']
-        region.iso = "%s-%s" % (record['countryIsoCode'], record['regionIsoCode']) 
+        region.iso = "%s-%s" % (record['countryIso'], record['regionIso'])
         return region   
     
     @staticmethod
@@ -683,8 +683,8 @@ class Region(Location):
             Region: the corresponding region information
         '''
         region = Region()
-        region.name = record['regionLabel']
-        region.iso = record['regionIsoCode'] 
+        region.name = record['regionName']
+        region.iso = record['regionIso']
         return region
 
     @property
@@ -738,7 +738,7 @@ class Country(Location):
         '''
         country = Country()
         country.name = record['countryName']
-        country.iso = record['countryIsoCode']
+        country.iso = record['countryIso']
         return country
     
     @staticmethod
@@ -1124,7 +1124,7 @@ class Locator(object):
             a list of city records
         '''
         cities = []
-        for column in ['name', 'wikidataName']:
+        for column in ['name', 'name']:
             cityRecords = self.places_by_name(cityName, column)
             for cityRecord in cityRecords:
                 cities.append(City.fromGeoLite2(cityRecord))
@@ -1142,9 +1142,9 @@ class Locator(object):
         '''
         regions = []    
         if self.isISO(region_name):
-            columnName = "regionIsoCode"
+            columnName = "iso"
         else:
-            columnName = 'regionLabel'
+            columnName = 'name'
         query = "SELECT * from regions WHERE %s = (?)" % (columnName)
         params = (region_name,)
         regionRecords = self.sqlDB.query(query, params)

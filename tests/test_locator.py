@@ -28,20 +28,14 @@ class TestLocator(Geograpy3Test):
         self.assertFalse(loc.isISO('Singapore'))   
          
         query="""
-        select distinct country_iso_code as isocode from cities 
-union
-select distinct subdivision_1_iso_code as isocode from cities 
+select distinct iso from countries
 union 
-select distinct subdivision_1_iso_code as isocode from cities
-union 
-select distinct countryIsoCode as isocode from countries
-union 
-select distinct regionIsoCode as isocode from regions
+select distinct iso from regions
 """     
         loc.populate_db()
         isocodeRecords=loc.sqlDB.query(query)
         for isocodeRecord in isocodeRecords:
-            isocode=isocodeRecord['isocode']
+            isocode=isocodeRecord['iso']
             if isocode:
                 isIso=loc.isISO(isocode)
                 if not isIso and self.debug:
@@ -54,7 +48,7 @@ select distinct regionIsoCode as isocode from regions
         test the word count 
         '''
         loc=Locator.getInstance()
-        query="SELECT city_name AS name from CITIES"
+        query="SELECT name from CITIES"
         nameRecords=loc.sqlDB.query(query)
         if self.debug:
             print ("testWordCount: found %d names" % len(nameRecords))

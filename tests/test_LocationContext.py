@@ -44,7 +44,7 @@ class TestLocationContext(Geograpy3Test):
         self.assertTrue(hasattr(countryManager,'countries'))
         self.assertTrue(len(countryManager.countries) >= 200)
         # check if California is in the list
-        countriesByWikidataId=self.checkNoDuplicateWikidataIds(countryManager,"countryId")
+        countriesByWikidataId=self.checkNoDuplicateWikidataIds(countryManager,"wikidataid")
         self.assertTrue("Q30" in countriesByWikidataId)
         
     def testRegionManager(self):
@@ -55,7 +55,7 @@ class TestLocationContext(Geograpy3Test):
         regionManager.fromCache()
         self.assertTrue(hasattr(regionManager,'regions'))
         self.assertTrue(len(regionManager.regions) >= 1000)
-        regionsByWikidataId = self.checkNoDuplicateWikidataIds(regionManager,"regionId",54)
+        regionsByWikidataId = self.checkNoDuplicateWikidataIds(regionManager,"wikidataid",54)
         self.assertTrue("Q99" in regionsByWikidataId)
 
         
@@ -68,8 +68,8 @@ class TestLocationContext(Geograpy3Test):
         self.assertTrue(hasattr(cityManager, 'cities'))
         self.assertTrue(len(cityManager.cities) >= 200000)
         # check if Los Angeles is in the list (popular city should always be in the list)
-        _citiesByWikiDataIdNoDuplicates = self.checkNoDuplicateWikidataIds(cityManager,"cityId",19750)
-        citiesByWikiDataId=cityManager.getLookup("cityId", withDuplicates=True)
+        _citiesByWikiDataIdNoDuplicates = self.checkNoDuplicateWikidataIds(cityManager,"wikidataid",19750)
+        citiesByWikiDataId=cityManager.getLookup("wikidataid", withDuplicates=True)
         self.assertTrue("Q65" in citiesByWikiDataId)
         
     def testLocationContextFromCache(self):
