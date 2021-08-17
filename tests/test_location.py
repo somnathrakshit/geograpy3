@@ -94,9 +94,11 @@ class TestLocationHierarchy(Geograpy3Test):
         if not locator.db_has_data():
             locator.populate_db()
         countryList = CountryManager.fromErdem()
-        regionList = RegionManager.from_sqlDb(locator.sqlDB)
+        config=LocationContext.getDefaultConfig()
+        regionManager=RegionManager(config=config)
+        regionManager.fromCache()
         for country in countryList.countries:
-            locationListWithDistances = country.getNClosestLocations(regionList, 3)
+            locationListWithDistances = country.getNClosestLocations(regionManager, 3)
             if self.debug:
                 print(f"{country}{country.lat:.2f},{country.lon:.2f}")
             for i, locationWithDistance in enumerate(locationListWithDistances):
@@ -170,9 +172,11 @@ class TestLocationHierarchy(Geograpy3Test):
         '''
         tests if the correct location for a given wikidataid is returned
         '''
-        countryList = CountryManager.fromJSONBackup()
-        country = countryList.getLocationByID("Q30")  # wikidataid of USA
-        self.assertTrue(hasattr(country, 'iso'))
+        config=LocationContext.getDefaultConfig()
+        countryManager = CountryManager(config=config)
+        countryManager.fromCache()
+        country = countryManager.getLocationByID("Q30")  # wikidataid of USA
+        self.assertTrue(hasattr(country, 'countryIsoCode'))
         self.assertEqual(country.iso, 'US')
 
     def test_LocationContext(self):
