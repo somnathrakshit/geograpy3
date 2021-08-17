@@ -176,7 +176,8 @@ class TestLocationHierarchy(Geograpy3Test):
         countryManager = CountryManager(config=config)
         countryManager.fromCache()
         country = countryManager.getLocationByID("Q30")  # wikidataid of USA
-        self.assertTrue(hasattr(country, 'countryIsoCode'))
+        self.assertIsNotNone(country)
+        self.assertTrue(hasattr(country, 'iso'))
         self.assertEqual(country.iso, 'US')
 
     def test_LocationContext(self):

@@ -108,6 +108,12 @@ class LocationManager(EntityManager):
                     validList.append(location)
             self.ballTuple = BallTree(coordinatesrad, metric='haversine'), validList
         return self.ballTuple
+    
+    def fromCache(self,force=False,getListOfDicts=None,sampleRecordCount=0):
+        super().fromCache(force, getListOfDicts, sampleRecordCount)
+        self.locationByWikidataID={}
+        for entry in self.getList():
+            self.locationByWikidataID[entry.wikidataid]=entry
 
     def getLocationByID(self, wikidataID:str):
         '''
@@ -250,8 +256,8 @@ class LocationManager(EntityManager):
             Returns True if at least one record is present.
         '''
         sqlDb=self.getSQLDB(self.config.cacheFile)
-        tableList = sqlDb.getTableList()
-        if self.tableName in tableList:
+        tableMap = sqlDb.getTableDict()
+        if self.tableName in tableMap:
             query = f'SELECT COUNT(*) AS count  FROM {self.tableName}'
             countResult = sqlDb.query(query)
             count = countResult[0]['count']
@@ -951,9 +957,9 @@ class LocationContext(object):
         # reduce possible Locations e.g. remove regions and countries already identified by a city
         cities=[self.cityManager.getLocationByWikidataId(id) for id in possibleLocations[self.cityManager.name]]
         for city in cities:
-            if city.region_wikidataid in possibleLocations[self.regionManager.name]:
+            if city.regionId in possibleLocations[self.regionManager.name]:
                 possibleLocations[self.regionManager.name].remove(city.region_wikidataid)
-            if city.country_wikidataid in possibleLocations[self.countryManager.name]:
+            if city.countryId in possibleLocations[self.countryManager.name]:
                 possibleLocations[self.countryManager.name].remove(city.country_wikidataid)
         regions=[self.regionManager.getLocationByWikidataId(id) for id in possibleLocations[self.regionManager.name]]
         for region in regions:
@@ -961,7 +967,7 @@ class LocationContext(object):
                 possibleLocations[self.countryManager.name].remove(region.country_wikidataid)
         countries=[self.countryManager.getLocationByWikidataId(id) for id in possibleLocations[self.countryManager.name]]
         # build final result in the order city→region→country
-        cities.sort(key=lambda c: int(getattr(c, 'population', 0)) if getattr(c, 'population') is not None else 0, reverse=True)
+        cities.sort(key=lambda c: int(getattr(c, 'pop', 0)) if getattr(c, 'pop') is not None else 0, reverse=True)
         res = [*cities, *regions, *countries]
         # Enhance location objects
         for location in res:
@@ -975,10 +981,10 @@ class LocationContext(object):
         Args:
             location: location for which the hierarchy should be looked up
         '''
-        if hasattr(location, 'region_wikidataid') and getattr(location, 'region_wikidataid') is not None:
-            location.region = self.regionManager.getLocationByWikidataId(location.region_wikidataid)
-        if hasattr(location, 'country_wikidataid') and getattr(location, 'country_wikidataid') is not None:
-            location.country = self.countryManager.getLocationByWikidataId(location.country_wikidataid)
+        if hasattr(location, 'regionId') and getattr(location, 'regionId') is not None:
+            location.region = self.regionManager.getLocationByWikidataId(location.regionId)
+        if hasattr(location, 'countrId') and getattr(location, 'countryId') is not None:
+            location.country = self.countryManager.getLocationByWikidataId(location.countryId)
             if hasattr(location, 'region') and location.region is not None:
                 location.region.country = location.country
 
