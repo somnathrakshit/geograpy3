@@ -89,9 +89,6 @@ class TestWikidata(Geograpy3Test):
         #    #self.assertEqual(region['cities'],len(cityList))
         #    pass
 
-
-   
-
     def testGetWikidataId(self):
         '''
         test getting a wikiDataId from a given URL

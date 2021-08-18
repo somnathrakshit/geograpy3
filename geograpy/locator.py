@@ -87,7 +87,7 @@ class LocationManager(EntityManager):
                           debug=debug)
         self.balltree = None
         self.locationByWikidataID={}
-        if config.mode==StoreMode.SQL:
+        if config is not None and config.mode==StoreMode.SQL:
             self.sqldb=self.getSQLDB(config.cacheFile)
 
     def getBallTuple(self, cache:bool=True):
@@ -793,7 +793,7 @@ class LocationContext(object):
             region = self._regionLookup.get(getattr(city, 'regionId'))
             if region is not None and isinstance(region, Region):
                 city.region = region
-        elapsed=profile.time()
+        _elapsed=profile.time()
   
                 
     def load(self,forceUpdate:bool=False,warnOnDuplicates:bool=False):
