@@ -567,7 +567,8 @@ class City(Location):
         return samplesLOD
     
     def __str__(self):
-        text = f"{self.name} ({self.region} - {self.country})"
+        name=self.name if hasattr(self,"name") else "?"
+        text = f"{name} ({self.region} - {self.country})"
         return text
     
     @staticmethod 
@@ -598,10 +599,12 @@ class City(Location):
         # first take all params
         cityRecord=City.partialDict(cityLookupRecord,City)
         city.fromDict(cityRecord)
-        regionRecord=City.mappedDict(cityLookupRecord,[("regionId","wikidataid"),("regionName","name"),("regionIso","iso"),("regionPop","pop")])
+        regionRecord=City.mappedDict(cityLookupRecord,
+            [("regionId","wikidataid"),("regionName","name"),("regionIso","iso"),("regionPop","pop"),("regionLat","lat"),("regionLon","lon")])
         city.region=Region()
         city.region.fromDict(regionRecord)
-        countryRecord=City.mappedDict(cityLookupRecord,[("countryId","wikidataid"),("countryName","name"),("countryIso","iso")])
+        countryRecord=City.mappedDict(cityLookupRecord,
+            [("countryId","wikidataid"),("countryName","name"),("countryIso","iso"),("countryLat","lat"),("countryLon","lon")])
         city.country=Country()
         city.country.fromDict(countryRecord)
         return city

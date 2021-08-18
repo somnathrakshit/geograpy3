@@ -121,8 +121,7 @@ class PlaceContext(Locator):
         cityLookupRecords=self.sqlDB.query(query,self.places)
 
         for cityLookupRecord in cityLookupRecords:
-            city=City()
-            city.fromCityLookup(cityLookupRecord)
+            city=City.fromCityLookup(cityLookupRecord)
            
             if city.name not in self.cities:
                 self.cities.append(city.name)

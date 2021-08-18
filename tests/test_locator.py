@@ -9,7 +9,7 @@ import unittest
 
 import geograpy
 import getpass
-from geograpy.locator import Locator, CountryManager, Location, LocationContext
+from geograpy.locator import Locator, City,CountryManager, Location, LocationContext
 from collections import Counter
 from lodstorage.uml import UML
 import re
@@ -19,6 +19,29 @@ class TestLocator(Geograpy3Test):
     '''
     test the Locator class from the location module
     '''   
+    
+    def testCityLookup(self):
+        '''
+        test the cityLookup to city/region/country object cluster 
+        '''
+        loc=Locator.getInstance()
+        loc.populate_db()
+        queryString="SELECT * FROM CityLookup where name in ('Berlin','Paris') ORDER by pop desc"
+        cityLookupRecords=loc.sqlDB.query(queryString)
+        berlinFound=False
+        parisFound=False
+        for cityLookupRecord in cityLookupRecords:
+            city=City.fromCityLookup(cityLookupRecord)
+            if city.pop is not None:
+                if city.name=="Berlin" and city.pop>3644000:
+                    berlinFound=True
+                if city.name=="Paris" and city.pop>2175000:
+                    parisFound=True
+            if self.debug:
+                print(f"{city}:{city.pop}")
+        self.assertTrue(berlinFound)
+        self.assertTrue(parisFound)
+         
         
     def testIsoRegexp(self):
         '''
