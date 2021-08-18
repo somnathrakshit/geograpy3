@@ -15,12 +15,6 @@ class TestLocatorDatabase(Geograpy3Test):
     test the locator database handling
     '''
 
-    def setUp(self):
-        pass
-
-
-    def tearDown(self):
-        pass
     
     def testLocatorWithWikiData(self):
         '''
@@ -28,8 +22,8 @@ class TestLocatorDatabase(Geograpy3Test):
         '''
         Locator.resetInstance()
         loc=Locator.getInstance()
-        forceUpdate=True
-        #forceUpdate=False
+        #forceUpdate=True
+        forceUpdate=False
         loc.populate_db(force=forceUpdate)
         tableList=loc.sqlDB.getTableList()
         self.assertTrue(loc.db_recordCount(tableList,"countries")>=200)
