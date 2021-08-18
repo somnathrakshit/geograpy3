@@ -989,8 +989,26 @@ class Locator(object):
         if Locator.locator is None:
             Locator.locator = Locator(correctMisspelling=correctMisspelling, debug=debug)
         return Locator.locator
+
+    def normalizePlaces(self,places:list):
+        '''
+        normalize places
         
-    def locateCity(self, places):
+        Args:
+            places(list) a list of places
+            
+        Return:
+            list: stripped and aliased list of places
+        '''
+        nplaces=[]
+        for place in places:
+            place = place.strip()
+            if place in self.aliases:
+                place = self.aliases[place]
+            nplaces.append(place)
+        return nplaces
+        
+    def locateCity(self, places:list):
         '''
         locate a city, region country combination based on the given wordtoken information
         
@@ -1007,10 +1025,8 @@ class Locator(object):
         cities = []
         regions = []
         # loop over all word elements
+        places=Locator.normalizePlaces(places)
         for place in places:
-            place = place.strip()
-            if place in self.aliases:
-                place = self.aliases[place]
             foundCountry = self.getCountry(place)
             if foundCountry is not None:
                 country = foundCountry

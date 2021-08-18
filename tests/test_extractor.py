@@ -52,11 +52,13 @@ class TestExtractor(Geograpy3Test):
         # broken since 2020-10 - returns javascript instead of plain html
         url='https://en.wikipedia.org/wiki/Golden_spike'
         places=geograpy.get_geoPlace_context(url=url)
-        if self.debug:
+        debug=self.debug
+        debug=True
+        if debug:
             print(places)
         self.assertTrue("Ogden" in places.cities)
         self.assertTrue('Utah' in places.regions)
-        self.assertTrue('United States' in places.countries)
+        self.assertTrue('United States of America' in places.countries)
         
     def testExtractorFromText(self):
         '''

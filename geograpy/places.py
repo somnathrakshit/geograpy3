@@ -13,13 +13,13 @@ class PlaceContext(Locator):
     Adds context information to a place name
     '''
 
-    def __init__(self, place_names, setAll=True,correctMisspelling=False):
+    def __init__(self, place_names:list, setAll:bool=True,correctMisspelling:bool=False):
         '''
         Constructor
         
         Args:
             place_names: 
-                string: The place names to check
+                list: The place names to check
             setAll: 
                 boolean: True if all context information should immediately be set
             db_file: 
@@ -27,7 +27,7 @@ class PlaceContext(Locator):
         '''
         super().__init__()
         self.correctMisspelling=correctMisspelling
-        self.places = place_names
+        self.places = self.normalizePlaces(place_names)
         if setAll:
             self.setAll()
             
@@ -97,6 +97,9 @@ WHERE c.name=(?)"""
         pass
 
     def set_regions(self):
+        '''
+        set the region results
+        '''
         regions = []
         self.country_regions = {}
         region_names = {}
