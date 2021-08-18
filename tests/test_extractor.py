@@ -120,7 +120,7 @@ class TestExtractor(Geograpy3Test):
         Add ISO country code
         ''' 
         localities=[
-            #'Singapore',
+            'Singapore',
             'Beijing, China',
             'Paris, France',
             'Barcelona, Spain',
@@ -131,10 +131,9 @@ class TestExtractor(Geograpy3Test):
             'Athens, Greece',
             'Shanghai, China']
         expectedCountry=[
-            #'SG',
+            'SG',
             'CN','FR','ES','IT','US','TH','AT','GR','CN']
         debug=self.debug
-        debug=True
         for index,locality in enumerate(localities):
             city=geograpy.locateCity(locality)
             if debug:
