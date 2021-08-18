@@ -54,7 +54,7 @@ class TestExtractor(Geograpy3Test):
         url='https://en.wikipedia.org/wiki/Golden_spike'
         places=geograpy.get_geoPlace_context(url=url)
         debug=self.debug
-        debug=True
+        #debug=True
         if debug:
             print(places)
         self.assertTrue("Ogden" in places.cities)
