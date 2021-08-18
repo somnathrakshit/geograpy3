@@ -781,19 +781,19 @@ class LocationContext(object):
                 print(duplicates)
         # interlink region with country
         for region in self.regions:
-            country = self._countryLookup.get(getattr(region, 'country_wikidataid'))
+            country = self._countryLookup.get(getattr(region, 'countryId'))
             if country is not None and isinstance(country, Country):
                 region.country = country
 
         # interlink city with region and country
         for city in self.cities:
-            country = self._countryLookup.get(getattr(city, 'country_wikidataid'))
+            country = self._countryLookup.get(getattr(city, 'countryId'))
             if country is not None and isinstance(country, Country):
                 city.country = country
-            region = self._regionLookup.get(getattr(city, 'region_wikidataid'))
+            region = self._regionLookup.get(getattr(city, 'regionId'))
             if region is not None and isinstance(region, Region):
                 city.region = region
-        elapsed=profile.time()
+        _elapsed=profile.time()
   
                 
     def load(self,forceUpdate:bool=False,warnOnDuplicates:bool=False):
