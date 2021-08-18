@@ -46,6 +46,7 @@ def remove_non_ascii(s):
 def fuzzy_match(s1, s2, max_dist=.8):
     ''' 
     Fuzzy match the given two strings with the given maximum distance
+    jellyfish jaro_winkler_similarity based on https://en.wikipedia.org/wiki/Jaro-Winkler_distance
     Args:
         s1: 
             string: First string 
@@ -54,7 +55,6 @@ def fuzzy_match(s1, s2, max_dist=.8):
         max_dist: 
             float: The distance - default: 0.8 
     Returns:
-        float: 
-            jellyfish jaro_winkler_similarity based on https://en.wikipedia.org/wiki/Jaro-Winkler_distance
+        True if the match is greater equals max_dist. Otherwise false
     '''
     return jellyfish.jaro_winkler_similarity(s1, s2) >= max_dist

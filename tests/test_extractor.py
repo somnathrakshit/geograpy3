@@ -41,7 +41,8 @@ class TestExtractor(Geograpy3Test):
         places = geograpy.get_geoPlace_context(url = url) 
         if self.debug:
             print(places)
-        self.assertEqual(['Rome', 'Brussels', 'Italy'],places.cities)
+        self.assertSetEqual({'Italy','Germany','France','United States of America','Belgium','Canada'}, set(places.countries))
+        self.assertSetEqual({'Rome', 'Brussels', 'Italy','Germany'},set(places.cities))   # Notes: Italy is also city in US-NY, Germany is also city in US-TX
             
         
     def testGetGeoPlace(self):
@@ -56,7 +57,7 @@ class TestExtractor(Geograpy3Test):
             print(places)
         self.assertTrue("Ogden" in places.cities)
         self.assertTrue('Utah' in places.regions)
-        self.assertTrue('United States' in places.countries)
+        self.assertTrue('United States of America' in places.countries)
         
     def testExtractorFromText(self):
         '''

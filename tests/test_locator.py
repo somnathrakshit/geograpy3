@@ -140,9 +140,8 @@ select distinct iso from regions
         https://github.com/somnathrakshit/geograpy3/issues/15
         test Issue 15 Disambiguate via population, gdp data
         '''
-        examples=['Paris','Vienna']
-        countries=['FR','AT']
-        # TODO: Berlin, DE fails
+        examples=['Paris','Vienna', 'Berlin']
+        countries=['FR','AT', 'DE']
         self.checkExamples(examples, countries)
         pass
     
@@ -163,7 +162,8 @@ select distinct iso from regions
         test issue 19
         '''
         examples=['Puebla City, Mexico','Newcastle, UK','San Juan, Puerto Rico']
-        countries=['MX','GB','PR']
+        countries=['MX','GB','US']
+        # For Puerto Rico exist two iso codes one as country and one as US region see https://en.wikipedia.org/wiki/Puerto_Rico in the dataset it is recognized as US region
         self.checkExamples(examples, countries)
         
     def testStackOverflow64379688(self):
@@ -215,10 +215,9 @@ February 3-5, 2020''']
         loc=Locator.getInstance()
         loc.populate_db()
         
-        ddls=["DROP VIEW IF EXISTS allNames","""CREATE VIEW allNames as select countryLabel as name from countries
-        union select regionLabel as name from regions
-        union select city_name as name from cities
-        union select cityLabel as name from cityPops"""]
+        ddls=["DROP VIEW IF EXISTS allNames","""CREATE VIEW allNames as select name as name from countries
+        union select name as name from regions
+        union select name as name from cities"""]
         for ddl in ddls:
             loc.sqlDB.execute(ddl)
         query="SELECT name from allNames"

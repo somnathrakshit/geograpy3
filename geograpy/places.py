@@ -13,17 +13,13 @@ class PlaceContext(Locator):
     Adds context information to a place name
     '''
 
-    def __init__(self, place_names, setAll=True):
+    def __init__(self, place_names:list, setAll=True):
         '''
         Constructor
         
         Args:
-            place_names: 
-                string: The place names to check
-            setAll: 
-                boolean: True if all context information should immediately be set
-            db_file: 
-                    string: Path to the database file to be used - if None the default "locs.db" will be used
+            place_names(list): The place names to check
+            setAll(bbol): True if all context information should immediately be set
         '''
         super().__init__()
         self.places = place_names
@@ -45,12 +41,20 @@ class PlaceContext(Locator):
             countryName(str): the name of the country
         '''
         country_name = self.correct_country_misspelling(countryName)
-        try:
-            regions = pycountry.subdivisions.get(country_code=obj.alpha2)
-        except:
-            regions = []
-
-        return [r.name for r in regions]
+        regionOfCountryQuery="""SELECT name 
+        FROM regions 
+        WHERE countryId IN (
+            SELECT wikidataid 
+            FROM countries
+            WHERE name LIKE (?)
+            OR wikidataid IN (
+                SELECT wikidataid 
+                FROM country_labels 
+                WHERE label LIKE (?)
+            )
+        )"""
+        regionRecords=self.sqlDB.query(regionOfCountryQuery, params=(country_name,country_name,))
+        return [r.get('name') for r in regionRecords]
 
     def setAll(self):
         '''
@@ -76,6 +80,12 @@ class PlaceContext(Locator):
         pass
 
     def set_regions(self):
+        '''
+        get the region information from my places
+
+        Returns:
+
+        '''
         regions = []
         self.country_regions = {}
         region_names = {}
@@ -83,16 +93,34 @@ class PlaceContext(Locator):
         if not self.countries:
             self.set_countries()
 
-        def region_match(place_name, region_name):
+        def region_match(place_name:str, region_name:str)->bool:
+            '''
+            Tests the similarity of the given strings after removing non ascii characters.
+            Args:
+                place_name(str): Place name
+                region_name(str): valid region name to test against
+
+            Returns:
+                True if the similarity of both values is greater equals 80%. Otherwise False
+            '''
             return fuzzy_match(remove_non_ascii(place_name),
                                remove_non_ascii(region_name))
 
-        def is_region(place_name, region_names):
-            return filter(lambda rn: region_match(place_name, rn), region_names)
+        def is_region(place_name:str, region_names:list):
+            '''
+            Filters out the regions that are not similar to the given place_name
+            Args:
+                place_name(str): place name to check against the regions
+                region_names(list): List of valid region names
+
+            Returns:
+                List of regions that are similar to the given place_name
+            '''
+            return any([region_match(place_name, rn) for rn in region_names])
 
         for country in self.countries:
             region_names = self.get_region_names(country)
-            matched_regions = [p for p in self.places if is_region(p, region_names)]
+            matched_regions = [p for p in set(self.places) if is_region(p, region_names)]
 
             regions += matched_regions
             self.country_regions[country] = list(set(matched_regions))
@@ -116,10 +144,12 @@ class PlaceContext(Locator):
 
         if not self.db_has_data():
             self.populate_db()
-        params=",".join("?" * len(self.places))
+        # ToDo: Duplicate with Locator.city_for_name e.g. extend method to support multiple names
+        placesWithoutDuplicates=set(self.places)
+        params=",".join("?" * len(placesWithoutDuplicates))
         query="SELECT * FROM CityLookup WHERE name IN (" + params + ")"
-        cityLookupRecords=self.sqlDB.query(query,self.places)
-
+        cityLookupRecords=self.sqlDB.query(query,list(placesWithoutDuplicates))
+        cityLookupRecords.sort(key=lambda cityRecord: float(cityRecord.get('pop')) if cityRecord.get('pop') is not None else 0.0 , reverse=True)
         for cityLookupRecord in cityLookupRecords:
             city=City.fromCityLookup(cityLookupRecord)
            
@@ -136,7 +166,7 @@ class PlaceContext(Locator):
 
             if city.name not in self.country_cities[countryName]:
                 self.country_cities[countryName].append(city.name)
-                regionName=self.city.region.name
+                regionName=city.region.name
                 if countryName in self.country_regions and regionName in self.country_regions[countryName]:
                     address=f"{city.name}, {regionName}, {countryName}"
                     self.address_strings.append(address)

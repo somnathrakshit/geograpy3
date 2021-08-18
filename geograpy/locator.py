@@ -72,6 +72,8 @@ class LocationManager(EntityManager):
             filterInvalidListTypes(bool): True if invalidListTypes should be deleted
             debug(boolean): override debug setting when default of config is used via config=None
         '''
+        if config is None:
+            config=LocationContext.getDefaultConfig()
         super().__init__(name=name,
                           entityName=entityName,
                           entityPluralName=entityPluralName,
@@ -85,6 +87,7 @@ class LocationManager(EntityManager):
                           debug=debug)
         self.balltree = None
         self.locationByWikidataID={}
+        self.populateDb()
         
     def getBallTuple(self, cache:bool=True):
         '''
@@ -256,7 +259,8 @@ class LocationManager(EntityManager):
         '''
         populate locations db which contains records of this EntityManager
         '''
-        LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename, self.config.getCachePath())
+        if not self.dbHasData():
+            LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename, self.config.getCachePath())
 
     def getLocationByWikidataId(self, wikidataId:str):
         '''
@@ -532,6 +536,21 @@ class Location(JSONAble):
             if name == self.name:
                 isKnown = True
         return isKnown
+
+    @staticmethod
+    def partialDict(record, clazz, keys=None):
+        if keys is None:
+            keys = clazz.getSamples()[0].keys()
+        pDict = {k: v for k, v in record.items() if k in keys}
+        return pDict
+
+    @staticmethod
+    def mappedDict(record, keyMapList: list):
+        keyMap = {}
+        for mkey, mValue in keyMapList:
+            keyMap[mkey] = mValue
+        pDict = {keyMap[k]: v for k, v in record.items() if k in keyMap.keys()}
+        return pDict
         
     
 class City(Location):
@@ -570,21 +589,6 @@ class City(Location):
         name=self.name if hasattr(self,"name") else "?"
         text = f"{name} ({self.region} - {self.country})"
         return text
-    
-    @staticmethod 
-    def partialDict(record,clazz,keys=None):
-        if keys is None:
-            keys=clazz.getSamples()[0].keys()
-        pDict={k:v for k,v in record.items() if k in keys}
-        return pDict
-    
-    @staticmethod
-    def mappedDict(record,keyMapList:list):
-        keyMap={}
-        for mkey,mValue in keyMapList:
-            keyMap[mkey]=mValue
-        pDict={keyMap[k]:v for k,v in record.items() if k in keyMap.keys()}
-        return pDict
     
     @staticmethod
     def fromCityLookup(cityLookupRecord:dict):
@@ -687,6 +691,22 @@ class Region(Location):
             Region: the corresponding region information
         '''
         region = Region()
+        return region
+
+    @staticmethod
+    def fromSqlRecord(regionRecord:dict):
+        '''
+        create a region from a SQL record
+
+        Args:
+            record(dict): the records as returned from a Query
+
+        Returns:
+            Region: the corresponding region information
+        '''
+        region = Region()
+        regionRecord = Location.partialDict(regionRecord, Region)
+        region.fromDict(regionRecord)
         return region
 
     @property
@@ -808,16 +828,16 @@ class LocationContext(object):
                 print(duplicates)
         # interlink region with country
         for region in self.regions:
-            country = self._countryLookup.get(getattr(region, 'country_wikidataid'))
+            country = self._countryLookup.get(getattr(region, 'countryId'))
             if country is not None and isinstance(country, Country):
                 region.country = country
 
         # interlink city with region and country
         for city in self.cities:
-            country = self._countryLookup.get(getattr(city, 'country_wikidataid'))
+            country = self._countryLookup.get(getattr(city, 'countryId'))
             if country is not None and isinstance(country, Country):
                 city.country = country
-            region = self._regionLookup.get(getattr(city, 'region_wikidataid'))
+            region = self._regionLookup.get(getattr(city, 'regionId'))
             if region is not None and isinstance(region, Region):
                 city.region = region
         elapsed=profile.time()
@@ -918,9 +938,9 @@ class LocationContext(object):
         Returns:
 
         '''
+        #strListToValues=lambda records: ', '.join([f'"{record}"' for record in records])
         if locations is None or locations is (None):
             return
-        
         possibleLocations = {
             self.cityManager.name:set(),
             self.regionManager.name: set(),
@@ -945,27 +965,26 @@ class LocationContext(object):
                 #     lp.extend([f"{parts[i]} {parts[i + 1]} {parts[i + 2]}" for i in range(numberParts - 2)])
         locationParts.extend(lp)
         locationParts=list(set(locationParts))   # remove duplicates
-        for location in locationParts:
-            location = location.strip()
-            for manager in self.cityManager, self.regionManager, self.countryManager:
-                possibleLocation = []
-                if Locator.isISO(location):
-                    locationIds=manager.getLocationByIsoCode(location)
-                    possibleLocation.extend(locationIds)
-                possibleLocation.extend(manager.getByName(location))
-                possibleLocations[manager.name] = possibleLocations[manager.name].union(set(possibleLocation))
-        # reduce possible Locations e.g. remove regions and countries already identified by a city
-        cities=[self.cityManager.getLocationByWikidataId(id) for id in possibleLocations[self.cityManager.name]]
-        for city in cities:
-            if city.regionId in possibleLocations[self.regionManager.name]:
-                possibleLocations[self.regionManager.name].remove(city.region_wikidataid)
-            if city.countryId in possibleLocations[self.countryManager.name]:
-                possibleLocations[self.countryManager.name].remove(city.country_wikidataid)
-        regions=[self.regionManager.getLocationByWikidataId(id) for id in possibleLocations[self.regionManager.name]]
-        for region in regions:
-            if region.country_wikidataid in possibleLocations[self.countryManager.name]:
-                possibleLocations[self.countryManager.name].remove(region.country_wikidataid)
-        countries=[self.countryManager.getLocationByWikidataId(id) for id in possibleLocations[self.countryManager.name]]
+        values=tuple(locationParts)
+        possibleIdsQuery=f"SELECT wikidataid FROM location_labels WHERE label IN ({','.join('?'*len(locationParts))})"
+        possibleIdQueryRes=self.locator.sqlDB.query(possibleIdsQuery, params=values)
+
+
+        possibleIds=[record['wikidataid'] for record in possibleIdQueryRes if 'wikidataid' in record]
+        for manager in self.cityManager, self.regionManager, self.countryManager:
+            paramsMarker=f"({','.join('?'*len(possibleIds))})"
+            queryLocationsById = f"SELECT * FROM {manager.entityPluralName} WHERE wikidataid in {paramsMarker}"
+            values=tuple(possibleIds)
+            resQueryLocationById=self.locator.sqlDB.query(queryLocationsById, params=values)
+            possibleLocations[manager.name]=[manager.clazz(**record) for record in resQueryLocationById]
+        # remove locations already identified by location in lower hierarchy
+        cities=possibleLocations[self.cityManager.name]
+        getAttrValues=lambda locations, attr:[getattr(location,attr) for location in locations if hasattr(location, attr)]
+        excludeRegionIds=getAttrValues(cities, 'regionId')
+        regions=[region for region in possibleLocations[self.regionManager.name] if hasattr(region, 'wikidataid') and not region.wikidataid in excludeRegionIds]
+        excldeCountryIds=[*getAttrValues(cities, "countryId"), *getAttrValues(regions, "countryId")]
+        countries=[country for country in possibleLocations[self.countryManager.name] if hasattr(country, 'wikidataid') and not country.wikidataid in excldeCountryIds]
+
         # build final result in the order city→region→country
         cities.sort(key=lambda c: int(getattr(c, 'pop', 0)) if getattr(c, 'pop') is not None else 0, reverse=True)
         res = [*cities, *regions, *countries]
@@ -973,6 +992,7 @@ class LocationContext(object):
         for location in res:
             self._completeLocationHierarchy(location)
         return res
+
 
     def _completeLocationHierarchy(self, location:Location):
         '''
@@ -983,7 +1003,7 @@ class LocationContext(object):
         '''
         if hasattr(location, 'regionId') and getattr(location, 'regionId') is not None:
             location.region = self.regionManager.getLocationByWikidataId(location.regionId)
-        if hasattr(location, 'countrId') and getattr(location, 'countryId') is not None:
+        if hasattr(location, 'countryId') and getattr(location, 'countryId') is not None:
             location.country = self.countryManager.getLocationByWikidataId(location.countryId)
             if hasattr(location, 'region') and location.region is not None:
                 location.region.country = location.country
@@ -1073,8 +1093,9 @@ class Locator(object):
     @staticmethod
     def isISO(s):
         '''
-        check if the given string is an ISO code
-        
+        check if the given string is an ISO code (ISO 3166-2 code)
+        see https://www.wikidata.org/wiki/Property:P300
+
         Returns:
             bool: True if the string might be an ISO Code as per a regexp check
         '''
@@ -1116,11 +1137,11 @@ class Locator(object):
                         for city in cities:
                             if city.region.iso == region.iso and not city.region.name == city.name:
                                 foundCity = city
-                                break;
+                                break
                         if foundCity is not None:
                             break
                 if foundCity is None and byPopulation:
-                    foundCity = max(cities, key=lambda city:0 if city.population is None else city.population)
+                    foundCity = max(cities, key=lambda city:0 if city.pop is None else city.pop)
                     pass
                     
         return foundCity    
@@ -1160,7 +1181,7 @@ class Locator(object):
         params = (region_name,)
         regionRecords = self.sqlDB.query(query, params)
         for regionRecord in regionRecords:
-            regions.append(Region.fromWikidata(regionRecord))
+            regions.append(Region.fromSqlRecord(regionRecord))
         return regions                     
     
     def correct_country_misspelling(self, name):
@@ -1175,7 +1196,7 @@ class Locator(object):
         with open(cur_dir + "/data/ISO3166ErrorDictionary.csv") as info:
             reader = csv.reader(info)
             for row in reader:
-                if name in remove_non_ascii(row[0]):
+                if name == remove_non_ascii(row[0]):
                     return row[2]
         return name
 
@@ -1206,8 +1227,10 @@ class Locator(object):
         else:
             if self.correctMisspelling:
                 name = self.correct_country_misspelling(name)
-            query="SELECT * FROM  countries WHERE name = (?)"""
-            params=(name,)
+            query="""SELECT * FROM countries 
+WHERE name LIKE (?)
+OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
+            params=(name,name,)
         country = None
         countryRecords=self.sqlDB.query(query,params)
         if len(countryRecords)==1:
@@ -1238,8 +1261,9 @@ class Locator(object):
         view = self.getView()
         query = f'SELECT * FROM {view} WHERE {columnName} = (?)'
         params = (placeName,)
-        cities = self.sqlDB.query(query, params)
-        return cities
+        cityLookupRecords = self.sqlDB.query(query, params)
+        cityLookupRecords.sort(key=lambda cityRecord: float(cityRecord.get('pop')) if cityRecord.get('pop') is not None else 0.0,reverse=True)
+        return cityLookupRecords
     
      
     def recreateDatabase(self):

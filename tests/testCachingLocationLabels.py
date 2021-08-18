@@ -24,35 +24,42 @@ class TestCachingLocationLabels(Geograpy3Test):
         pass
 
     def testCacheLocationLabels(self):
-        wd=Wikidata()
-        config = LocationContext.getDefaultConfig()
-        countryManager=CountryManager(config=config)
-        regionManager = RegionManager(config=config)
-        cityManager=CityManager(config=config)
-        sqlDb=SQLDB(dbname=config.cacheFile, debug=self.debug)
-        for manager in countryManager, regionManager, cityManager:
-            manager.fromCache()
-            wikidataIdQuery = f"SELECT DISTINCT wikidataid FROM {manager.entityPluralName}"
-            wikidataIdQueryRes = sqlDb.query(wikidataIdQuery)
-            wikidataIds = [l['wikidataid'] for l in wikidataIdQueryRes]
+        '''
+        Generates the location label tabels in the SQL db fro countries, regions and cities by querying wikidata for
+        the rdfs:label and skos:altLa of each location.
+        A view containing all location labels is also created.
+        '''
+        testLocationLabelExtraction = False
+        if testLocationLabelExtraction:
+            wd=Wikidata()
+            config = LocationContext.getDefaultConfig()
+            countryManager=CountryManager(config=config)
+            regionManager = RegionManager(config=config)
+            cityManager=CityManager(config=config)
+            sqlDb=SQLDB(dbname=config.cacheFile, debug=self.debug)
+            for manager in countryManager, regionManager, cityManager:
+                manager.fromCache()
+                wikidataIdQuery = f"SELECT DISTINCT wikidataid FROM {manager.entityPluralName}"
+                wikidataIdQueryRes = sqlDb.query(wikidataIdQuery)
+                wikidataIds = [l['wikidataid'] for l in wikidataIdQueryRes]
 
-            chunkSize=1000
-            iterations = math.ceil(len(wikidataIds) / chunkSize)
-            progress = 0
-            res=[]
-            for i in range(iterations):
-                workOnIds = wikidataIds[i * chunkSize:(i + 1) * chunkSize]
-                progress += len(workOnIds)
-                index = 0
-                values = ""
-                for location in workOnIds:
-                    spacer = "  \n\t\t\t" if index % 10 == 0 else " "
-                    values += f"{spacer}wd:{wd.getWikidataId(location)}"
-                    index += 1
-                query = self.getLablesQuery(values=values)
-                res.extend(wd.query(f"Query {i}/{iterations} - Querying {manager.entityName} Labels", queryString=query))
-            wd.store2DB(res, tableName=f"{manager.entityName}_labels", sqlDB=sqlDb)
-        self.createViews(sqlDB=sqlDb)
+                chunkSize=1000
+                iterations = math.ceil(len(wikidataIds) / chunkSize)
+                progress = 0
+                res=[]
+                for i in range(iterations):
+                    workOnIds = wikidataIds[i * chunkSize:(i + 1) * chunkSize]
+                    progress += len(workOnIds)
+                    index = 0
+                    values = ""
+                    for location in workOnIds:
+                        spacer = "  \n\t\t\t" if index % 10 == 0 else " "
+                        values += f"{spacer}wd:{wd.getWikidataId(location)}"
+                        index += 1
+                    query = self.getLablesQuery(values)
+                    res.extend(wd.query(f"Query {i}/{iterations} - Querying {manager.entityName} Labels", queryString=query))
+                wd.store2DB(res, tableName=f"{manager.entityName}_labels", sqlDB=sqlDb)
+            self.createViews(sqlDB=sqlDb)
 
 
     def getLablesQuery(self, wikidataIds:str):

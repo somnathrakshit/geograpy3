@@ -42,8 +42,8 @@ def get_place_context(url=None, text=None,labels=Labels.default, debug=False):
     '''
     e = Extractor(url=url, text=text,debug=debug)
     e.find_entities(labels=labels)
-
-    pc = PlaceContext(e.places)
+    places=e.places
+    pc = PlaceContext(places)
     pc.setAll()
     return pc
 
