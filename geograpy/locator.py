@@ -589,8 +589,12 @@ class City(Location):
     @staticmethod
     def fromCityLookup(cityLookupRecord:dict):
         '''
+        
+        create a city from a cityLookupRecord and setting City, Region and Country while at it
         Args:
             cityRecord(dict): a map derived from the CityLookup view
+            
+            
         '''
         # we create city, region and country from scratch without true
         # object relational mapping and lookup from the locationContext 
@@ -599,10 +603,12 @@ class City(Location):
         # first take all params
         cityRecord=City.partialDict(cityLookupRecord,City)
         city.fromDict(cityRecord)
+        
         regionRecord=City.mappedDict(cityLookupRecord,
             [("regionId","wikidataid"),("regionName","name"),("regionIso","iso"),("regionPop","pop"),("regionLat","lat"),("regionLon","lon")])
         city.region=Region()
         city.region.fromDict(regionRecord)
+        
         countryRecord=City.mappedDict(cityLookupRecord,
             [("countryId","wikidataid"),("countryName","name"),("countryIso","iso"),("countryLat","lat"),("countryLon","lon")])
         city.country=Country()
