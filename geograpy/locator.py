@@ -113,7 +113,7 @@ class LocationManager(EntityManager):
             self.ballTuple = BallTree(coordinatesrad, metric='haversine'), validList
         return self.ballTuple
     
-    def fromCache(self,force=False,getListOfDicts=None,sampleRecordCount=0):
+    def fromCache(self,force=False,getListOfDicts=None,sampleRecordCount=-1):
         '''
         get me from the cache
         '''
