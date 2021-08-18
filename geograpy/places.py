@@ -67,7 +67,7 @@ WHERE c.name=(?)"""
         if self.correctMisspelling:
             countryName = self.correct_country_misspelling(countryName)
         try:
-           regions=self.getRegions(countryName)
+            regions=self.getRegions(countryName)
         except:
             pass
 

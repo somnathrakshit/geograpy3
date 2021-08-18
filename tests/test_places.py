@@ -12,7 +12,7 @@ class TestPlaces(Geograpy3Test):
     def setUp(self):
         super().setUp()
         Locator.resetInstance()
-        self.debug=True
+        self.debug=False
         pass
 
 
@@ -47,11 +47,11 @@ class TestPlaces(Geograpy3Test):
         if self.debug:
             print (pc)
             
-        self.assertEqual(1,len(pc.countries))
+        self.assertEqual(2,len(pc.countries))
         self.assertEqual("Kenya",pc.countries[0])
         self.assertEqual(2,len(pc.cities))
         cityNames=['Nairobi','Ohio','Amsterdam']
-        countries=['Kenya','United States','Netherlands']
+        countries=['Kenya','United States of America','Netherlands']
         for index,cityName in enumerate(cityNames):
             cities=pc.cities_for_name(cityName)
             country=cities[0].country

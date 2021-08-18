@@ -1220,7 +1220,7 @@ class Locator(object):
         if not self.db_has_data():
             self.populate_db()
         view = self.getView()
-        query = f'SELECT * FROM {view} WHERE {columnName} = (?)'
+        query = f'SELECT * FROM {view} WHERE {columnName} = (?) ORDER BY pop DESC'
         params = (placeName,)
         cities = self.sqlDB.query(query, params)
         return cities
