@@ -85,7 +85,7 @@ class LocationManager(EntityManager):
                           debug=debug)
         self.balltree = None
         self.locationByWikidataID={}
-        if config.mode==StoreMode.SQL:
+        if config is not None and config.mode==StoreMode.SQL:
             self.sqldb=self.getSQLDB(config.cacheFile)
         
     def getBallTuple(self, cache:bool=True):
