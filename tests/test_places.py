@@ -1,3 +1,4 @@
+import geograpy
 from geograpy.places import PlaceContext
 from geograpy.locator import Locator
 import unittest
@@ -61,6 +62,21 @@ class TestPlaces(Geograpy3Test):
         pc = PlaceContext(['Mumbai'])
         if self.debug:
             print(pc)
+            
+    def testIssue49(self):
+        '''
+        country recognition
+        '''
+        texts=['United Kingdom','UK','Great Britain','GB','United States']
+        print("lookup with geograpy.get_geoPlace_context")
+        for text in texts:
+            countries=geograpy.get_geoPlace_context(text=text).countries
+            print (f"{text}:{countries}")
+        print("lookup with PlaceContext")
+        for text in texts:
+            pc=PlaceContext([text])  
+            pc.set_countries()
+            print (f"{text}:{pc.countries}")
 
 
 if __name__ == "__main__":

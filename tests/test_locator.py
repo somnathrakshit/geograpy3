@@ -166,6 +166,8 @@ select distinct iso from regions
         # For Puerto Rico exist two iso codes one as country and one as US region see https://en.wikipedia.org/wiki/Puerto_Rico in the dataset it is recognized as US region
         self.checkExamples(examples, countries)
         
+    
+        
     def testStackOverflow64379688(self):
         '''
         compare old and new geograpy interface
@@ -250,6 +252,7 @@ February 3-5, 2020''']
         self.assertTrue(len(places.countries)>5)
         self.assertTrue(len(places.regions)>5)
         self.assertTrue(len(places.cities)>20)
+            
         
     def testExamples(self):
         '''
