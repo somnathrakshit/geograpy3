@@ -85,6 +85,8 @@ class LocationManager(EntityManager):
                           debug=debug)
         self.balltree = None
         self.locationByWikidataID={}
+        if config.mode==StoreMode.SQL:
+            self.sqldb=self.getSQLDB(config.cacheFile)
         
     def getBallTuple(self, cache:bool=True):
         '''
@@ -110,6 +112,9 @@ class LocationManager(EntityManager):
         return self.ballTuple
     
     def fromCache(self,force=False,getListOfDicts=None,sampleRecordCount=0):
+        '''
+        get me from the cache
+        '''
         super().fromCache(force, getListOfDicts, sampleRecordCount)
         self.locationByWikidataID={}
         for entry in self.getList():
@@ -1025,7 +1030,7 @@ class Locator(object):
         cities = []
         regions = []
         # loop over all word elements
-        places=Locator.normalizePlaces(places)
+        places=self.normalizePlaces(places)
         for place in places:
             foundCountry = self.getCountry(place)
             if foundCountry is not None:
