@@ -70,7 +70,12 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         '''
         test counting human settlement types
         '''
-        limit=5000 if getpass.getuser()=="wf" else 50
+        if self.inCI():
+            limit=50
+        elif getpass.getuser()=="wf":
+            limit=5000
+        else:
+            limit=0
         self.cacheRegionCities2Json(limit=limit)
         
     def testReadCachedCitiesByRegion(self):

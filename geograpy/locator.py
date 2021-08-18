@@ -87,8 +87,9 @@ class LocationManager(EntityManager):
                           debug=debug)
         self.balltree = None
         self.locationByWikidataID={}
-        self.populateDb()
-        
+        if config.mode==StoreMode.SQL:
+            self.sqldb=self.getSQLDB(config.cacheFile)
+
     def getBallTuple(self, cache:bool=True):
         '''
         get the BallTuple=BallTree,validList of this location list
@@ -113,6 +114,9 @@ class LocationManager(EntityManager):
         return self.ballTuple
     
     def fromCache(self,force=False,getListOfDicts=None,sampleRecordCount=0):
+        '''
+        get me from the cache
+        '''
         super().fromCache(force, getListOfDicts, sampleRecordCount)
         self.locationByWikidataID={}
         for entry in self.getList():
@@ -230,37 +234,11 @@ class LocationManager(EntityManager):
         Returns:
             Returns locations that match the given name
         '''
-        if not self.dbHasData():
-            self.populateDb()
-        sqlDB = self.getSQLDB(self.config.cacheFile)
         query = f'SELECT wikidataid FROM {self.tableName} WHERE name LIKE (?)'
         params = (name,)
-        locationRecords = sqlDB.query(query, params)
+        locationRecords = self.sqldb.query(query, params)
         wikidataIds=[record['wikidataid'] for record in locationRecords if 'wikidataid' in record]
         return wikidataIds
-
-    def dbHasData(self):
-        '''
-        Checks whether the db has records for this EntityManager
-        Returns:
-            Returns True if at least one record is present.
-        '''
-        sqlDb=self.getSQLDB(self.config.cacheFile)
-        tableMap = sqlDb.getTableDict()
-        if self.tableName in tableMap:
-            query = f'SELECT COUNT(*) AS count  FROM {self.tableName}'
-            countResult = sqlDb.query(query)
-            count = countResult[0]['count']
-            if count > 0:
-                return True
-        return False
-
-    def populateDb(self):
-        '''
-        populate locations db which contains records of this EntityManager
-        '''
-        if not self.dbHasData():
-            LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename, self.config.getCachePath())
 
     def getLocationByWikidataId(self, wikidataId:str):
         '''
@@ -273,12 +251,9 @@ class LocationManager(EntityManager):
         '''
         if wikidataId is None:
             return None
-        if not self.dbHasData():
-            self.populateDb()
-        sqlDB = self.getSQLDB(self.config.cacheFile)
         query = f'SELECT * FROM {self.tableName} WHERE wikidataid LIKE (?)'
         params = (wikidataId,)
-        records = sqlDB.query(query, params)
+        records = self.sqldb.query(query, params)
         if records:
             location=self.clazz()
             location.fromDict(records[0])
@@ -295,16 +270,13 @@ class LocationManager(EntityManager):
             List of wikidata ids of locations matching the given isoCode
         '''
         if isinstance(self, RegionManager) or isinstance(self, CountryManager):
-            if not self.dbHasData():
-                self.populateDb()
-            sqlDb = self.getSQLDB(self.config.cacheFile)
             if isinstance(self, RegionManager):
                 query = f"SELECT wikidataid FROM {self.tableName} WHERE iso LIKE (?) OR iso LIKE (?)"
                 params = (f"%-{isoCode}", isoCode,)
             else:
                 query = f"SELECT wikidataid FROM {self.tableName} WHERE iso LIKE (?)"
                 params = (isoCode,)
-            qres = sqlDb.query(query, params)
+            qres = self.sqldb.query(query, params)
             locationIds = [record['wikidataid'] for record in qres if 'wikidataid' in record]
             return locationIds
         else:
@@ -551,7 +523,7 @@ class Location(JSONAble):
             keyMap[mkey] = mValue
         pDict = {keyMap[k]: v for k, v in record.items() if k in keyMap.keys()}
         return pDict
-        
+
     
 class City(Location):
     '''
@@ -589,12 +561,15 @@ class City(Location):
         name=self.name if hasattr(self,"name") else "?"
         text = f"{name} ({self.region} - {self.country})"
         return text
-    
+
     @staticmethod
     def fromCityLookup(cityLookupRecord:dict):
         '''
+
+        create a city from a cityLookupRecord and setting City, Region and Country while at it
         Args:
             cityRecord(dict): a map derived from the CityLookup view
+
         '''
         # we create city, region and country from scratch without true
         # object relational mapping and lookup from the locationContext 
@@ -603,10 +578,11 @@ class City(Location):
         # first take all params
         cityRecord=City.partialDict(cityLookupRecord,City)
         city.fromDict(cityRecord)
+
         regionRecord=City.mappedDict(cityLookupRecord,
             [("regionId","wikidataid"),("regionName","name"),("regionIso","iso"),("regionPop","pop"),("regionLat","lat"),("regionLon","lon")])
-        city.region=Region()
-        city.region.fromDict(regionRecord)
+        city.region=Region.fromRegionRecord(regionRecord)
+
         countryRecord=City.mappedDict(cityLookupRecord,
             [("countryId","wikidataid"),("countryName","name"),("countryIso","iso"),("countryLat","lat"),("countryLon","lon")])
         city.country=Country()
@@ -680,32 +656,17 @@ class Region(Location):
         return text
     
     @staticmethod
-    def fromWikidata(record):
+    def fromRegionRecord(regionRecord:dict):
         '''
-        create  a region from a Wikidata record
+        create  a region from a dict record
         
         Args:
-            record(dict): the records as returned from a Query
+            regionRecord(dict): the records as returned from a Query
             
         Returns:
             Region: the corresponding region information
         '''
         region = Region()
-        return region
-
-    @staticmethod
-    def fromSqlRecord(regionRecord:dict):
-        '''
-        create a region from a SQL record
-
-        Args:
-            record(dict): the records as returned from a Query
-
-        Returns:
-            Region: the corresponding region information
-        '''
-        region = Region()
-        regionRecord = Location.partialDict(regionRecord, Region)
         region.fromDict(regionRecord)
         return region
 
@@ -732,6 +693,21 @@ class Country(Location):
             setattr(self, 'level', 3)
         if not hasattr(self, 'locationKind'):
             setattr(self, 'locationKind', "Country")
+
+    @staticmethod
+    def fromCountryRecord(countryRecord:dict):
+        '''
+        create  a country from a country record
+
+        Args:
+            countryRecord(dict): the records as returned from a Query
+
+        Returns:
+            Country: the corresponding region information
+        '''
+        country=Country()
+        country.fromDict(countryRecord)
+        return country
 
     @classmethod
     def getSamples(cls):
@@ -762,29 +738,6 @@ class Country(Location):
     def __str__(self):
         text = f"{self.iso}({self.name})" 
         return text
-    
-    @staticmethod 
-    def fromGeoLite2(record):
-        '''
-        create a country from a geolite2 record
-        '''
-        country = Country()
-        country.name = record['countryName']
-        country.iso = record['countryIso']
-        return country
-    
-    @staticmethod
-    def fromPyCountry(pcountry):
-        '''
-        Args:
-            pcountry(PyCountry): a country as gotten from pycountry
-        Returns: 
-            Country: the country 
-        '''
-        country = Country()
-        country.name = pcountry.name
-        country.iso = pcountry.alpha_2
-        return country
 
 
 class LocationContext(object):
@@ -865,23 +818,6 @@ class LocationContext(object):
         locationContext = LocationContext(countryManager, regionManager, cityManager, config)
         return locationContext
 
-    @classmethod
-    def fromJSONBackup(cls, config:StorageConfig=None,withStore:bool=False):
-        '''
-        Inits a LocationContext form the JSON backup
-        
-        Args:
-            config(StorageConfig): the storage Configuration to use
-            withStore(bool): if True store the managers
-        '''
-        if config is None:
-            config = cls.getDefaultConfig()
-        countryList = CountryManager.fromJSONBackup(config=config)
-        regionList = RegionManager.fromJSONBackup(config=config)
-        cityList = CityManager.fromJSONBackup(config=config)
-        locationContext = LocationContext(countryList, regionList, cityList, config)
-        return locationContext
-
     @staticmethod
     def getDefaultConfig() -> StorageConfig:
         '''
@@ -938,7 +874,6 @@ class LocationContext(object):
         Returns:
 
         '''
-        #strListToValues=lambda records: ', '.join([f'"{record}"' for record in records])
         if locations is None or locations is (None):
             return
         possibleLocations = {
@@ -992,7 +927,6 @@ class LocationContext(object):
         for location in res:
             self._completeLocationHierarchy(location)
         return res
-
 
     def _completeLocationHierarchy(self, location:Location):
         '''
@@ -1058,8 +992,26 @@ class Locator(object):
         if Locator.locator is None:
             Locator.locator = Locator(correctMisspelling=correctMisspelling, debug=debug)
         return Locator.locator
-        
-    def locateCity(self, places):
+
+    def normalizePlaces(self,places:list):
+        '''
+        normalize places
+
+        Args:
+            places(list) a list of places
+
+        Return:
+            list: stripped and aliased list of places
+        '''
+        nplaces=[]
+        for place in places:
+            place = place.strip()
+            if place in self.aliases:
+                place = self.aliases[place]
+            nplaces.append(place)
+        return nplaces
+
+    def locateCity(self, places:list):
         '''
         locate a city, region country combination based on the given wordtoken information
         
@@ -1076,10 +1028,8 @@ class Locator(object):
         cities = []
         regions = []
         # loop over all word elements
+        places=self.normalizePlaces(places)
         for place in places:
-            place = place.strip()
-            if place in self.aliases:
-                place = self.aliases[place]
             foundCountry = self.getCountry(place)
             if foundCountry is not None:
                 country = foundCountry
@@ -1181,7 +1131,7 @@ class Locator(object):
         params = (region_name,)
         regionRecords = self.sqlDB.query(query, params)
         for regionRecord in regionRecords:
-            regions.append(Region.fromSqlRecord(regionRecord))
+            regions.append(Region.fromRegionRecord(regionRecord))
         return regions                     
     
     def correct_country_misspelling(self, name):
@@ -1234,8 +1184,7 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
         country = None
         countryRecords=self.sqlDB.query(query,params)
         if len(countryRecords)==1:
-            country=Country()
-            country.fromDict(countryRecords[0])
+            country=Country.fromCountryRecord(countryRecords[0])
             pass
         return country
     
@@ -1244,7 +1193,7 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
         get the view to be used
         
         Returns:
-            str: the SQL view to be used for CityLookups e.g. GeoLite2CityLookup
+            str: the SQL view to be used for CityLookups e.g. CityLookup
         '''
         view = self.view
         return view
@@ -1259,7 +1208,7 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
         if not self.db_has_data():
             self.populate_db()
         view = self.getView()
-        query = f'SELECT * FROM {view} WHERE {columnName} = (?)'
+        query = f'SELECT * FROM {view} WHERE {columnName} = (?) ORDER BY pop DESC'
         params = (placeName,)
         cityLookupRecords = self.sqlDB.query(query, params)
         cityLookupRecords.sort(key=lambda cityRecord: float(cityRecord.get('pop')) if cityRecord.get('pop') is not None else 0.0,reverse=True)

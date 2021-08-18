@@ -215,14 +215,16 @@ February 3-5, 2020''']
         loc=Locator.getInstance()
         loc.populate_db()
         
-        ddls=["DROP VIEW IF EXISTS allNames","""CREATE VIEW allNames as select name as name from countries
-        union select name as name from regions
-        union select name as name from cities"""]
+        ddls=["DROP VIEW IF EXISTS allNames","""CREATE VIEW allNames as select name from countries
+        union select name from regions
+        union select name from cities"""]
         for ddl in ddls:
             loc.sqlDB.execute(ddl)
         query="SELECT name from allNames"
         nameRecords=loc.sqlDB.query(query)
-        if self.debug:
+        show=self.debug
+        show=True
+        if show:
             print("found %d name records" % len(nameRecords))
         ordC=Counter()
         for nameRecord in nameRecords:
@@ -233,7 +235,7 @@ February 3-5, 2020''']
                     ordC[code]+=1
         for index,countT in enumerate(ordC.most_common(10)):
             code,count=countT
-            if self.debug:
+            if show:
                 print ("%d: %d %s -> %d" % (index,code,chr(code),count))
     
     

@@ -1,7 +1,7 @@
 
 from .utils import remove_non_ascii, fuzzy_match
 from collections import Counter
-from geograpy.locator import Locator, City
+from geograpy.locator import Locator, City, Region
 
 """
 Takes a list of place names and works place designation (country, region, etc) 
@@ -13,16 +13,21 @@ class PlaceContext(Locator):
     Adds context information to a place name
     '''
 
-    def __init__(self, place_names:list, setAll=True):
+    def __init__(self, place_names:list, setAll:bool=True,correctMisspelling:bool=False):
         '''
         Constructor
         
         Args:
-            place_names(list): The place names to check
-            setAll(bbol): True if all context information should immediately be set
+            place_names:
+                list: The place names to check
+            setAll:
+                boolean: True if all context information should immediately be set
+            db_file:
+                    string: Path to the database file to be used - if None the default "locs.db" will be used
         '''
         super().__init__()
-        self.places = place_names
+        self.correctMisspelling=correctMisspelling
+        self.places = self.normalizePlaces(place_names)
         if setAll:
             self.setAll()
             
@@ -33,6 +38,24 @@ class PlaceContext(Locator):
         text= "countries=%s\nregions=%s\ncities=%s\nother=%s" % (self.countries,self.regions,self.cities,self.other)
         return text
 
+    def getRegions(self, countryName:str)->list:
+        '''
+        get a list of regions for the given countryName
+
+        countryName(str): the countryName to check
+        '''
+        regions = []
+        queryString="""SELECT r.*  FROM 
+COUNTRIES c 
+JOIN regions r ON r.countryId=c.wikidataid
+WHERE c.name=(?)"""
+        params=(countryName,)
+        regionRecords=self.sqlDB.query(queryString, params)
+        for regionRecord in regionRecords:
+            region=Region.fromRegionRecord(regionRecord)
+            regions.append(region)
+        return regions
+
     def get_region_names(self, countryName:str)->list:
         '''
         get region names for the given country
@@ -40,7 +63,8 @@ class PlaceContext(Locator):
         Args:
             countryName(str): the name of the country
         '''
-        country_name = self.correct_country_misspelling(countryName)
+        if self.correctMisspelling:
+            countryName = self.correct_country_misspelling(countryName)
         regionOfCountryQuery="""SELECT name 
         FROM regions 
         WHERE countryId IN (
@@ -53,7 +77,7 @@ class PlaceContext(Locator):
                 WHERE label LIKE (?)
             )
         )"""
-        regionRecords=self.sqlDB.query(regionOfCountryQuery, params=(country_name,country_name,))
+        regionRecords=self.sqlDB.query(regionOfCountryQuery, params=(countryName,countryName,))
         return [r.get('name') for r in regionRecords]
 
     def setAll(self):
@@ -81,10 +105,7 @@ class PlaceContext(Locator):
 
     def set_regions(self):
         '''
-        get the region information from my places
-
-        Returns:
-
+        get the region information from my places (limited to the already identified countries)
         '''
         regions = []
         self.country_regions = {}
