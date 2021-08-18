@@ -1,7 +1,7 @@
 
 from .utils import remove_non_ascii, fuzzy_match
 from collections import Counter
-from geograpy.locator import Locator, City
+from geograpy.locator import Locator, City, Region
 
 """
 Takes a list of place names and works place designation (country, region, etc) 
@@ -37,6 +37,24 @@ class PlaceContext(Locator):
         '''
         text= "countries=%s\nregions=%s\ncities=%s\nother=%s" % (self.countries,self.regions,self.cities,self.other)
         return text
+    
+    def getRegions(self, countryName:str)->list:
+        '''
+        get a list of regions for the given countryName
+        
+        countryName(str): the countryName to check
+        '''
+        regions = []
+        queryString="""SELECT r.*  FROM 
+COUNTRIES c 
+JOIN regions r ON r.countryId=c.wikidataid
+WHERE c.name=(?)"""
+        params=(countryName,)
+        regionRecords=self.sqlDB.query(queryString, params)
+        for regionRecord in regionRecords:
+            region=Region.fromRegionRecord(regionRecord)
+            regions.append(region)
+        return regions
 
     def get_region_names(self, countryName:str)->list:
         '''
@@ -45,15 +63,13 @@ class PlaceContext(Locator):
         Args:
             countryName(str): the name of the country
         '''
+        regions = []
         if self.correctMisspelling:
             countryName = self.correct_country_misspelling(countryName)
         try:
-            queryString="SELECT * FROM regions WHERE name=(?)"
-            params=(countryName,)
-            regionRecords=self.sqlDB.query(queryString, params)
-            
+           regions=self.getRegions(countryName)
         except:
-            regions = []
+            pass
 
         return [r.name for r in regions]
 

@@ -24,7 +24,16 @@ class TestPlaces(Geograpy3Test):
         test getting region names
         '''
         pc=PlaceContext(place_names=["Berlin"])
-        pc.get_region_names("Germany")
+        regions=pc.getRegions("Germany")
+        self.assertEqual(16,len(regions))
+        for region in regions:
+            if self.debug:
+                print(region)
+            self.assertTrue(region.iso.startswith("DE"))
+        regionNames=pc.get_region_names("Germany")
+        self.assertEqual(16,len(regionNames))
+        if self.debug:
+            print(regionNames)
     
     
     def testPlaces(self):
