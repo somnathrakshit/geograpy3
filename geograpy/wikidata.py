@@ -104,7 +104,7 @@ WHERE {
   #}
   # get the coordinates
   OPTIONAL { 
-      ?countryQ wdt:P625 ?countryCoord.
+      ?countryQ wdt:P625 ?coord.
   } 
   # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
   ?countryQ wdt:P297 ?iso.

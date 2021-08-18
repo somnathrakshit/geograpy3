@@ -28,8 +28,8 @@ class TestLocatorDatabase(Geograpy3Test):
         '''
         Locator.resetInstance()
         loc=Locator.getInstance()
-        #forceUpdate=True
-        forceUpdate=False
+        forceUpdate=True
+        #forceUpdate=False
         loc.populate_db(force=forceUpdate)
         tableList=loc.sqlDB.getTableList()
         self.assertTrue(loc.db_recordCount(tableList,"countries")>=200)

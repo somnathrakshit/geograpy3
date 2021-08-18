@@ -5,7 +5,7 @@ Created on 2020-09-23
 '''
 import unittest
 from geograpy.wikidata import Wikidata
-from geograpy.locator import Locator
+from geograpy.locator import Country
 import getpass
 from tests.basetest import Geograpy3Test
 from lodstorage.sql import SQLDB
@@ -23,7 +23,13 @@ class TestWikidata(Geograpy3Test):
         wikidata=Wikidata()
         try:
             countryList=wikidata.getCountries()
-            self.assertTrue(len(countryList)>=190)
+            self.assertTrue(len(countryList)>=200)
+            expectedAttrs=Country.getSamples()[0].keys()
+            for country in countryList:
+                if self.debug:
+                    print(country)
+                    for attr in expectedAttrs:
+                        self.assertTrue(hasattr(country,attr))
         except Exception as ex:
             self.handleWikidataException(ex)
             pass

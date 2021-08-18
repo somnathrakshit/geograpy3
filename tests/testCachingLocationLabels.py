@@ -1,3 +1,8 @@
+'''
+Created on 2021-08-17
+
+@author: th
+'''
 import math
 import unittest
 from lodstorage.sql import SQLDB
@@ -6,7 +11,11 @@ from geograpy.locator import RegionManager, LocationContext, CountryManager, Cit
 from geograpy.wikidata import Wikidata
 
 
-class TestCachingCitiesByRegion(Geograpy3Test):
+class TestCachingLocationLabels(Geograpy3Test):
+    '''
+    adds location label tables
+    
+    '''
 
     def setUp(self):
         pass
@@ -46,13 +55,22 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         self.createViews(sqlDB=sqlDb)
 
 
-    def getLablesQuery(self, values:str):
-        query = """SELECT DISTINCT ?locationId ?label
-            WHERE{
-                VALUES ?wikidataid {%s}
-                ?wikidataid rdfs:label|skos:altLabel ?label
-                FILTER(lang(?label)="en")
-            }""" % values
+    def getLablesQuery(self, wikidataIds:str):
+        '''
+        get the query for the alternatives labels for the given values
+        
+        wikidataIds(str): a list of wikidataids
+        '''
+        query = """# get alternative labels for the given wikidata 
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+SELECT DISTINCT ?wikidataid ?label
+WHERE{
+  VALUES ?wikidataid { %s }
+  ?wikidataid rdfs:label|skos:altLabel ?label
+  FILTER(lang(?label)="en")
+}""" % wikidataIds
         return query
 
     def createViews(self, sqlDB):

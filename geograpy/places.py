@@ -1,8 +1,7 @@
 
-import pycountry
 from .utils import remove_non_ascii, fuzzy_match
 from collections import Counter
-from geograpy.locator import Locator
+from geograpy.locator import Locator, City
 
 """
 Takes a list of place names and works place designation (country, region, etc) 
@@ -38,10 +37,15 @@ class PlaceContext(Locator):
         text= "countries=%s\nregions=%s\ncities=%s\nother=%s" % (self.countries,self.regions,self.cities,self.other)
         return text
 
-    def get_region_names(self, country_name):
-        country_name = self.correct_country_misspelling(country_name)
+    def get_region_names(self, countryName:str)->list:
+        '''
+        get region names for the given country
+        
+        Args:
+            countryName(str): the name of the country
+        '''
+        country_name = self.correct_country_misspelling(countryName)
         try:
-            obj = pycountry.countries.get(name=country_name)
             regions = pycountry.subdivisions.get(country_code=obj.alpha2)
         except:
             regions = []
@@ -114,35 +118,29 @@ class PlaceContext(Locator):
             self.populate_db()
         params=",".join("?" * len(self.places))
         query="SELECT * FROM CityLookup WHERE name IN (" + params + ")"
-        cities=self.sqlDB.query(query,self.places)
+        cityLookupRecords=self.sqlDB.query(query,self.places)
 
-        for city in cities:
-            country = None
-            alpha_2=city['country_iso_code']
-            country = pycountry.countries.get(alpha_2=alpha_2)
-            if country is not None:
-                country_name = country.name
-            else:
-                country_name = city['country_name']
-     
-            city_name = city['city_name']
-            region_name = city['subdivision_1_name']
+        for cityLookupRecord in cityLookupRecords:
+            city=City()
+            city.fromCityLookup(cityLookupRecord)
+           
+            if city.name not in self.cities:
+                self.cities.append(city.name)
 
-            if city_name not in self.cities:
-                self.cities.append(city_name)
+            countryName=city.country.name
+            if countryName not in self.countries:
+                self.countries.append(countryName)
+                self.country_mentions.append((countryName, 1))
 
-            if country_name not in self.countries:
-                self.countries.append(country_name)
-                self.country_mentions.append((country_name, 1))
+            if countryName not in self.country_cities:
+                self.country_cities[countryName] = []
 
-            if country_name not in self.country_cities:
-                self.country_cities[country_name] = []
-
-            if city_name not in self.country_cities[country_name]:
-                self.country_cities[country_name].append(city_name)
-
-                if country_name in self.country_regions and region_name in self.country_regions[country_name]:
-                    self.address_strings.append(city_name + ", " + region_name + ", " + country_name)
+            if city.name not in self.country_cities[countryName]:
+                self.country_cities[countryName].append(city.name)
+                regionName=self.city.region.name
+                if countryName in self.country_regions and regionName in self.country_regions[countryName]:
+                    address=f"{city.name}, {regionName}, {countryName}"
+                    self.address_strings.append(address)
 
         all_cities = [p for p in self.places if p in self.cities]
         self.city_mentions = Counter(all_cities).most_common()

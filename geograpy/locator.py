@@ -217,19 +217,6 @@ class LocationManager(EntityManager):
         url = f"https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/{fileName}.gz"
         backupFile = LocationManager.downloadBackupFile(url, fileName, targetDirectory)
         return backupFile
-    
-    @classmethod
-    def getMyLocationLodFromJsonBackup(cls,listName:str):
-        '''
-        get my List of Dicts from a Json Backup 
-        
-        listName(str): the listName used in the json file
-        '''
-        fileName=f"{listName}_geograpy3.json"
-        backupFile=cls.downloadBackupFileFromGitHub(fileName)
-        jsonStr = LocationManager.getFileContent(backupFile)
-        lod = json.loads(jsonStr)[listName]
-        return lod
 
     def getByName(self, name:str):
         '''
@@ -725,7 +712,16 @@ class Country(Location):
 
     @classmethod
     def getSamples(cls):
-        samplesLOD = [{
+        samplesLOD = [
+            {
+            'wikidataid': 'Q38', 
+             'name': 'Italy', 
+             'iso': 'IT', 
+             'pop': 60317000.0, 
+             'lat': 42.5, 
+             'lon': 12.5,
+            },
+            {
             "name": "United States of America",
             "wikidataid": "Q30",
             "lat": 39.82818,
@@ -736,7 +732,8 @@ class Country(Location):
             "comment": None,
             "labels":["USA", "US", "United States of America"],
             "iso":"US"
-        }]
+        }, {
+            }]
         return samplesLOD
 
     def __str__(self):
@@ -828,7 +825,7 @@ class LocationContext(object):
         load my data
         '''
         for manager in self.countryManager,self.regionManager,self.cityManager:
-            manager.fromCache(force=forceUpdate, getListOfDicts=manager.getLocationLodFromJsonBackup)
+            manager.fromCache(force=forceUpdate)
         self.interlinkLocations(warnOnDuplicates=warnOnDuplicates)
     
 
@@ -1372,10 +1369,12 @@ class Locator(object):
     def createViews(self, sqlDB):
         viewDDLs = ["DROP VIEW IF EXISTS CityLookup", """
 CREATE VIEW CityLookup AS
-SELECT ci.*,r.name as regionName,r.iso as regionIso,r.pop as regionPop,co.name as countryName,co.iso as countryIso
+SELECT ci.*,
+   r.name as regionName ,r.iso as regionIso ,r.pop as regionPop,r.lat as regionLat, r.lon as regionLon,
+   c.name as countryName,c.iso as countryIso,c.lat as CountryLat, c.lon as CountryLon
 FROM cities ci
 JOIN regions r on ci.regionId=r.wikidataid
-JOIN countries co on ci.countryId=co.wikidataid
+JOIN countries c on ci.countryId=c.wikidataid
 """, "DROP INDEX IF EXISTS cityByRegion",
 "CREATE INDEX cityByRegion ON cities (regionId)",
 "DROP INDEX IF EXISTS regionByCountry",

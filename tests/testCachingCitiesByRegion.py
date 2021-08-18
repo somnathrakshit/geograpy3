@@ -1,5 +1,5 @@
 '''
-Created on 16.08.2021
+Created on 2021-08-16
 
 @author: wf
 '''
@@ -14,6 +14,17 @@ import re
 import getpass
 
 class TestCachingCitiesByRegion(Geograpy3Test):
+    '''
+    The wikidata city query times out even on the wikidata copy in the RWTH i5 infrastructure
+    Therefore we need to split the queries to a reasonable size so that each individual query does not time out.
+    
+    A query per region is done some 3000 times.
+    The query used here works for most regions except a few where the query needs to be modified to not go the full depth of
+    the Property
+       located in the administrative territorial entity (P131) 
+    but limit it
+    
+    '''
 
 
     def setUp(self):
@@ -24,6 +35,7 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         pass
     
     def cacheRegionCities2Json(self,limit,showDone=False):
+        # TODO - refactor to Locator/LocationContext - make available via command line
         wd=Wikidata()
         config=LocationContext.getDefaultConfig()
         countryManager= CountryManager(config=config)
@@ -90,6 +102,7 @@ class TestCachingCitiesByRegion(Geograpy3Test):
                     for city4Region in cities4Region:
                         city=City()
                         city.fromDict(city4Region)
+                        # fix regionId
                         if hasattr(city, "regionId"):
                             city.partOfRegionId=city.regionId
                         city.regionId=region.wikidataid
