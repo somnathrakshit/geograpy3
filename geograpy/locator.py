@@ -651,9 +651,9 @@ class Region(Location):
         return text
     
     @staticmethod
-    def fromRegionRecord(regionRecord):
+    def fromRegionRecord(regionRecord:dict):
         '''
-        create  a region from a Wikidata record
+        create  a region from a dict record 
         
         Args:
             regionRecord(dict): the records as returned from a Query
@@ -688,6 +688,21 @@ class Country(Location):
             setattr(self, 'level', 3)
         if not hasattr(self, 'locationKind'):
             setattr(self, 'locationKind', "Country")
+     
+    @staticmethod        
+    def fromCountryRecord(countryRecord:dict):
+        '''
+        create  a country from a country record
+        
+        Args:
+            countryRecord(dict): the records as returned from a Query
+            
+        Returns:
+            Country: the corresponding region information
+        '''
+        country=Country()
+        country.fromDict(countryRecord)
+        return country
 
     @classmethod
     def getSamples(cls):
@@ -1056,7 +1071,7 @@ class Locator(object):
                         if foundCity is not None:
                             break
                 if foundCity is None and byPopulation:
-                    foundCity = max(cities, key=lambda city:0 if city.population is None else city.population)
+                    foundCity = max(cities, key=lambda city:0 if city.pop is None else city.pop)
                     pass
                     
         return foundCity    
@@ -1147,8 +1162,7 @@ class Locator(object):
         country = None
         countryRecords=self.sqlDB.query(query,params)
         if len(countryRecords)==1:
-            country=Country()
-            country.fromDict(countryRecords[0])
+            country=Country.fromCountryRecord(countryRecords[0])
             pass
         return country
     
