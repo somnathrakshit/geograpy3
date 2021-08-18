@@ -13,7 +13,7 @@ class PlaceContext(Locator):
     Adds context information to a place name
     '''
 
-    def __init__(self, place_names, setAll=True):
+    def __init__(self, place_names, setAll=True,correctMisspelling=False):
         '''
         Constructor
         
@@ -26,6 +26,7 @@ class PlaceContext(Locator):
                     string: Path to the database file to be used - if None the default "locs.db" will be used
         '''
         super().__init__()
+        self.correctMisspelling=correctMisspelling
         self.places = place_names
         if setAll:
             self.setAll()
@@ -44,9 +45,13 @@ class PlaceContext(Locator):
         Args:
             countryName(str): the name of the country
         '''
-        country_name = self.correct_country_misspelling(countryName)
+        if self.correctMisspelling:
+            countryName = self.correct_country_misspelling(countryName)
         try:
-            regions = pycountry.subdivisions.get(country_code=obj.alpha2)
+            queryString="SELECT * FROM regions WHERE name=(?)"
+            params=(countryName,)
+            regionRecords=self.sqlDB.query(queryString, params)
+            
         except:
             regions = []
 
@@ -136,7 +141,7 @@ class PlaceContext(Locator):
 
             if city.name not in self.country_cities[countryName]:
                 self.country_cities[countryName].append(city.name)
-                regionName=self.city.region.name
+                regionName=city.region.name
                 if countryName in self.country_regions and regionName in self.country_regions[countryName]:
                     address=f"{city.name}, {regionName}, {countryName}"
                     self.address_strings.append(address)

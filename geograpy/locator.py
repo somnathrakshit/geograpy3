@@ -606,8 +606,8 @@ class City(Location):
         
         regionRecord=City.mappedDict(cityLookupRecord,
             [("regionId","wikidataid"),("regionName","name"),("regionIso","iso"),("regionPop","pop"),("regionLat","lat"),("regionLon","lon")])
-        city.region=Region()
-        city.region.fromDict(regionRecord)
+        city.region=Region.fromRegionRecord(regionRecord)
+
         
         countryRecord=City.mappedDict(cityLookupRecord,
             [("countryId","wikidataid"),("countryName","name"),("countryIso","iso"),("countryLat","lat"),("countryLon","lon")])
@@ -682,17 +682,18 @@ class Region(Location):
         return text
     
     @staticmethod
-    def fromWikidata(record):
+    def fromRegionRecord(regionRecord):
         '''
         create  a region from a Wikidata record
         
         Args:
-            record(dict): the records as returned from a Query
+            regionRecord(dict): the records as returned from a Query
             
         Returns:
             Region: the corresponding region information
         '''
         region = Region()
+        region.fromDict(regionRecord)
         return region
 
     @property
@@ -748,29 +749,6 @@ class Country(Location):
     def __str__(self):
         text = f"{self.iso}({self.name})" 
         return text
-    
-    @staticmethod 
-    def fromGeoLite2(record):
-        '''
-        create a country from a geolite2 record
-        '''
-        country = Country()
-        country.name = record['countryName']
-        country.iso = record['countryIso']
-        return country
-    
-    @staticmethod
-    def fromPyCountry(pcountry):
-        '''
-        Args:
-            pcountry(PyCountry): a country as gotten from pycountry
-        Returns: 
-            Country: the country 
-        '''
-        country = Country()
-        country.name = pcountry.name
-        country.iso = pcountry.alpha_2
-        return country
 
 
 class LocationContext(object):
@@ -1166,7 +1144,7 @@ class Locator(object):
         params = (region_name,)
         regionRecords = self.sqlDB.query(query, params)
         for regionRecord in regionRecords:
-            regions.append(Region.fromWikidata(regionRecord))
+            regions.append(Region.fromRegionRecord(regionRecord))
         return regions                     
     
     def correct_country_misspelling(self, name):
@@ -1227,7 +1205,7 @@ class Locator(object):
         get the view to be used
         
         Returns:
-            str: the SQL view to be used for CityLookups e.g. GeoLite2CityLookup
+            str: the SQL view to be used for CityLookups e.g. CityLookup
         '''
         view = self.view
         return view

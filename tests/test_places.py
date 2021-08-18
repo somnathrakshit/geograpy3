@@ -19,6 +19,13 @@ class TestPlaces(Geograpy3Test):
     def tearDown(self):
         pass
     
+    def testGetRegionNames(self):
+        '''
+        test getting region names
+        '''
+        pc=PlaceContext(place_names=["Berlin"])
+        pc.get_region_names("Germany")
+    
     
     def testPlaces(self):
         '''
