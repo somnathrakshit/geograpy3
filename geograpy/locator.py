@@ -227,36 +227,11 @@ class LocationManager(EntityManager):
         Returns:
             Returns locations that match the given name
         '''
-        if not self.dbHasData():
-            self.populateDb()
-        sqlDB = self.getSQLDB(self.config.cacheFile)
         query = f'SELECT wikidataid FROM {self.tableName} WHERE name LIKE (?)'
         params = (name,)
-        locationRecords = sqlDB.query(query, params)
+        locationRecords = self.sqlDB.query(query, params)
         wikidataIds=[record['wikidataid'] for record in locationRecords if 'wikidataid' in record]
         return wikidataIds
-
-    def dbHasData(self):
-        '''
-        Checks whether the db has records for this EntityManager
-        Returns:
-            Returns True if at least one record is present.
-        '''
-        sqlDb=self.getSQLDB(self.config.cacheFile)
-        tableMap = sqlDb.getTableDict()
-        if self.tableName in tableMap:
-            query = f'SELECT COUNT(*) AS count  FROM {self.tableName}'
-            countResult = sqlDb.query(query)
-            count = countResult[0]['count']
-            if count > 0:
-                return True
-        return False
-
-    def populateDb(self):
-        '''
-        populate locations db which contains records of this EntityManager
-        '''
-        LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename, self.config.getCachePath())
 
     def getLocationByWikidataId(self, wikidataId:str):
         '''
@@ -269,12 +244,9 @@ class LocationManager(EntityManager):
         '''
         if wikidataId is None:
             return None
-        if not self.dbHasData():
-            self.populateDb()
-        sqlDB = self.getSQLDB(self.config.cacheFile)
         query = f'SELECT * FROM {self.tableName} WHERE wikidataid LIKE (?)'
         params = (wikidataId,)
-        records = sqlDB.query(query, params)
+        records = self.sqlDB.query(query, params)
         if records:
             location=self.clazz()
             location.fromDict(records[0])
@@ -291,16 +263,13 @@ class LocationManager(EntityManager):
             List of wikidata ids of locations matching the given isoCode
         '''
         if isinstance(self, RegionManager) or isinstance(self, CountryManager):
-            if not self.dbHasData():
-                self.populateDb()
-            sqlDb = self.getSQLDB(self.config.cacheFile)
             if isinstance(self, RegionManager):
                 query = f"SELECT wikidataid FROM {self.tableName} WHERE iso LIKE (?) OR iso LIKE (?)"
                 params = (f"%-{isoCode}", isoCode,)
             else:
                 query = f"SELECT wikidataid FROM {self.tableName} WHERE iso LIKE (?)"
                 params = (isoCode,)
-            qres = sqlDb.query(query, params)
+            qres = self.sqlDb.query(query, params)
             locationIds = [record['wikidataid'] for record in qres if 'wikidataid' in record]
             return locationIds
         else:
@@ -827,24 +796,7 @@ class LocationContext(object):
         regionManager = RegionManager("regions", config=config)
         countryManager = CountryManager("countries", config=config)
         locationContext = LocationContext(countryManager, regionManager, cityManager, config)
-        return locationContext
-
-    @classmethod
-    def fromJSONBackup(cls, config:StorageConfig=None,withStore:bool=False):
-        '''
-        Inits a LocationContext form the JSON backup
-        
-        Args:
-            config(StorageConfig): the storage Configuration to use
-            withStore(bool): if True store the managers
-        '''
-        if config is None:
-            config = cls.getDefaultConfig()
-        countryList = CountryManager.fromJSONBackup(config=config)
-        regionList = RegionManager.fromJSONBackup(config=config)
-        cityList = CityManager.fromJSONBackup(config=config)
-        locationContext = LocationContext(countryList, regionList, cityList, config)
-        return locationContext
+        return locationContext 
 
     @staticmethod
     def getDefaultConfig() -> StorageConfig:
