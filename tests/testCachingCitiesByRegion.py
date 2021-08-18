@@ -26,14 +26,6 @@ class TestCachingCitiesByRegion(Geograpy3Test):
     
     '''
 
-
-    def setUp(self):
-        pass
-
-
-    def tearDown(self):
-        pass
-    
     def cacheRegionCities2Json(self,limit,showDone=False):
         # TODO - refactor to Locator/LocationContext - make available via command line
         wd=Wikidata()
