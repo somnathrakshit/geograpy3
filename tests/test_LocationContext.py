@@ -6,7 +6,6 @@ Created on 2021-08-13
 import unittest
 
 from tests.basetest import Geograpy3Test
-from lodstorage.storageconfig import StorageConfig
 from geograpy.locator import LocationContext,LocationManager,CityManager,RegionManager,CountryManager
 
 class TestLocationContext(Geograpy3Test):
