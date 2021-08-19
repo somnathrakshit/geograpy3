@@ -44,7 +44,6 @@ class TestExtractor(Geograpy3Test):
         self.assertSetEqual({'Italy','Germany','France','United States of America','Belgium','Canada'}, set(places.countries))
         self.assertSetEqual({'Rome', 'Brussels', 'Italy','Germany'},set(places.cities))   # Notes: Italy is also city in US-NY, Germany is also city in US-TX
             
-        
     def testGetGeoPlace(self):
         '''
         test geo place handling

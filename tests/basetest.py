@@ -15,17 +15,17 @@ class Geograpy3Test(TestCase):
     base test for geograpy 3 tests
     '''
 
-    def setUp(self):
+    def setUp(self,debug=False):
         '''
         setUp test environment
         '''
+        TestCase.setUp(self)
+        self.debug=debug
         msg=f"test {self._testMethodName}, debug={self.debug}"
         self.profile=Profiler(msg)
         Locator.resetInstance()
         locator=Locator.getInstance()
         locator.downloadDB()
-        TestCase.setUp(self)
-        self.debug=False
         # actively test Wikidata tests?
         self.testWikidata = False
         
