@@ -67,16 +67,23 @@ class TestPlaces(Geograpy3Test):
         '''
         country recognition
         '''
+        show=self.debug
         texts=['United Kingdom','UK','Great Britain','GB','United States']
-        print("lookup with geograpy.get_geoPlace_context")
+        expected=["United Kingdom","United Kingdom","United Kingdom","United Kingdom","United States of America"]
+        if show:
+            print("lookup with geograpy.get_geoPlace_context")
         for text in texts:
             countries=geograpy.get_geoPlace_context(text=text).countries
-            print (f"{text}:{countries}")
-        print("lookup with PlaceContext")
-        for text in texts:
+            if show:
+                print (f"{text}:{countries}")
+        if show:
+            print("lookup with PlaceContext")
+        for i,text in enumerate(texts):
             pc=PlaceContext([text])  
             pc.set_countries()
-            print (f"{text}:{pc.countries}")
+            if show:
+                print (f"{text}:{pc.countries}")
+            self.assertEqual([expected[i]],pc.countries)
 
 
 if __name__ == "__main__":
