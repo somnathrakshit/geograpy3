@@ -1,5 +1,46 @@
 import jellyfish
 import time
+import urllib
+import os
+
+class Download:
+    '''
+    Utility functions for downloading data
+    '''
+    
+    @staticmethod
+    def getURLContent(url:str):
+        with urllib.request.urlopen(url) as urlResponse:
+            content = urlResponse.read().decode()
+            return content
+
+    @staticmethod
+    def getFileContent(path:str):
+        with open(path, "r") as file:
+            content = file.read()
+            return content
+
+    @staticmethod
+    def needsDownload(filePath:str,force:bool=False)->bool:
+        '''
+        check if a download of the given filePath is necessary that is the file
+        does not exist has a size of zero or the download should be forced
+        
+        Args:
+            filePath(str): the path of the file to be checked
+            force(bool): True if the result should be forced to True
+            
+        Return:
+            bool: True if  a download for this file needed
+        '''
+        if not os.path.isfile(filePath):
+            result=True
+        else:
+            stats=os.stat(filePath)
+            size=stats.st_size
+            result=force or size==0
+        return result
+
 
 class Profiler:
     '''

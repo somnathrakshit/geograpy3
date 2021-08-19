@@ -8,6 +8,7 @@ import getpass
 import os
 import json
 from geograpy.utils import Profiler
+from geograpy.locator import Locator
 
 class Geograpy3Test(TestCase):
     '''
@@ -18,12 +19,15 @@ class Geograpy3Test(TestCase):
         '''
         setUp test environment
         '''
+        msg=f"test {self._testMethodName}, debug={self.debug}"
+        self.profile=Profiler(msg)
+        Locator.resetInstance()
+        locator=Locator.getInstance()
+        locator.downloadDB()
         TestCase.setUp(self)
         self.debug=False
         # actively test Wikidata tests?
         self.testWikidata = False
-        msg=f"test {self._testMethodName}, debug={self.debug}"
-        self.profile=Profiler(msg)
         
     def tearDown(self):
         TestCase.tearDown(self)

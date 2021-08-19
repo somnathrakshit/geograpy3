@@ -50,7 +50,7 @@ from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 from lodstorage.jsonable import JSONAble
 from math import radians, cos, sin, asin, sqrt
-from geograpy.utils import Profiler
+from geograpy.utils import Profiler, Download
 
 class LocationManager(EntityManager):
     '''
@@ -148,24 +148,13 @@ class LocationManager(EntityManager):
         if hasattr(location,"wikidataid"):
             self.locationByWikidataID[location.wikidataid]=location
 
-    @staticmethod
-    def getURLContent(url:str):
-        with urllib.request.urlopen(url) as urlResponse:
-            content = urlResponse.read().decode()
-            return content
-
-    @staticmethod
-    def getFileContent(path:str):
-        with open(path, "r") as file:
-            content = file.read()
-            return content
-
+    
     @staticmethod
     def getBackupDirectory():
         home = str(Path.home())
         path = f"{home}/.geograpy3"
         return path
-
+    
     @staticmethod
     def downloadBackupFile(url:str, fileName:str, targetDirectory:str=None, force:bool=False):
         '''
@@ -186,13 +175,7 @@ class LocationManager(EntityManager):
             backupDirectory=targetDirectory
         extractTo = f"{backupDirectory}/{fileName}"
         # we might want to check whether a new version is available
-        if not os.path.isfile(extractTo):
-            needDownload=True
-        else:
-            stats=os.stat(extractTo)
-            size=stats.st_size
-            needDownload=force or size==0
-        if needDownload:
+        if Download.needsDownload(extractTo,force=force):
             if not os.path.isdir(backupDirectory):
                 os.makedirs(backupDirectory)
             zipped = f"{extractTo}.gz"
@@ -1221,6 +1204,7 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
         '''
         print(f"recreating database ... {self.db_file}")
         self.populate_db(force=True)
+        
                 
     def populate_db(self, force=False):
         '''
@@ -1238,9 +1222,17 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
             self.populate_Version(self.sqlDB)
     
         elif not hasData:
-            LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename, self.storageConfig.getCachePath())
+            self.downloadDB()
         if not os.path.isfile(self.db_file):
             raise(f"could not create lookup database {self.db_file}")
+        
+    def downloadDB(self):
+        '''
+        download my database
+        '''
+        if Download.needsDownload(self.db_file):
+            LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename, self.storageConfig.getCachePath())
+        
             
     def populate_Version(self, sqlDB):
         '''
