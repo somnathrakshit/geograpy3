@@ -40,6 +40,16 @@ class TestLocator(Geograpy3Test):
                     print(f"{name}:{pop:.0f}")
     
         self.assertEqual(len(found),len(emap))
+        
+    def testHasViews(self):
+        '''
+        test that the views are available
+        '''
+        loc=Locator.getInstance()
+        viewsMap=loc.sqlDB.getTableDict(tableType="view")
+        for view in ["CityLookup","RegionLookup","CountryLookup"]:
+            self.assertTrue(view in viewsMap)
+       
     
     def testCityLookup(self):
         '''

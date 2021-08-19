@@ -28,49 +28,22 @@ class TestQueries(Geograpy3Test):
                 qm=QueryManager(lang='sql',debug=self.debug,path=path)
                 return qm
         return None
-    
-    def documentQuery(self,title:str,query:str,lod:list,tablefmt:str="mediawiki",withSourceCode=True,**kwArgs):
-        '''
-        document the given query
-        
-        Args:
-            title(str): the title to use
-            query(str): the SQL query
-            lod: the list of dicts result
-            tablefmt(str): the table format to use
-            withSourceCode(bool): if True document the source code
-            
-        Return:
-            str(
-        '''
-        if withSourceCode:
-            sourceCode=""
-            if tablefmt=="github":
-                sourceCode=f"""```sql
-{query}
-```"""
-            if tablefmt=="mediawiki":
-                sourceCode=f"""== {title} ==
-<source lang='sql'>
-{query}
-</source>
-"""
-            print (sourceCode)
-        tab=tabulate(lod,headers="keys",tablefmt=tablefmt,**kwArgs)
-        print(tab)
         
      
     def testQueries(self):
         '''
         test preconfigured queries
         '''
+        show=True
         qm=self.getQueryManager()
         self.assertIsNotNone(qm)
         locator=Locator.getInstance()
-        for name,query in qm.queriesByName.items():
+        for _name,query in qm.queriesByName.items():
             lod=locator.sqlDB.query(query.query) 
             for tablefmt in ["mediawiki","github"]:
-                self.documentQuery(name,query.query,lod,tablefmt=tablefmt,floatfmt=".0f")
+                doc=query.documentQueryResult(lod,tablefmt=tablefmt,floatfmt=".0f")
+                if show:
+                    print(doc)
         pass
     
     def testQuery(self):

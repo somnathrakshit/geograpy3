@@ -10,5 +10,5 @@
         order by pop desc
 'LabelLookup example #2':
     sql: |  
-        select * from CityLookup where label in ('CA')
+        select * from RegionLookup where label in ('CA')
 
