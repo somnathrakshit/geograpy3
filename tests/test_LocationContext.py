@@ -68,7 +68,7 @@ class TestLocationContext(Geograpy3Test):
         self.assertTrue(hasattr(cityManager, 'cities'))
         self.assertTrue(len(cityManager.cities) >= 200000)
         # check if Los Angeles is in the list (popular city should always be in the list)
-        _citiesByWikiDataIdNoDuplicates = self.checkNoDuplicateWikidataIds(cityManager,"wikidataid",303725)   # ToDo: Reduce number of duplicates
+        _citiesByWikiDataIdNoDuplicates = self.checkNoDuplicateWikidataIds(cityManager,"wikidataid",304000)   # ToDo: Reduce number of duplicates
         citiesByWikiDataId=cityManager.getLookup("wikidataid", withDuplicates=True)
         self.assertTrue("Q65" in citiesByWikiDataId)
         
