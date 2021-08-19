@@ -1337,13 +1337,22 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
     def createViews(self, sqlDB):
         viewDDLs = ["DROP VIEW IF EXISTS CityLookup", """
 CREATE VIEW CityLookup AS
-SELECT ci.*,
+SELECT 
+   cl.label,
+   ci.*,
    r.name as regionName ,r.iso as regionIso ,r.pop as regionPop,r.lat as regionLat, r.lon as regionLon,
    c.name as countryName,c.iso as countryIso,c.lat as CountryLat, c.lon as CountryLon
-FROM cities ci
+FROM 
+city_labels cl
+JOIN cities ci on ci.wikidataid=cl.wikidataid
 JOIN regions r on ci.regionId=r.wikidataid
 JOIN countries c on ci.countryId=c.wikidataid
-""", "DROP INDEX IF EXISTS cityByRegion",
+""", 
+"DROP INDEX if EXISTS cityLabelByWikidataid",
+"CREATE INDEX cityLabelByWikidataid ON city_labels (wikidataid)",
+"DROP INDEX if EXISTS cityByWikidataid",
+"CREATE INDEX cityByWikidataid ON cities (wikidataid)",
+"DROP INDEX IF EXISTS cityByRegion",
 "CREATE INDEX cityByRegion ON cities (regionId)",
 "DROP INDEX IF EXISTS regionByCountry",
 "CREATE INDEX regionByCountry ON regions (countryId)"]
