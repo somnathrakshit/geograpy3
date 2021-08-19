@@ -592,6 +592,7 @@ class City(Location):
             [("countryId","wikidataid"),("countryName","name"),("countryIso","iso"),("countryLat","lat"),("countryLon","lon")])
         city.country=Country()
         city.country.fromDict(countryRecord)
+        city.region.country=city.country
         return city
     
     def setValue(self, name, record):
@@ -852,26 +853,6 @@ class LocationContext(object):
     @property
     def cities(self) -> list:
         return self.cityManager.getList()
-
-    def getCountries(self, name:str):
-        '''Returns all countries that are known under the given name'''
-        wikidataIds = self.countryManager.getByName(name)
-        countries = [self.countryManager.getLocationByWikidataId(id) for id in wikidataIds]
-        return countries
-
-    def getRegions(self, name:str):
-        '''Returns all regions that are known under the given name'''
-        wikidataIds = self.regionManager.getByName(name)
-        regions = [self.regionManager.getLocationByWikidataId(id) for id in wikidataIds]
-        self._completeLocationHierarchy(*regions)
-        return regions
-
-    def getCities(self, name:str):
-        '''Returns all cities that are known under the given name'''
-        wikidataIds = self.cityManager.getByName(name)
-        cities=[self.cityManager.getLocationByWikidataId(id) for id in wikidataIds]
-        self._completeLocationHierarchy(*cities)
-        return cities
 
     def locateLocation(self, *locations, verbose:bool=False):
         '''
@@ -1367,7 +1348,7 @@ city_labels cl
 JOIN cities ci on ci.wikidataid=cl.wikidataid
 JOIN regions r on ci.regionId=r.wikidataid
 JOIN countries c on ci.countryId=c.wikidataid
-""",
+""","DROP VIEW IF EXISTS RegionLookup",
 """CREATE VIEW RegionLookup AS
 SELECT 
    rl.label,
@@ -1377,7 +1358,7 @@ FROM
 region_labels rl
 JOIN regions r on rl.wikidataid=r.wikidataid
 JOIN countries c on r.countryId=c.wikidataid
-""",
+""","DROP VIEW IF EXISTS CountryLookup",
 """CREATE VIEW CountryLookup AS
 SELECT 
    cl.label,

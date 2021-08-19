@@ -89,6 +89,20 @@ class TestWikidata(Geograpy3Test):
         #    #self.assertEqual(region['cities'],len(cityList))
         #    pass
 
+    def testWikidataCityStates(self):
+        '''
+        test getting region information from wikidata
+        '''
+        wikidata=Wikidata()
+        try:
+            regionList=wikidata.getCityStates()
+            self.assertTrue(len(regionList)>=2)
+            cityStateNames=[r.get('name') for r in regionList]
+            self.assertTrue("Singapore" in cityStateNames)
+        except Exception as ex:
+            self.handleWikidataException(ex)
+            pass
+
     def testGetWikidataId(self):
         '''
         test getting a wikiDataId from a given URL

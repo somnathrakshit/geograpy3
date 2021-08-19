@@ -187,7 +187,7 @@ class TestLocationHierarchy(Geograpy3Test):
 
         # test interlinking of city with region and country
         locationContext = self.getLocationContext()
-        cities = locationContext.getCities('Los Angeles')
+        cities = locationContext.cityManager.getByName('Los Angeles')
         la = [x for x in cities if x.wikidataid == "Q65"][0]
         self.assertEqual(la.name, 'Los Angeles')
         ca = la.region
