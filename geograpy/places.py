@@ -52,7 +52,7 @@ WHERE c.name=(?)"""
         params=(countryName,)
         regionRecords=self.sqlDB.query(queryString, params)
         for regionRecord in regionRecords:
-            region=Region.fromRegionRecord(regionRecord)
+            region=Region.fromRecord(regionRecord)
             regions.append(region)
         return regions
 

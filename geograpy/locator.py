@@ -217,31 +217,30 @@ class LocationManager(EntityManager):
         Returns:
             Returns locations that match the given name
         '''
-        query = f'SELECT wikidataid FROM {self.tableName} WHERE name LIKE (?)'
-        params = (name,)
-        locationRecords = self.sqldb.query(query, params)
-        wikidataIds=[record['wikidataid'] for record in locationRecords if 'wikidataid' in record]
-        return wikidataIds
+        query = f'SELECT wikidataid FROM {self.tableName} WHERE wikidataid IN (SELECT wikidataid FROM {self.entityName}_labels) WHERE label LIKE (?)'
+        locationRecords = self.sqldb.query(query, params=(name,))
+        locations=[self.clazz.fromRecord(lr) for lr in locationRecords]
 
-    def getLocationByWikidataId(self, wikidataId:str):
+    def getLocationsByWikidataId(self, *wikidataId:str):
         '''
-
+        Returns Location objects for the given wikidataids
         Args:
-            wikidataId: wikidataId of the location that should be returned
+            *wikidataId(str): wikidataIds of the locations that should be returned
 
         Returns:
-            Location object identified by the given wikidataId
+            Location objects matching the given wikidataids
         '''
-        if wikidataId is None:
-            return None
-        query = f'SELECT * FROM {self.tableName} WHERE wikidataid LIKE (?)'
-        params = (wikidataId,)
-        records = self.sqldb.query(query, params)
-        if records:
-            location=self.clazz()
-            location.fromDict(records[0])
-            return location
-        return None
+        wikidataIds=set(wikidataId)
+        if wikidataIds is None or not wikidataIds:
+            return
+        query=f"SELECT * FROM {self.tableName} WHERE wikidataid IN ({','.join('?'*len(wikidataIds))})"
+        locationRecords=self.sqldb.query(query, params=tuple(list(wikidataIds)))
+        if locationRecords:
+            for locationRecord in locationRecords:
+                yield self.clazz.fromRecord(locationRecord)
+        else:
+            if self.debug:
+                print("No Records matching the given wikidataIds found.")
 
     def getLocationByIsoCode(self, isoCode:str):
         '''
@@ -507,6 +506,21 @@ class Location(JSONAble):
         pDict = {keyMap[k]: v for k, v in record.items() if k in keyMap.keys()}
         return pDict
 
+    @classmethod
+    def fromRecord(cls,regionRecord: dict):
+        '''
+        create  a location from a dict record
+
+        Args:
+            regionRecord(dict): the records as returned from a Query
+
+        Returns:
+            Region: the corresponding region information
+        '''
+        location=cls()
+        location.fromDict(regionRecord)
+        return location
+
     
 class City(Location):
     '''
@@ -564,7 +578,7 @@ class City(Location):
 
         regionRecord=City.mappedDict(cityLookupRecord,
             [("regionId","wikidataid"),("regionName","name"),("regionIso","iso"),("regionPop","pop"),("regionLat","lat"),("regionLon","lon")])
-        city.region=Region.fromRegionRecord(regionRecord)
+        city.region=Region.fromRecord(regionRecord)
 
         countryRecord=City.mappedDict(cityLookupRecord,
             [("countryId","wikidataid"),("countryName","name"),("countryIso","iso"),("countryLat","lat"),("countryLon","lon")])
@@ -637,21 +651,6 @@ class Region(Location):
     def __str__(self):
         text = f"{self.iso}({self.name})" 
         return text
-    
-    @staticmethod
-    def fromRegionRecord(regionRecord:dict):
-        '''
-        create  a region from a dict record
-        
-        Args:
-            regionRecord(dict): the records as returned from a Query
-            
-        Returns:
-            Region: the corresponding region information
-        '''
-        region = Region()
-        region.fromDict(regionRecord)
-        return region
 
     @property
     def country(self):
@@ -676,21 +675,6 @@ class Country(Location):
             setattr(self, 'level', 3)
         if not hasattr(self, 'locationKind'):
             setattr(self, 'locationKind', "Country")
-
-    @staticmethod
-    def fromCountryRecord(countryRecord:dict):
-        '''
-        create  a country from a country record
-
-        Args:
-            countryRecord(dict): the records as returned from a Query
-
-        Returns:
-            Country: the corresponding region information
-        '''
-        country=Country()
-        country.fromDict(countryRecord)
-        return country
 
     @classmethod
     def getSamples(cls):
@@ -833,16 +817,14 @@ class LocationContext(object):
         '''Returns all regions that are known under the given name'''
         wikidataIds = self.regionManager.getByName(name)
         regions = [self.regionManager.getLocationByWikidataId(id) for id in wikidataIds]
-        for region in regions:
-            self._completeLocationHierarchy(region)
+        self._completeLocationHierarchy(*regions)
         return regions
 
     def getCities(self, name:str):
         '''Returns all cities that are known under the given name'''
         wikidataIds = self.cityManager.getByName(name)
         cities=[self.cityManager.getLocationByWikidataId(id) for id in wikidataIds]
-        for city in cities:
-            self._completeLocationHierarchy(city)
+        self._completeLocationHierarchy(*cities)
         return cities
 
     def locateLocation(self, *locations, verbose:bool=False):
@@ -883,47 +865,46 @@ class LocationContext(object):
                 #     lp.extend([f"{parts[i]} {parts[i + 1]} {parts[i + 2]}" for i in range(numberParts - 2)])
         locationParts.extend(lp)
         locationParts=list(set(locationParts))   # remove duplicates
-        values=tuple(locationParts)
         possibleIdsQuery=f"SELECT wikidataid FROM location_labels WHERE label IN ({','.join('?'*len(locationParts))})"
-        possibleIdQueryRes=self.locator.sqlDB.query(possibleIdsQuery, params=values)
-
-
+        possibleIdQueryRes=self.locator.sqlDB.query(possibleIdsQuery, params=tuple(locationParts))
+        # wikidataids to location objects
         possibleIds=[record['wikidataid'] for record in possibleIdQueryRes if 'wikidataid' in record]
         for manager in self.cityManager, self.regionManager, self.countryManager:
-            paramsMarker=f"({','.join('?'*len(possibleIds))})"
-            queryLocationsById = f"SELECT * FROM {manager.entityPluralName} WHERE wikidataid in {paramsMarker}"
-            values=tuple(possibleIds)
-            resQueryLocationById=self.locator.sqlDB.query(queryLocationsById, params=values)
-            possibleLocations[manager.name]=[manager.clazz(**record) for record in resQueryLocationById]
+            possibleLocations[manager.name]=list(manager.getLocationsByWikidataId(*possibleIds))
         # remove locations already identified by location in lower hierarchy
         cities=possibleLocations[self.cityManager.name]
         getAttrValues=lambda locations, attr:[getattr(location,attr) for location in locations if hasattr(location, attr)]
         excludeRegionIds=getAttrValues(cities, 'regionId')
         regions=[region for region in possibleLocations[self.regionManager.name] if hasattr(region, 'wikidataid') and not region.wikidataid in excludeRegionIds]
-        excldeCountryIds=[*getAttrValues(cities, "countryId"), *getAttrValues(regions, "countryId")]
-        countries=[country for country in possibleLocations[self.countryManager.name] if hasattr(country, 'wikidataid') and not country.wikidataid in excldeCountryIds]
+        excludeCountryIds=[*getAttrValues(cities, "countryId"), *getAttrValues(regions, "countryId")]
+        countries=[country for country in possibleLocations[self.countryManager.name] if hasattr(country, 'wikidataid') and not country.wikidataid in excludeCountryIds]
 
         # build final result in the order city→region→country
         cities.sort(key=lambda c: int(getattr(c, 'pop', 0)) if getattr(c, 'pop') is not None else 0, reverse=True)
         res = [*cities, *regions, *countries]
         # Enhance location objects
-        for location in res:
-            self._completeLocationHierarchy(location)
+        self._completeLocationHierarchy(*res)
         return res
 
-    def _completeLocationHierarchy(self, location:Location):
+    def _completeLocationHierarchy(self, *locations:Location):
         '''
-        Completes the location hierarchy of the given location by linking to locations in the hierarchy of the given location.
+        Completes the location hierarchy of the given locations by linking to locations in the hierarchy of the given location.
         E.g. for a given city adding the region and country object
         Args:
-            location: location for which the hierarchy should be looked up
+            *location(Location): locations for which the hierarchy should be looked up
         '''
-        if hasattr(location, 'regionId') and getattr(location, 'regionId') is not None:
-            location.region = self.regionManager.getLocationByWikidataId(location.regionId)
-        if hasattr(location, 'countryId') and getattr(location, 'countryId') is not None:
-            location.country = self.countryManager.getLocationByWikidataId(location.countryId)
-            if hasattr(location, 'region') and location.region is not None:
-                location.region.country = location.country
+        neededRegions=set([l.regionId for l in locations if hasattr(l, 'regionId')])
+        neededCountries=set([l.countryId for l in locations if hasattr(l, 'countryId')])
+        regions=self.regionManager.getLocationsByWikidataId(*neededRegions)
+        countries=self.countryManager.getLocationsByWikidataId(*neededCountries)
+        regionLuT={r.wikidataid:r for r in regions}
+        countryLuT={c.wikidataid:c for c in countries}
+        for location in locations:
+            if hasattr(location,'regionId'):
+                location.region=regionLuT.get(getattr(location,'regionId'))
+            if hasattr(location,'countryId'):
+                location.country=countryLuT.get(getattr(location,'countryId'))
+
 
 class Locator(object):
     '''
@@ -1114,7 +1095,7 @@ class Locator(object):
         params = (region_name,)
         regionRecords = self.sqlDB.query(query, params)
         for regionRecord in regionRecords:
-            regions.append(Region.fromRegionRecord(regionRecord))
+            regions.append(Region.fromRecord(regionRecord))
         return regions                     
     
     def correct_country_misspelling(self, name):
@@ -1167,7 +1148,7 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
         country = None
         countryRecords=self.sqlDB.query(query,params)
         if len(countryRecords)==1:
-            country=Country.fromCountryRecord(countryRecords[0])
+            country=Country.fromRecord(countryRecords[0])
             pass
         return country
     
