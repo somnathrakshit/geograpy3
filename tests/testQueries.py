@@ -7,6 +7,7 @@ import unittest
 from tests.basetest import Geograpy3Test
 from lodstorage.query import QueryManager
 from lodstorage.sql import EntityInfo
+from lodstorage.query import Query
 from geograpy.locator import LocationContext, Locator
 import os
 from tabulate import tabulate
@@ -34,7 +35,7 @@ class TestQueries(Geograpy3Test):
         '''
         test preconfigured queries
         '''
-        show=True
+        show=self.debug
         qm=self.getQueryManager()
         self.assertIsNotNone(qm)
         locator=Locator.getInstance()
@@ -50,6 +51,7 @@ class TestQueries(Geograpy3Test):
         '''
         test a single query
         '''
+        show=True
         queries=[("LocationLabel Count","""select count(*),hierarchy 
 from location_labels
 group by hierarchy""")]
@@ -57,10 +59,13 @@ group by hierarchy""")]
             queries.append((f"unique wikidataids for {tableName}",f"select count(distinct(wikidataid)) as wikidataids from {tableName}"))
             queries.append((f"total #records for {tableName}",f"select count(*) as recordcount from {tableName}"))            
         locator=Locator.getInstance()
-        for title,query in queries:
-            lod=locator.sqlDB.query(query) 
+        for title,queryString in queries:
+            lod=locator.sqlDB.query(queryString) 
             for tablefmt in ["mediawiki"]:
-                self.documentQuery(title,query,lod,tablefmt=tablefmt)
+                query=Query(name=title,query=queryString,lang="sql")
+                doc=query.documentQueryResult(lod,tablefmt=tablefmt)
+                if show:
+                    print(doc)
 
 
 if __name__ == "__main__":
