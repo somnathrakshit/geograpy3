@@ -208,18 +208,26 @@ class LocationManager(EntityManager):
         backupFile = LocationManager.downloadBackupFile(url, fileName, targetDirectory)
         return backupFile
 
-    def getByName(self, name:str):
+    def getByName(self, *names:str):
         '''
-        Get locations matching given name
+        Get locations matching given names
         Args:
             name: Name of the location
 
         Returns:
             Returns locations that match the given name
         '''
-        query = f'SELECT wikidataid FROM {self.tableName} WHERE wikidataid IN (SELECT wikidataid FROM {self.entityName}_labels) WHERE label LIKE (?)'
-        locationRecords = self.sqldb.query(query, params=(name,))
-        locations=[self.clazz.fromRecord(lr) for lr in locationRecords]
+        query = f"SELECT * FROM {self.clazz.__name__}Lookup WHERE label IN ({','.join('?'*len(names))})"
+        locationRecords = self.sqldb.query(query, params=tuple(names))
+        if self.clazz is City:
+            locations=[City.fromCityLookup(record) for record in locationRecords]
+        elif self.clazz is Region:
+            locations = [Region.fromRegionLookup(record) for record in locationRecords]
+        elif self.clazz is Country:
+            locations = [Country.fromCountryLookup(record) for record in locationRecords]
+        else:
+            locations=[self.clazz.fromRecord(lr) for lr in locationRecords]
+        return locations
 
     def getLocationsByWikidataId(self, *wikidataId:str):
         '''
@@ -660,6 +668,28 @@ class Region(Location):
     def country(self, country):
         self._country = country
 
+    @staticmethod
+    def fromRegionLookup(regionLookupRecord: dict):
+        '''
+
+        create a region from a regionLookupRecord and setting Region and Country while at it
+        Args:
+            regionRecord(dict): a map derived from the CityLookup view
+        '''
+        # we create region and country from scratch without true
+        # object relational mapping and lookup from the locationContext
+        # this is only useful for small result sets that need no further interlinking
+        region = Region()
+        # first take all params
+        regionRecord = Location.partialDict(regionLookupRecord, Region)
+        region.fromDict(regionRecord)
+        countryRecord = Location.mappedDict(regionLookupRecord,
+                                        [("countryId", "wikidataid"), ("countryName", "name"), ("countryIso", "iso"),
+                                         ("countryLat", "lat"), ("countryLon", "lon")])
+        region.country = Country()
+        region.country.fromDict(countryRecord)
+        return region
+
 
 class Country(Location):
     '''
@@ -705,6 +735,22 @@ class Country(Location):
     def __str__(self):
         text = f"{self.iso}({self.name})" 
         return text
+
+    @staticmethod
+    def fromCountryLookup(countryLookupRecord: dict):
+        '''
+
+        create a region from a regionLookupRecord and setting Region and Country while at it
+        Args:
+            regionRecord(dict): a map derived from the CityLookup view
+        '''
+        # we create region and country from scratch without true
+        # object relational mapping and lookup from the locationContext
+        # this is only useful for small result sets that need no further interlinking
+        country = Country()
+        countryRecord = Location.partialDict(countryLookupRecord, Region)
+        country.fromDict(countryRecord)
+        return country
 
 
 class LocationContext(object):
@@ -841,11 +887,6 @@ class LocationContext(object):
         '''
         if locations is None or locations is (None):
             return
-        possibleLocations = {
-            self.cityManager.name:set(),
-            self.regionManager.name: set(),
-            self.countryManager.name: set()
-        }
         locationParts = []
         for location in locations:
             if location is not None:
@@ -865,19 +906,17 @@ class LocationContext(object):
                 #     lp.extend([f"{parts[i]} {parts[i + 1]} {parts[i + 2]}" for i in range(numberParts - 2)])
         locationParts.extend(lp)
         locationParts=list(set(locationParts))   # remove duplicates
-        possibleIdsQuery=f"SELECT wikidataid FROM location_labels WHERE label IN ({','.join('?'*len(locationParts))})"
-        possibleIdQueryRes=self.locator.sqlDB.query(possibleIdsQuery, params=tuple(locationParts))
-        # wikidataids to location objects
-        possibleIds=[record['wikidataid'] for record in possibleIdQueryRes if 'wikidataid' in record]
-        for manager in self.cityManager, self.regionManager, self.countryManager:
-            possibleLocations[manager.name]=list(manager.getLocationsByWikidataId(*possibleIds))
+
+        cities=self.cityManager.getByName(*locationParts)
+        regions = self.regionManager.getByName(*locationParts)
+        countries = self.countryManager.getByName(*locationParts)
+
         # remove locations already identified by location in lower hierarchy
-        cities=possibleLocations[self.cityManager.name]
         getAttrValues=lambda locations, attr:[getattr(location,attr) for location in locations if hasattr(location, attr)]
         excludeRegionIds=getAttrValues(cities, 'regionId')
-        regions=[region for region in possibleLocations[self.regionManager.name] if hasattr(region, 'wikidataid') and not region.wikidataid in excludeRegionIds]
+        regions=[region for region in regions if hasattr(region, 'wikidataid') and not region.wikidataid in excludeRegionIds]
         excludeCountryIds=[*getAttrValues(cities, "countryId"), *getAttrValues(regions, "countryId")]
-        countries=[country for country in possibleLocations[self.countryManager.name] if hasattr(country, 'wikidataid') and not country.wikidataid in excludeCountryIds]
+        countries=[country for country in countries if hasattr(country, 'wikidataid') and not country.wikidataid in excludeCountryIds]
 
         # build final result in the order city→region→country
         cities.sort(key=lambda c: int(getattr(c, 'pop', 0)) if getattr(c, 'pop') is not None else 0, reverse=True)
