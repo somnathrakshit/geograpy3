@@ -54,14 +54,14 @@ class TestQueries(Geograpy3Test):
         show=True
         queries=[("LocationLabel Count","""select count(*),hierarchy 
 from location_labels
-group by hierarchy""")]
+group by hierarchy"""),("NY example","select * from cityLookup where label='New York City'")]
         for tableName in ["countries","regions","cities"]:
             queries.append((f"unique wikidataids for {tableName}",f"select count(distinct(wikidataid)) as wikidataids from {tableName}"))
             queries.append((f"total #records for {tableName}",f"select count(*) as recordcount from {tableName}"))            
         locator=Locator.getInstance()
         for title,queryString in queries:
             lod=locator.sqlDB.query(queryString) 
-            for tablefmt in ["mediawiki"]:
+            for tablefmt in ["mediawiki","github"]:
                 query=Query(name=title,query=queryString,lang="sql")
                 doc=query.documentQueryResult(lod,tablefmt=tablefmt)
                 if show:
