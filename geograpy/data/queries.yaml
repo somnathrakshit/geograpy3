@@ -4,7 +4,8 @@
 # WF 2021-08-19
 'LabelLookup example #1':
     sql: |  
-        select  cl.wikidataid,label,name,pop,regionIso,regionName,countryIso,countryName,gndId,geoNameId,lat,lon from 
+        select  distinct cl.wikidataid,label,name,pop,regionIso,regionName,countryIso,countryName,gndId,geoNameId,lat,lon from 
         city_labels l 
         join CityLookup cl on l.wikidataid=cl.wikidataid
-        where l.label in ('St. Petersburg','Singapore')
+        where l.label in ('Berlin',',St. Petersburg','Singapore','Athens')
+        order by pop desc
