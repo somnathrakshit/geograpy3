@@ -20,28 +20,51 @@ class TestLocator(Geograpy3Test):
     test the Locator class from the location module
     '''   
     
+    def lookupQuery(self,viewName,whereClause):
+        loc=Locator.getInstance()
+        queryString=f"SELECT * FROM {viewName} where {whereClause} AND pop is not NULL ORDER by pop desc"
+        lookupRecords=loc.sqlDB.query(queryString)
+        return lookupRecords
+    
+    def checkExpected(self,lod,expected):
+        emap={}
+        found={}
+        for key,value in expected:
+            emap[key]=value
+        for record in lod:
+            name=record["name"]
+            pop=record["pop"]
+            if name in emap and pop> emap[name]:
+                found[name]=record
+                if self.debug:
+                    print(f"{name}:{pop:.0f}")
+    
+        self.assertEqual(len(found),len(emap))
+    
     def testCityLookup(self):
         '''
         test the cityLookup to city/region/country object cluster 
         '''
-        loc=Locator.getInstance()
-        loc.populate_db()
-        queryString="SELECT * FROM CityLookup where name in ('Berlin','Paris') ORDER by pop desc"
-        cityLookupRecords=loc.sqlDB.query(queryString)
-        berlinFound=False
-        parisFound=False
-        for cityLookupRecord in cityLookupRecords:
-            city=City.fromCityLookup(cityLookupRecord)
-            if city.pop is not None:
-                if city.name=="Berlin" and city.pop>3644000:
-                    berlinFound=True
-                if city.name=="Paris" and city.pop>2175000:
-                    parisFound=True
-            if self.debug:
-                print(f"{city}:{city.pop}")
-        self.assertTrue(berlinFound)
-        self.assertTrue(parisFound)
+        cityLookupRecords=self.lookupQuery("CityLookup", "label in ('Berlin','Paris','Athens','Singapore')")
+        expected=[("Berlin",3644000),("Paris",2175000),("Athens",600000),("Singapore",5800000)]
+        self.checkExpected(cityLookupRecords,expected)   
          
+    def testRegionLookup(self):
+        '''
+        test region Lookup
+        '''   
+        regionLookupRecords=self.lookupQuery("RegionLookup", "label in ('CA')")
+        expected=[("California",39000000)]
+        self.checkExpected(regionLookupRecords,expected) 
+        
+    def testCountryLookup(self):
+        '''
+        test country Lookup
+        '''
+        #self.debug=True
+        countryLookupRecords=self.lookupQuery("CountryLookup", "label in ('CA')")
+        expected=[("Canada",37000000)]
+        self.checkExpected(countryLookupRecords,expected) 
         
     def testIsoRegexp(self):
         '''
@@ -64,7 +87,6 @@ select distinct iso from regions
                 if not isIso and self.debug:
                     print(isocode)
                 self.assertTrue(isIso)
-        
         
     def testWordCount(self):
         '''

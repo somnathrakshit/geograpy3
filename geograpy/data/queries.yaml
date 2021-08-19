@@ -9,3 +9,8 @@
         join CityLookup cl on l.wikidataid=cl.wikidataid
         where l.label in ('Berlin',',St. Petersburg','Singapore','Athens')
         order by pop desc
+'LabelLookup example #2':
+    sql: |  
+        select * from CityLookup cl where cl.label in ('CA')
+           
+     

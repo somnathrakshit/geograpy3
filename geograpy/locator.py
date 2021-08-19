@@ -1347,7 +1347,25 @@ city_labels cl
 JOIN cities ci on ci.wikidataid=cl.wikidataid
 JOIN regions r on ci.regionId=r.wikidataid
 JOIN countries c on ci.countryId=c.wikidataid
-""", 
+""",
+"""CREATE VIEW RegionLookup AS
+SELECT 
+   rl.label,
+   r.*,
+   c.name as countryName,c.iso as countryIso,c.lat as CountryLat, c.lon as CountryLon
+FROM 
+region_labels rl
+JOIN regions r on rl.wikidataid=r.wikidataid
+JOIN countries c on r.countryId=c.wikidataid
+""",
+"""CREATE VIEW CountryLookup AS
+SELECT 
+   cl.label,
+   c.*
+FROM 
+country_labels cl
+JOIN countries c on cl.wikidataid=c.wikidataid
+""",
 "DROP INDEX if EXISTS cityLabelByWikidataid",
 "CREATE INDEX cityLabelByWikidataid ON city_labels (wikidataid)",
 "DROP INDEX if EXISTS cityByWikidataid",
