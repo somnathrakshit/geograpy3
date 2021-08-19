@@ -29,7 +29,7 @@ class TestQueries(Geograpy3Test):
                 return qm
         return None
     
-    def documentQuery(self,title:str,query:str,lod:list,tablefmt:str="mediawiki",withSourceCode=True):
+    def documentQuery(self,title:str,query:str,lod:list,tablefmt:str="mediawiki",withSourceCode=True,**kwArgs):
         '''
         document the given query
         
@@ -56,7 +56,7 @@ class TestQueries(Geograpy3Test):
 </source>
 """
             print (sourceCode)
-        tab=tabulate(lod,headers="keys",tablefmt=tablefmt)
+        tab=tabulate(lod,headers="keys",tablefmt=tablefmt,**kwArgs)
         print(tab)
         
      
@@ -70,7 +70,7 @@ class TestQueries(Geograpy3Test):
         for name,query in qm.queriesByName.items():
             lod=locator.sqlDB.query(query.query) 
             for tablefmt in ["mediawiki","github"]:
-                self.documentQuery(name,query.query,lod,tablefmt=tablefmt)
+                self.documentQuery(name,query.query,lod,tablefmt=tablefmt,floatfmt=".0f")
         pass
     
     def testQuery(self):
