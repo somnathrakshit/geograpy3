@@ -72,10 +72,11 @@ class TestCachingLocationLabels(Geograpy3Test):
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX wd: <http://www.wikidata.org/entity/>
-SELECT DISTINCT ?wikidataid ?label
+SELECT DISTINCT ?wikidataid ?label ?lang
 WHERE{
   VALUES ?wikidataid { %s }
   ?wikidataid rdfs:label|skos:altLabel ?label
+  BIND(lang(?label) AS ?lang)
   FILTER(lang(?label)="en")
 }""" % wikidataIds
         return query
@@ -91,7 +92,13 @@ WHERE{
                 UNION 
                 SELECT *, "City" AS "hierarchy" 
                 FROM city_labels
-        """]
+        """,
+                    "DROP INDEX if EXISTS cityLabelByWikidataid",
+                    "CREATE INDEX cityLabelByWikidataid ON city_labels (wikidataid)",
+                    "DROP INDEX if EXISTS regionLabelByWikidataid",
+                    "CREATE INDEX regionLabelByWikidataid ON region_labels (wikidataid)",
+                    "DROP INDEX if EXISTS countryLabelByWikidataid",
+                    "CREATE INDEX countryLabelByWikidataid ON country_labels (wikidataid)",]
         for viewDDL in viewDDLs:
             sqlDB.execute(viewDDL)
 
