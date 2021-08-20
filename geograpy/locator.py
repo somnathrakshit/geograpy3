@@ -219,14 +219,7 @@ class LocationManager(EntityManager):
         '''
         query = f"SELECT * FROM {self.clazz.__name__}Lookup WHERE label IN ({','.join('?'*len(names))})"
         locationRecords = self.sqldb.query(query, params=tuple(names))
-        if self.clazz is City:
-            locations=[City.fromCityLookup(record) for record in locationRecords]
-        elif self.clazz is Region:
-            locations = [Region.fromRegionLookup(record) for record in locationRecords]
-        elif self.clazz is Country:
-            locations = [Country.fromCountryLookup(record) for record in locationRecords]
-        else:
-            locations=[self.clazz.fromRecord(lr) for lr in locationRecords]
+        locations=self._locationsFromLookup(*locationRecords)
         return locations
 
     def getLocationsByWikidataId(self, *wikidataId:str):
@@ -241,14 +234,34 @@ class LocationManager(EntityManager):
         wikidataIds=set(wikidataId)
         if wikidataIds is None or not wikidataIds:
             return
-        query=f"SELECT * FROM {self.tableName} WHERE wikidataid IN ({','.join('?'*len(wikidataIds))})"
+        query=f"SELECT * FROM {self.clazz.__name__}Lookup WHERE wikidataid IN ({','.join('?'*len(wikidataIds))})"
         locationRecords=self.sqldb.query(query, params=tuple(list(wikidataIds)))
         if locationRecords:
-            for locationRecord in locationRecords:
-                yield self.clazz.fromRecord(locationRecord)
+            locations=self._locationsFromLookup(*locationRecords)
+            return locations
         else:
             if self.debug:
                 print("No Records matching the given wikidataIds found.")
+            return
+
+    def _locationsFromLookup(self, *locationRecords:dict):
+        '''
+        Convert given lookup records to the corresponding location objects
+        Args:
+            *locationRecords: lookup records of locations
+
+        Returns:
+            List of Location objects based on the given records
+        '''
+        if self.clazz is City:
+            locations=[City.fromCityLookup(record) for record in locationRecords]
+        elif self.clazz is Region:
+            locations = [Region.fromRegionLookup(record) for record in locationRecords]
+        elif self.clazz is Country:
+            locations = [Country.fromCountryLookup(record) for record in locationRecords]
+        else:
+            locations=[self.clazz.fromRecord(lr) for lr in locationRecords]
+        return locations
 
     def getLocationByIsoCode(self, isoCode:str):
         '''
@@ -902,28 +915,8 @@ class LocationContext(object):
         # build final result in the order city→region→country
         cities.sort(key=lambda c: int(getattr(c, 'pop', 0)) if getattr(c, 'pop') is not None else 0, reverse=True)
         res = [*cities, *regions, *countries]
-        # Enhance location objects
-        self._completeLocationHierarchy(*res)
         return res
 
-    def _completeLocationHierarchy(self, *locations:Location):
-        '''
-        Completes the location hierarchy of the given locations by linking to locations in the hierarchy of the given location.
-        E.g. for a given city adding the region and country object
-        Args:
-            *location(Location): locations for which the hierarchy should be looked up
-        '''
-        neededRegions=set([l.regionId for l in locations if hasattr(l, 'regionId')])
-        neededCountries=set([l.countryId for l in locations if hasattr(l, 'countryId')])
-        regions=self.regionManager.getLocationsByWikidataId(*neededRegions)
-        countries=self.countryManager.getLocationsByWikidataId(*neededCountries)
-        regionLuT={r.wikidataid:r for r in regions}
-        countryLuT={c.wikidataid:c for c in countries}
-        for location in locations:
-            if hasattr(location,'regionId'):
-                location.region=regionLuT.get(getattr(location,'regionId'))
-            if hasattr(location,'countryId'):
-                location.country=countryLuT.get(getattr(location,'countryId'))
 
 
 class Locator(object):
