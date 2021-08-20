@@ -1416,9 +1416,9 @@ JOIN countries c on cl.wikidataid=c.wikidataid
         return ok
 
     
-__version__ = '0.1.31'
+__version__ = '0.2.1'
 __date__ = '2020-09-26'
-__updated__ = '2021-08-11'    
+__updated__ = '2021-08-20'
 
 DEBUG = 1
 
