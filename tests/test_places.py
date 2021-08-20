@@ -11,15 +11,18 @@ class TestPlaces(Geograpy3Test):
 
 
     def setUp(self):
-        super().setUp()
+        super().setUp(debug=False)
         Locator.resetInstance()
-        self.debug=False
-        pass
-
-
-    def tearDown(self):
         pass
     
+    def testIssue25(self):
+        '''
+        https://github.com/somnathrakshit/geograpy3/issues/25
+        '''
+        pc=PlaceContext(place_names=["Bulgaria","Croatia","Czech Republic","Hungary"])
+        if self.debug:
+            print (pc.countries)
+
     def testGetRegionNames(self):
         '''
         test getting region names

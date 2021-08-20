@@ -4,11 +4,14 @@
 # WF 2021-08-19
 'LabelLookup example #1':
     sql: |  
-        select  distinct wikidataid,label,name,pop,regionIso,regionName,countryIso,countryName,gndId,geoNameId,lat,lon from
-        CityLookup cl
-        where label in ('Berlin',',St. Petersburg','Singapore','Athens')
-        order by pop desc
+        SELECT  *  
+        FROM CityLookup 
+        WHERE label IN ('Berlin',',St. Petersburg','Singapore','Athens')
+        ORDER BY pop DESC
 'LabelLookup example #2':
     sql: |  
-        select * from RegionLookup where label in ('CA')
+        SELECT * from RegionLookup WHERE label IN ('CA')
+'LabelLookup example #3':
+    sql: |  
+        SELECT * from CountryLookup WHERE label IN ('CA')
 
