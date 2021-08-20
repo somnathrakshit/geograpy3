@@ -1,5 +1,5 @@
 # geograpy3
-[![Join the chat at https://gitter.im/geograpy3/community](https://badges.gitter.im/geograpy3/community.svg)](https://gitter.im/geograpy3/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the discussion at https://github.com/somnathrakshit/geograpy3/discussions](https://shields.io/badge/GitHub-%20Discussions-blue?logo=github)](https://github.com/somnathrakshit/geograpy3/discussions)
 [![Documentation Status](https://readthedocs.org/projects/geograpy3/badge/?version=latest)](https://geograpy3.readthedocs.io/en/latest/?badge=latest)
 [![pypi](https://img.shields.io/pypi/pyversions/geograpy3)](https://pypi.org/project/geograpy3/)
 [![Github Actions Build](https://github.com/somnathrakshit/geograpy3/workflows/Build/badge.svg?branch=master)](https://github.com/somnathrakshit/geograpy3/actions?query=workflow%3ABuild+branch%3Amaster)
@@ -9,14 +9,19 @@
 [![GitHub closed issues](https://img.shields.io/github/issues-closed/somnathrakshit/geograpy3.svg)](https://github.com/somnathrakshit/geograpy3/issues/?q=is%3Aissue+is%3Aclosed)
 [![License](https://img.shields.io/github/license/somnathrakshit/geograpy3.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
-geograpy3 is a fork of [geograpy2](https://github.com/Corollarium/geograpy2), which is itself a fork of [geograpy](https://github.com/ushahidi/geograpy) and inherits
-most of it, but solves several problems (such as support for utf8, places names
+geograpy3 is a fork of [geograpy2](https://github.com/Corollarium/geograpy2), which is itself a fork of [geograpy](https://github.com/ushahidi/geograpy) and inherits most of it, but solves several problems (such as support for utf8, places names
 with multiple words, confusion over homonyms etc). Also, geograpy3 is compatible with Python 3, unlike geograpy2.
+
+since geograpy3 0.0.2 cities,countries and regions are matched against a database derived from the corresponding wikidata entries
 
 What it is
 ==========
 
-geograpy extracts place names from a URL or text, and add context to those names -- for example distinguishing between a country, region or city.
+geograpy extracts place names from a URL or text, and adds context to those names -- for example distinguishing between a country, region or city.
+
+The extraction is a two step process. The first process is a Natural Language Processing task which analyzes a text for potential mentions of geographic locations. In the next step the words which represent such locations are looked up using the Locator.
+
+If you already know that your content has geographic information you might want to use the Locator interface directly.
 
 ## Examples/Tutorial
 * [see Examples/Tutorial Wiki](http://wiki.bitplan.com/index.php/Geograpy#Examples)
@@ -135,9 +140,8 @@ geograpy3 uses the following excellent libraries:
 * [pylodstorage](https://pypi.org/project/pylodstorage/) for storage and retrieval of tabular data from SQL and SPARQL sources
 
 geograpy3 uses the following data sources:
-* [GeoLite2](http://dev.maxmind.com/geoip/geoip2/geolite2/) by MaxMind for city lookups
 * [ISO3166ErrorDictionary](https://github.com/bodacea/countryname/blob/master/countryname/databases/ISO3166ErrorDictionary.csv) for common country mispellings _via [Sara-Jayne Terp](https://github.com/bodacea)_
 * [pycountry](https://pypi.python.org/pypi/pycountry) for country/region lookups
-* [Wikidata](https://www.wikidata.org) for country/region/city information with disambiguation details like population/gdpPerCapita
+* [Wikidata](https://www.wikidata.org) for country/region/city information with disambiguation via population
 
 Hat tip to [Chris Albon](https://github.com/chrisalbon) for the name.
