@@ -79,10 +79,11 @@ group by hierarchy"""),
             queries.append((f"total #records for {tableName}",f"select count(*) as recordcount from {tableName}"))            
         locator=Locator.getInstance()
         for title,queryString in queries:
-            lod=locator.sqlDB.query(queryString) 
+            query=Query(name=title,query=queryString,lang="sql")
+            qlod=locator.sqlDB.query(queryString) 
             for tablefmt in ["mediawiki","github"]:
-                query=Query(name=title,query=queryString,lang="sql")
-                self.documentQueryResult(query, lod, tablefmt, show=self.debug)
+                lod=copy.deepcopy(qlod)
+                self.documentQueryResult(query, lod, tablefmt, show=True)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
