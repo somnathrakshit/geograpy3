@@ -3,9 +3,12 @@ Created on 2020-09-19
 
 @author: wf
 '''
-
+import os.path
+import tempfile
 import unittest
+from pathlib import Path
 
+from lodstorage.storageconfig import StorageConfig
 
 import geograpy
 import getpass
@@ -322,6 +325,40 @@ February 3-5, 2020''']
         if self.debug:
             print(d)
         self.assertAlmostEqual(10007.54,d,delta=0.1)
+
+    def testIssue_59_db_download(self):
+        '''
+        tests the correct downloading of the backup database in different configurations
+        '''
+        cacheFilePath=lambda config: f"{config.getCachePath()}/{config.cacheFile}"
+
+        def getConfig(tmpdir:str): return StorageConfig(cacheFile="locations.db", cacheRootDir=tmpdir)
+
+        def downloadAndTestDB(config:StorageConfig, loc:Locator=None, forceUpdate:bool=False):
+            '''downloads and tests the downloaded db'''
+            if loc is None:
+                loc = Locator(storageConfig=config)
+            loc.downloadDB(forceUpdate=forceUpdate)
+            self.assertTrue(os.path.exists(cacheFilePath(config)))
+            self.assertTrue(loc.db_has_data())
+            return loc
+
+        # test downloading with no file in dir
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config=getConfig(tmpdir)
+            downloadAndTestDB(config)
+
+        # test downloading with empty file in dir
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config=getConfig(tmpdir)
+            Path(cacheFilePath(config)).touch()   # create empty file
+            loc=downloadAndTestDB(config)
+
+            # test downloading with forceUpdate
+            # drop a important table to check if it is restored
+            loc.sqlDB.execute("DROP TABLE countries")
+            self.assertFalse(loc.db_has_data())
+            downloadAndTestDB(config,loc=loc, forceUpdate=True)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

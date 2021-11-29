@@ -88,7 +88,7 @@ class LocationManager(EntityManager):
         self.balltree = None
         self.locationByWikidataID={}
         if config is not None and config.mode==StoreMode.SQL:
-            self.sqldb=self.getSQLDB(config.cacheFile)
+            self.sqldb=self.getSQLDB(f"{config.getCachePath()}/{config.cacheFile}")
 
     def getBallTuple(self, cache:bool=True):
         '''
@@ -155,48 +155,15 @@ class LocationManager(EntityManager):
         path = f"{home}/.geograpy3"
         return path
     
-    @staticmethod
-    def downloadBackupFile(url:str, fileName:str, targetDirectory:str=None, force:bool=False):
-        '''
-        Downloads from the given url the zip-file and extracts the file corresponding to the given fileName.
-
-        Args:
-            url: url linking to a downloadable gzip file
-            fileName: Name of the file that should be extracted from gzip file
-            targetDirectory(str): download the file this directory
-            force (bool): True if the download should be forced
-
-        Returns:
-            Name of the extracted file with path to the backup directory
-        '''
-        if targetDirectory is None:
-            backupDirectory=LocationManager.getBackupDirectory()
-        else:
-            backupDirectory=targetDirectory
-        extractTo = f"{backupDirectory}/{fileName}"
-        # we might want to check whether a new version is available
-        if Download.needsDownload(extractTo,force=force):
-            if not os.path.isdir(backupDirectory):
-                os.makedirs(backupDirectory)
-            zipped = f"{extractTo}.gz"
-            print(f"Downloading {zipped} from {url} ... this might take a few seconds")
-            urllib.request.urlretrieve(url, zipped)
-            print(f"unzipping {extractTo} from {zipped}")
-            with gzip.open(zipped, 'rb') as gzipped:
-                with open(extractTo, 'wb') as unzipped:
-                    shutil.copyfileobj(gzipped, unzipped)
-            if not os.path.isfile(extractTo):
-                raise (f"could not extract {fileName} from {zipped}")
-        return extractTo
-    
     @classmethod
-    def downloadBackupFileFromGitHub(cls,fileName:str, targetDirectory:str=None):
+    def downloadBackupFileFromGitHub(cls,fileName:str, targetDirectory:str=None, force:bool=False):
         '''
         download the given fileName from the github data directory
         
         Args:
             fileName(str): the filename to download
             targetDirectory(str): download the file this directory
+            force(bool): force the overwriting of the existent file
         
         Return:
             str: the local file
@@ -205,7 +172,9 @@ class LocationManager(EntityManager):
         # as documented in https://github.com/somnathrakshit/geograpy3/wiki
         # git clone https://github.com/somnathrakshit/geograpy3.wiki.git
         url = f"https://raw.githubusercontent.com/wiki/somnathrakshit/geograpy3/data/{fileName}.gz"
-        backupFile = LocationManager.downloadBackupFile(url, fileName, targetDirectory)
+        if targetDirectory is None:
+            targetDirectory=LocationManager.getBackupDirectory()
+        backupFile = Download.downloadBackupFile(url, fileName, targetDirectory, force)
         return backupFile
 
     def getByName(self, *names:str):
@@ -833,12 +802,20 @@ class LocationContext(object):
     
 
     @classmethod
-    def fromCache(cls, config:StorageConfig=None):
+    def fromCache(cls, config:StorageConfig=None, forceUpdate:bool=False):
         '''
         Inits a LocationContext form Cache if existent otherwise init cache
+
+        Args:
+            config(StorageConfig): configuration of the cache if None the default config is used
+            forceUpdate(bool): If True an existent cache will be over written
         '''
         if config is None:
             config = cls.getDefaultConfig()
+        if Download.needsDownload(f"{config.getCachePath()}/{config.cacheFile}"):
+            LocationManager.downloadBackupFileFromGitHub(fileName=cls.db_filename,
+                                                         targetDirectory=config.getCachePath(),
+                                                         force=forceUpdate)
         cityManager = CityManager("cities", config=config)
         regionManager = RegionManager("regions", config=config)
         countryManager = CountryManager("countries", config=config)
@@ -850,9 +827,7 @@ class LocationContext(object):
         '''
         Returns default StorageConfig
         '''
-        config = StorageConfig(cacheDirName="geograpy3")
-        cachedir = config.getCachePath()
-        config.cacheFile = f"{cachedir}/{LocationContext.db_filename}"
+        config = StorageConfig(cacheFile=LocationContext.db_filename,cacheDirName="geograpy3")
         return config
 
     @property
@@ -948,7 +923,7 @@ class Locator(object):
         else:
             self.db_file=db_file
         self.view = "CityLookup"
-        self.sqlDB = SQLDB(self.db_file, errorDebug=True)
+        self.loadDB()
         self.getAliases()
         self.dbVersion = "2021-08-18 16:15:00"
         
@@ -1220,12 +1195,18 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
         if not os.path.isfile(self.db_file):
             raise(f"could not create lookup database {self.db_file}")
         
-    def downloadDB(self):
+    def downloadDB(self, forceUpdate:bool=False):
         '''
         download my database
+
+        Args:
+            forceUpdate(bool): force the overwriting of the existent file
         '''
         if Download.needsDownload(self.db_file):
-            LocationManager.downloadBackupFileFromGitHub(LocationContext.db_filename, self.storageConfig.getCachePath())
+            LocationManager.downloadBackupFileFromGitHub(fileName=LocationContext.db_filename,
+                                                         targetDirectory=self.storageConfig.getCachePath(),
+                                                         force=forceUpdate)
+            self.loadDB()
         
             
     def populate_Version(self, sqlDB):
@@ -1414,6 +1395,13 @@ JOIN countries c on cl.wikidataid=c.wikidataid
         # hasWikidataCities=self.db_recordCount(tableList,'City_wikidata')>100000
         ok = hasVersion and versionOk and hasCities and hasRegions and hasCountries
         return ok
+
+    def loadDB(self):
+        '''
+        loads the database from cache and sets it as sqlDB property
+        '''
+        dbPath=f"{self.db_path}/{self.db_file}"
+        self.sqlDB = SQLDB(dbPath, errorDebug=True)
 
     
 __version__ = '0.2.1'

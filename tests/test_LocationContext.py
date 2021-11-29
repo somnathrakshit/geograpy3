@@ -3,7 +3,10 @@ Created on 2021-08-13
 
 @author: wf
 '''
+import tempfile
 import unittest
+
+from lodstorage.storageconfig import StorageConfig
 
 from tests.basetest import Geograpy3Test
 from geograpy.locator import LocationContext,LocationManager,CityManager,RegionManager,CountryManager
@@ -83,6 +86,18 @@ class TestLocationContext(Geograpy3Test):
             self.assertTrue(len(locationContext.countries) > 180)
             self.assertTrue(len(locationContext.regions) > 3500)
             self.assertTrue(len(locationContext.cities) > 1000000)
+
+
+    def testIssue_59_db_download(self):
+        '''
+        tests if the cache database is downloaded if not present
+        '''
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config=StorageConfig(cacheFile="locations.db", cacheRootDir=tmpdir)
+            loc=LocationContext.fromCache(config=config)
+            locations=loc.locateLocation("Germany")
+            self.assertTrue(len(locations)>0)
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

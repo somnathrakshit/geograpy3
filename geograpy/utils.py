@@ -1,6 +1,8 @@
+import gzip
+import shutil
 import jellyfish
 import time
-import urllib
+import urllib.request
 import os
 
 class Download:
@@ -40,6 +42,36 @@ class Download:
             size=stats.st_size
             result=force or size==0
         return result
+
+    @staticmethod
+    def downloadBackupFile(url:str, fileName:str, targetDirectory:str, force:bool=False):
+        '''
+        Downloads from the given url the zip-file and extracts the file corresponding to the given fileName.
+
+        Args:
+            url: url linking to a downloadable gzip file
+            fileName: Name of the file that should be extracted from gzip file
+            targetDirectory(str): download the file this directory
+            force (bool): True if the download should be forced
+
+        Returns:
+            Name of the extracted file with path to the backup directory
+        '''
+        extractTo = f"{targetDirectory}/{fileName}"
+        # we might want to check whether a new version is available
+        if Download.needsDownload(extractTo, force=force):
+            if not os.path.isdir(targetDirectory):
+                os.makedirs(targetDirectory)
+            zipped = f"{extractTo}.gz"
+            print(f"Downloading {zipped} from {url} ... this might take a few seconds")
+            urllib.request.urlretrieve(url, zipped)
+            print(f"unzipping {extractTo} from {zipped}")
+            with gzip.open(zipped, 'rb') as gzipped:
+                with open(extractTo, 'wb') as unzipped:
+                    shutil.copyfileobj(gzipped, unzipped)
+            if not os.path.isfile(extractTo):
+                raise (f"could not extract {fileName} from {zipped}")
+        return extractTo
 
 
 class Profiler:
