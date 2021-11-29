@@ -385,7 +385,7 @@ WHERE
 
         # regex pattern taken from https://www.wikidata.org/wiki/Q43649390 and extended to also support property ids
         wikidataidMatch = re.search(r"[PQ][1-9]\d*", wikidataURL)
-        if wikidataidMatch.group(0):
+        if wikidataidMatch and wikidataidMatch.group(0):
             wikidataid = wikidataidMatch.group(0)
             return wikidataid
         else:

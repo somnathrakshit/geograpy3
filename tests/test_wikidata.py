@@ -117,6 +117,10 @@ class TestWikidata(Geograpy3Test):
         expectedPropertyID="P31"
         propertyId=Wikidata.getWikidataId(wikidataURLProperty)
         self.assertEqual(expectedPropertyID, propertyId)
+        # test invalid entries
+        wikidataURLProperty = ""
+        parsedId = Wikidata.getWikidataId(wikidataURLProperty)
+        self.assertIsNone(parsedId)
 
     def testGetCoordinateComponents(self):
         '''
