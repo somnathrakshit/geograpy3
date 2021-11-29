@@ -308,7 +308,9 @@ class RegionManager(LocationManager):
                             debug=debug
                         )
         self.wd=Wikidata()
-        self.getListOfDicts=self.wd.getRegions
+        def _queryRegions(**kwargs):
+            return [*self.wd.getRegions(**kwargs), *self.wd.getCityStates(**kwargs)]
+        self.getListOfDicts=_queryRegions
 
 
 class CityManager(LocationManager):

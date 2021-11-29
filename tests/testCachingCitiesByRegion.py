@@ -108,6 +108,21 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         cityManager.store()
         profiler.time()
 
+    def testCityFromCityStates(self):
+        '''
+        tests if city states are queried correctly if given the region
+        For city states the city is region and city (in some cases also country).
+        This test ensures that by querying for the cities of a region the city states include themself in the result
+        (the result for cities in city-states often includes the municipalities)
+        '''
+        wd = Wikidata()
+        cityStateRecords = wd.getCityStates()
+        for cityStateRecord in cityStateRecords:
+            regionId = cityStateRecord.get('wikidataid')
+            regionCities = wd.getCitiesForRegion(regionId, msg=f"Query for cities in {cityStateRecord.get('name')}")
+            foundCities=[c.get('wikidataid') for c in regionCities]
+            self.assertTrue( regionId in foundCities)
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
