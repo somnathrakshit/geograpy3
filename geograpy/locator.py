@@ -1406,9 +1406,9 @@ JOIN countries c on cl.wikidataid=c.wikidataid
         self.sqlDB = SQLDB(self.db_file, errorDebug=True)
 
     
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 __date__ = '2020-09-26'
-__updated__ = '2021-08-20'
+__updated__ = '2021-11-29'
 
 DEBUG = 1
 

@@ -12,7 +12,7 @@ except:
     long_description = open('../../README.md').read()
 
 setup(name='geograpy3',
-      version='0.2.1',
+      version='0.2.2',
       description='Extract countries, regions and cities from a URL or text',
       long_description=long_description,
       long_description_content_type='text/markdown',
