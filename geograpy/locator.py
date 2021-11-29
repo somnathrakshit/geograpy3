@@ -88,7 +88,7 @@ class LocationManager(EntityManager):
         self.balltree = None
         self.locationByWikidataID={}
         if config is not None and config.mode==StoreMode.SQL:
-            self.sqldb=self.getSQLDB(f"{config.getCachePath()}/{config.cacheFile}")
+            self.sqldb=self.getSQLDB(config.cacheFile)
 
     def getBallTuple(self, cache:bool=True):
         '''
@@ -812,7 +812,7 @@ class LocationContext(object):
         '''
         if config is None:
             config = cls.getDefaultConfig()
-        if Download.needsDownload(f"{config.getCachePath()}/{config.cacheFile}"):
+        if Download.needsDownload(config.cacheFile):
             LocationManager.downloadBackupFileFromGitHub(fileName=cls.db_filename,
                                                          targetDirectory=config.getCachePath(),
                                                          force=forceUpdate)
@@ -828,6 +828,7 @@ class LocationContext(object):
         Returns default StorageConfig
         '''
         config = StorageConfig(cacheFile=LocationContext.db_filename,cacheDirName="geograpy3")
+        config.cacheFile=f"{config.getCachePath()}/{config.cacheFile}"
         return config
 
     @property
@@ -1202,7 +1203,7 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
         Args:
             forceUpdate(bool): force the overwriting of the existent file
         '''
-        if Download.needsDownload(self.db_file):
+        if Download.needsDownload(self.db_file) or forceUpdate:
             LocationManager.downloadBackupFileFromGitHub(fileName=LocationContext.db_filename,
                                                          targetDirectory=self.storageConfig.getCachePath(),
                                                          force=forceUpdate)
@@ -1400,8 +1401,7 @@ JOIN countries c on cl.wikidataid=c.wikidataid
         '''
         loads the database from cache and sets it as sqlDB property
         '''
-        dbPath=f"{self.db_path}/{self.db_file}"
-        self.sqlDB = SQLDB(dbPath, errorDebug=True)
+        self.sqlDB = SQLDB(self.db_file, errorDebug=True)
 
     
 __version__ = '0.2.1'

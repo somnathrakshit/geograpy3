@@ -330,16 +330,17 @@ February 3-5, 2020''']
         '''
         tests the correct downloading of the backup database in different configurations
         '''
-        cacheFilePath=lambda config: f"{config.getCachePath()}/{config.cacheFile}"
-
-        def getConfig(tmpdir:str): return StorageConfig(cacheFile="locations.db", cacheRootDir=tmpdir)
+        def getConfig(tmpdir:str):
+            config=StorageConfig(cacheFile="locations.db", cacheDirName="geograpyTest", cacheRootDir=tmpdir)
+            config.cacheFile=f"{config.getCachePath()}/{config.cacheFile}"
+            return config
 
         def downloadAndTestDB(config:StorageConfig, loc:Locator=None, forceUpdate:bool=False):
             '''downloads and tests the downloaded db'''
             if loc is None:
                 loc = Locator(storageConfig=config)
             loc.downloadDB(forceUpdate=forceUpdate)
-            self.assertTrue(os.path.exists(cacheFilePath(config)))
+            self.assertTrue(os.path.exists(config.cacheFile))
             self.assertTrue(loc.db_has_data())
             return loc
 
@@ -351,7 +352,7 @@ February 3-5, 2020''']
         # test downloading with empty file in dir
         with tempfile.TemporaryDirectory() as tmpdir:
             config=getConfig(tmpdir)
-            Path(cacheFilePath(config)).touch()   # create empty file
+            Path(config.cacheFile).touch()   # create empty file
             loc=downloadAndTestDB(config)
 
             # test downloading with forceUpdate

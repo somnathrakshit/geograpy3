@@ -94,6 +94,7 @@ class TestLocationContext(Geograpy3Test):
         '''
         with tempfile.TemporaryDirectory() as tmpdir:
             config=StorageConfig(cacheFile="locations.db", cacheRootDir=tmpdir)
+            config.cacheFile = f"{config.getCachePath()}/{config.cacheFile}"
             loc=LocationContext.fromCache(config=config)
             locations=loc.locateLocation("Germany")
             self.assertTrue(len(locations)>0)
