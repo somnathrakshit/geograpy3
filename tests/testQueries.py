@@ -55,11 +55,12 @@ class TestQueries(Geograpy3Test):
         qm=self.getQueryManager()
         self.assertIsNotNone(qm)
         locator=Locator.getInstance()
+        show=self.debug
+        show=True
         for _name,query in qm.queriesByName.items():
             qlod=locator.sqlDB.query(query.query) 
             for tablefmt in ["mediawiki","github"]:
-                lod=copy.deepcopy(qlod)
-                self.documentQueryResult(query, lod,tablefmt,show=self.debug)
+                self.documentQueryResult(query, qlod,tablefmt,show=show)
                 
         pass
     
@@ -82,8 +83,7 @@ group by hierarchy"""),
             query=Query(name=title,query=queryString,lang="sql")
             qlod=locator.sqlDB.query(queryString) 
             for tablefmt in ["mediawiki","github"]:
-                lod=copy.deepcopy(qlod)
-                self.documentQueryResult(query, lod, tablefmt, show=True)
+                self.documentQueryResult(query, qlod, tablefmt, show=True)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
