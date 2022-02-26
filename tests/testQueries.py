@@ -8,7 +8,6 @@ from tests.basetest import Geograpy3Test
 from lodstorage.query import QueryManager
 from lodstorage.query import Query
 from geograpy.locator import LocationContext, Locator
-import copy
 import os
 import re
 
@@ -26,7 +25,7 @@ class TestQueries(Geograpy3Test):
         for path in cachedir,f"{scriptDir}/../geograpy/data":
             qYamlFile=f"{path}/queries.yaml"
             if os.path.isfile(qYamlFile):
-                qm=QueryManager(lang='sql',debug=self.debug,path=path)
+                qm=QueryManager(lang='sql',debug=self.debug,queriesPath=qYamlFile)
                 return qm
         return None
     

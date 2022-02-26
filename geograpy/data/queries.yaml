@@ -14,4 +14,53 @@
 'LabelLookup example #3':
     sql: |  
         SELECT * from CountryLookup WHERE label IN ('CA')
+'Countries':
+    title: Countries sorted by ISO code
+    description: Countries with population and coordinates sorted by ISO code
+    sparql: |
+        # get a list of countries
+        # for geograpy3 library
+        # see https://github.com/somnathrakshit/geograpy3/issues/15
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX wd: <http://www.wikidata.org/entity/>
+        PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+        PREFIX p: <http://www.wikidata.org/prop/>
+        PREFIX ps: <http://www.wikidata.org/prop/statement/>
+        PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
+        # get City details with Country
+        SELECT DISTINCT ?wikidataid ?name ?iso ?pop ?coord
+        WHERE {
+          BIND (?countryQ AS ?wikidataid)
+        
+          # instance of Country
+          # inverse path see https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/query_optimization#Inverse_property_paths
+          wd:Q6256 ^wdt:P279*/^wdt:P31 ?countryQ .
+          
+          # VALUES ?country { wd:Q55}.
+          # label for the country
+          ?countryQ rdfs:label ?name filter (lang(?name) = "en").
+          # get the continent (s)
+          #OPTIONAL {
+          #  ?country wdt:P30 ?continent.
+          #  ?continent rdfs:label ?continentLabel filter (lang(?continentLabel) = "en").
+          #}
+          # get the coordinates
+          OPTIONAL { 
+              ?countryQ wdt:P625 ?coord.
+          } 
+          # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
+          ?countryQ wdt:P297 ?iso.
+          # population of country   
+          OPTIONAL
+          { 
+            SELECT ?countryQ (max(?countryPopulationValue) as ?pop)
+            WHERE {
+              ?countryQ wdt:P1082 ?countryPopulationValue
+            } group by ?countryQ
+          }
+          # https://www.wikidata.org/wiki/Property:P2132
+          # nominal GDP per capita
+          # OPTIONAL { ?country wdt:P2132 ?countryGDP_perCapitaValue. }
+        }
+        ORDER BY ?iso
 
