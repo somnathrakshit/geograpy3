@@ -41,7 +41,7 @@ setup(name='geograpy3',
         'nltk',
         'newspaper3k',
         'jellyfish',
-        'pylodstorage~=0.0.85',
+        'pylodstorage~=0.1.13',
         'sphinx-rtd-theme',
         'scikit-learn',
         'pandas'
