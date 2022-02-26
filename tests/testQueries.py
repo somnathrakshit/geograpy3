@@ -55,7 +55,7 @@ class TestQueries(Geograpy3Test):
         self.assertIsNotNone(qm)
         locator=Locator.getInstance()
         show=self.debug
-        show=True
+        #show=True
         for _name,query in qm.queriesByName.items():
             qlod=locator.sqlDB.query(query.query) 
             for tablefmt in ["mediawiki","github"]:
