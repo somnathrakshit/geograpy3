@@ -1,3 +1,19 @@
 #!/bin/bash
 # WF 2020-06-03
-python3 -m unittest discover
+python="python3"
+while [  "$1" != ""  ]
+do
+  option="$1"
+  case $option in
+    -d|--debug)
+      # show environment for debugging
+      env
+      ;;
+    -p|--python)
+      shift
+      python="$1"
+      ;;
+  esac
+  shift
+done
+$python -m unittest discover
