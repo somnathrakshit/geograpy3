@@ -187,7 +187,8 @@ class LocationManager(EntityManager):
             Returns locations that match the given name
         '''
         query = f"SELECT * FROM {self.clazz.__name__}Lookup WHERE label IN ({','.join('?'*len(names))})"
-        locationRecords = self.sqldb.query(query, params=tuple(names))
+        sqldb=self.getSQLDB(self.config.cacheFile)
+        locationRecords = sqldb.query(query, params=tuple(names))
         locations=self._locationsFromLookup(*locationRecords)
         return locations
 
@@ -204,7 +205,8 @@ class LocationManager(EntityManager):
         if wikidataIds is None or not wikidataIds:
             return
         query=f"SELECT * FROM {self.clazz.__name__}Lookup WHERE wikidataid IN ({','.join('?'*len(wikidataIds))})"
-        locationRecords=self.sqldb.query(query, params=tuple(list(wikidataIds)))
+        sqldb = self.getSQLDB(self.config.cacheFile)
+        locationRecords=sqldb.query(query, params=tuple(list(wikidataIds)))
         if locationRecords:
             locations=self._locationsFromLookup(*locationRecords)
             return locations
@@ -248,7 +250,8 @@ class LocationManager(EntityManager):
             else:
                 query = f"SELECT wikidataid FROM {self.tableName} WHERE iso LIKE (?)"
                 params = (isoCode,)
-            qres = self.sqldb.query(query, params)
+            sqldb = self.getSQLDB(self.config.cacheFile)
+            qres = sqldb.query(query, params)
             locationIds = [record['wikidataid'] for record in qres if 'wikidataid' in record]
             return locationIds
         else:
