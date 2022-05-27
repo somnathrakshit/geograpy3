@@ -1,0 +1,12 @@
+#!/bin/sh
+
+if [! -d $HOME/.geograpy3]; then
+    mkdir $HOME/.geograpy3
+fi
+cd $HOME/.geograpy3
+
+curl -o locations.db.gz --remote-name -L https://github.com/somnathrakshit/geograpy3/wiki/data/locations.db.gz
+gzip -d locations.db.gz
+curl -o regions.tgz --remote-name -L https://github.com/somnathrakshit/geograpy3/wiki/data/regions.tgz
+tar xvfz regions.tgz
+rm regions.tgz
