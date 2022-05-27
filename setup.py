@@ -41,8 +41,8 @@ class Download(install):
     def run(self):
         install.run(self)
         self.nltk_download()
-        self.db_download()
-        
+        # self.db_download()
+
 try:
     long_description = ""
     with open('README.md', encoding='utf-8') as f:
