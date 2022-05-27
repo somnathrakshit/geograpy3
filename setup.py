@@ -30,10 +30,10 @@ setup(name='geograpy3',
       ),
       classifiers=[
             'Programming Language :: Python',
-            'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
-	        'Programming Language :: Python :: 3.9'
+	          'Programming Language :: Python :: 3.9',
+            'Programming Language :: Python :: 3.10'
       ],
       packages=['geograpy'],
       install_requires=[
