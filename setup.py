@@ -1,6 +1,20 @@
 from setuptools import setup
 import os 
 from collections import OrderedDict
+from setuptools.command.install import install
+
+# https://stackoverflow.com/a/16609054
+class Download(install):
+    def run(self):
+        install.run(self)
+        import nltk
+        nltk.downloader.download('maxent_ne_chunker')
+        nltk.downloader.download('words')
+        nltk.downloader.download('treebank')
+        nltk.downloader.download('maxent_treebank_pos_tagger')
+        nltk.downloader.download('punkt')
+        # since 2020-09
+        nltk.downloader.download('averaged_perceptron_tagger')
 
 try:
     long_description = ""
@@ -32,7 +46,7 @@ setup(name='geograpy3',
             'Programming Language :: Python',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
-	          'Programming Language :: Python :: 3.9',
+            'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10'
       ],
       packages=['geograpy'],
@@ -46,7 +60,7 @@ setup(name='geograpy3',
         'scikit-learn',
         'pandas'
       ],
-      scripts=['geograpy/bin/geograpy-nltk'],
+      cmdclass={'install': Download},
       package_data={
           'geograpy': ['data/*.csv'],
       },
