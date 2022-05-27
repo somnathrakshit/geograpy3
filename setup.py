@@ -5,8 +5,8 @@ from setuptools.command.install import install
 
 # https://stackoverflow.com/a/16609054
 class Download(install):
-    def run(self):
-        install.run(self)
+
+    def nltk_download(self):
         import nltk
         nltk.downloader.download('maxent_ne_chunker')
         nltk.downloader.download('words')
@@ -16,6 +16,33 @@ class Download(install):
         # since 2020-09
         nltk.downloader.download('averaged_perceptron_tagger')
 
+    def gunzip(self, source_filepath, dest_filepath, block_size=65536):
+        import gzip
+        with gzip.open(source_filepath, 'rb') as s_file, \
+                open(dest_filepath, 'wb') as d_file:
+            while True:
+                block = s_file.read(block_size)
+                if not block:
+                    break
+                else:
+                    d_file.write(block)
+
+    def db_download(self):
+        import urllib.request
+        import gzip
+        from pathlib import Path
+        import os
+
+        urllib.request.urlretrieve('https://github.com/somnathrakshit/geograpy3/wiki/data/locations.db.gz', 'locations.db.gz')
+        urllib.request.urlretrieve('https://github.com/somnathrakshit/geograpy3/wiki/data/regions.tgz', 'regions.tgz')
+        self.gunzip("locations.db.gz", f"{str(Path(Path.home(), '.geograpy3'))}")
+
+
+    def run(self):
+        install.run(self)
+        self.nltk_download()
+        self.db_download()
+        
 try:
     long_description = ""
     with open('README.md', encoding='utf-8') as f:
