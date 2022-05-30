@@ -151,8 +151,7 @@ class LocationManager(EntityManager):
     
     @staticmethod
     def getBackupDirectory():
-        home = str(Path.home())
-        path = f"{home}/.geograpy3"
+        path = str(Path(Path.home(), ".geograpy3"))
         return path
     
     @classmethod
@@ -1140,6 +1139,7 @@ WHERE name LIKE (?)
 OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
             params=(name,name,)
         country = None
+        self.populate_db()
         countryRecords=self.sqlDB.query(query,params)
         if len(countryRecords)==1:
             country=Country.fromRecord(countryRecords[0])
