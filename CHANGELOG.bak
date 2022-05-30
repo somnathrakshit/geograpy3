@@ -6,13 +6,7 @@
 
 ### New Features
 
-- Improve performance by avoiding ORM loading of all data ([#53](https://github.com/somnathrakshit/geograpy3/issues/53))
-  - **Is your feature request related to a problem? Please describe.**
-Loading the LocationContext as objects in to main memory currently takes 4 seconds which is completly unnecessary for most usecases where only a few lookups are needed
-
-**Describe the solution you'd like**
-Allow for lazy loading via properties and lookup without using hashtables as the solution was a few weeks ago using SQLite access.
-
+- Fix NLTK and DB download issue (PR #66)
 
 
 ## 0.1.9
