@@ -2,7 +2,10 @@ from setuptools import setup
 import os 
 from collections import OrderedDict
 from setuptools.command.install import install
-import geograpy
+import configparser
+
+config = configparser.ConfigParser()
+config.read('settings.ini')
 
 try:
     # pip >=20
@@ -47,7 +50,7 @@ except:
     long_description = open('../../README.md').read()
 
 setup(name='geograpy3',
-      version='0.2.3',
+      version=config["DEFAULT"]["version"],
       description='Extract countries, regions and cities from a URL or text',
       long_description=long_description,
       long_description_content_type='text/markdown',
