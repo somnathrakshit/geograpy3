@@ -144,3 +144,4 @@ dmypy.json
 geograpy/*.db
 geograpy/*.db.gz
 
+CHANGELOG.bak
