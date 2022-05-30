@@ -2,6 +2,23 @@ from setuptools import setup
 import os 
 from collections import OrderedDict
 from setuptools.command.install import install
+import geograpy
+
+try:
+    # pip >=20
+    from pip._internal.network.session import PipSession
+    from pip._internal.req import parse_requirements
+except ImportError:
+    try:
+        # 10.0.0 <= pip <= 19.3.1
+        from pip._internal.download import PipSession
+        from pip._internal.req import parse_requirements
+    except ImportError:
+        # pip <= 9.0.3
+        from pip.download import PipSession
+        from pip.req import parse_requirements
+
+requirements = parse_requirements(os.path.join(os.path.dirname(__file__), 'requirements.txt'), session=PipSession())
 
 # https://stackoverflow.com/a/16609054
 class Download(install):
@@ -16,33 +33,10 @@ class Download(install):
         # since 2020-09
         nltk.downloader.download('averaged_perceptron_tagger')
 
-    def gunzip(self, source_filepath, dest_filepath, block_size=65536):
-        import gzip
-        with gzip.open(source_filepath, 'rb') as s_file, \
-                open(dest_filepath, 'wb') as d_file:
-            while True:
-                block = s_file.read(block_size)
-                if not block:
-                    break
-                else:
-                    d_file.write(block)
-
-    def db_download(self):
-        import urllib.request
-        import gzip
-        from pathlib import Path
-        import os
-
-        urllib.request.urlretrieve('https://github.com/somnathrakshit/geograpy3/wiki/data/locations.db.gz', 'locations.db.gz')
-        urllib.request.urlretrieve('https://github.com/somnathrakshit/geograpy3/wiki/data/regions.tgz', 'regions.tgz')
-        self.gunzip("locations.db.gz", f"{str(Path(Path.home(), '.geograpy3'))}")
-
-
     def run(self):
         install.run(self)
         self.nltk_download()
-        # self.db_download()
-
+        
 try:
     long_description = ""
     with open('README.md', encoding='utf-8') as f:
@@ -77,16 +71,7 @@ setup(name='geograpy3',
             'Programming Language :: Python :: 3.10'
       ],
       packages=['geograpy'],
-      install_requires=[
-        'numpy',
-        'nltk',
-        'newspaper3k',
-        'jellyfish',
-        'pylodstorage~=0.1.13',
-        'sphinx-rtd-theme',
-        'scikit-learn',
-        'pandas'
-      ],
+      install_requires=[str(requirement.requirement) for requirement in requirements],
       cmdclass={'install': Download},
       package_data={
           'geograpy': ['data/*.csv'],

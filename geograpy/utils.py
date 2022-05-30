@@ -65,10 +65,11 @@ class Download:
             zipped = f"{extractTo}.gz"
             print(f"Downloading {zipped} from {url} ... this might take a few seconds")
             urllib.request.urlretrieve(url, zipped)
-            print(f"unzipping {extractTo} from {zipped}")
+            print(f"Unzipping {extractTo} from {zipped}")
             with gzip.open(zipped, 'rb') as gzipped:
                 with open(extractTo, 'wb') as unzipped:
                     shutil.copyfileobj(gzipped, unzipped)
+                print("Extracting completed")
             if not os.path.isfile(extractTo):
                 raise (f"could not extract {fileName} from {zipped}")
         return extractTo
