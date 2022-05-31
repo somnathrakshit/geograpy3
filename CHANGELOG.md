@@ -2,17 +2,11 @@
 
 <!-- do not remove -->
 
-## 0.2.4
-
-### New Features
-
-- Read version number from settings.ini file instead of duplicating to setup.py (Commit 9cfdd5980c)
-
-
 ## 0.2.3
 
-### New Features
-
+- Move NLTK download code to Extractor class.
+- Upgrade package build method
+- Upgrade PyPi distribution
 - Fix NLTK and DB download issue (PR #66)
 
 
