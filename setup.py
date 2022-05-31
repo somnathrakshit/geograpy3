@@ -1,4 +1,6 @@
 from setuptools import setup
+import pathlib
+import pkg_resources
 import os 
 from collections import OrderedDict
 from setuptools.command.install import install
@@ -7,38 +9,22 @@ import configparser
 config = configparser.ConfigParser()
 config.read('settings.ini')
 
-try:
-    # pip >=20
-    from pip._internal.network.session import PipSession
-    from pip._internal.req import parse_requirements
-except ImportError:
-    try:
-        # 10.0.0 <= pip <= 19.3.1
-        from pip._internal.download import PipSession
-        from pip._internal.req import parse_requirements
-    except ImportError:
-        # pip <= 9.0.3
-        from pip.download import PipSession
-        from pip.req import parse_requirements
+with pathlib.Path('requirements.txt').open() as requirements_txt:
+    install_requires = [
+        str(requirement)
+        for requirement
+        in pkg_resources.parse_requirements(requirements_txt)
+    ]
 
-requirements = parse_requirements(os.path.join(os.path.dirname(__file__), 'requirements.txt'), session=PipSession())
-
-# https://stackoverflow.com/a/16609054
-class Download(install):
-
-    def nltk_download(self):
-        import nltk
-        nltk.downloader.download('maxent_ne_chunker')
-        nltk.downloader.download('words')
-        nltk.downloader.download('treebank')
-        nltk.downloader.download('maxent_treebank_pos_tagger')
-        nltk.downloader.download('punkt')
-        # since 2020-09
-        nltk.downloader.download('averaged_perceptron_tagger')
-
-    def run(self):
-        install.run(self)
-        self.nltk_download()
+def _post_install():
+    import nltk
+    nltk.downloader.download('maxent_ne_chunker')
+    nltk.downloader.download('words')
+    nltk.downloader.download('treebank')
+    nltk.downloader.download('maxent_treebank_pos_tagger')
+    nltk.downloader.download('punkt')
+    # since 2020-09
+    nltk.downloader.download('averaged_perceptron_tagger')
         
 try:
     long_description = ""
@@ -74,9 +60,10 @@ setup(name='geograpy3',
             'Programming Language :: Python :: 3.10'
       ],
       packages=['geograpy'],
-      install_requires=[str(requirement.requirement) for requirement in requirements],
-      cmdclass={'install': Download},
+      install_requires=install_requires,
       package_data={
           'geograpy': ['data/*.csv'],
       },
       zip_safe=False)
+
+_post_install()
