@@ -22,6 +22,20 @@ class Extractor(object):
         self.text = text
         self.url = url
         self.places = []
+        nltk_packages = ['maxent_ne_chunker',
+                        'words',
+                        'treebank',
+                        'maxent_treebank_pos_tagger',
+                        'punkt',
+                        'averaged_perceptron_tagger'
+                        ]
+        for nltk_package in nltk_packages:
+            try:
+                import nltk
+                nltk.data.find(nltk_package)
+            except LookupError:
+                nltk.downloader.download(nltk_package, quiet=True)
+        import nltk  
 
     def set_text(self):
         '''
@@ -63,20 +77,6 @@ class Extractor(object):
             list: 
                 List of places
         '''
-        nltk_packages = ['maxent_ne_chunker',
-                        'words',
-                        'treebank',
-                        'maxent_treebank_pos_tagger',
-                        'punkt',
-                        'averaged_perceptron_tagger'
-                        ]
-        for nltk_package in nltk_packages:
-            try:
-                nltk.data.find(nltk_packages)
-            except LookupError:
-                nltk.download(nltk_package)
-        import nltk            
-
         self.set_text()
 
         text = nltk.word_tokenize(self.text)
