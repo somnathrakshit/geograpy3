@@ -1,2 +1,4 @@
 include README.md
 include geograpy/data/*.csv
+include requirements.txt
+include settings.ini

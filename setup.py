@@ -9,22 +9,12 @@ import configparser
 config = configparser.ConfigParser()
 config.read('settings.ini')
 
-with pathlib.Path('requirements.txt').open() as requirements_txt:
+with pathlib.Path(os.path.join(os.path.dirname(__file__), 'requirements.txt')).open() as requirements_txt:
     install_requires = [
         str(requirement)
         for requirement
         in pkg_resources.parse_requirements(requirements_txt)
     ]
-
-def _post_install():
-    import nltk
-    nltk.downloader.download('maxent_ne_chunker')
-    nltk.downloader.download('words')
-    nltk.downloader.download('treebank')
-    nltk.downloader.download('maxent_treebank_pos_tagger')
-    nltk.downloader.download('punkt')
-    # since 2020-09
-    nltk.downloader.download('averaged_perceptron_tagger')
         
 try:
     long_description = ""
@@ -65,5 +55,3 @@ setup(name='geograpy3',
           'geograpy': ['data/*.csv'],
       },
       zip_safe=False)
-
-_post_install()
