@@ -3,7 +3,6 @@ import pathlib
 import pkg_resources
 import os 
 from collections import OrderedDict
-from setuptools.command.install import install
 import configparser
 
 config = configparser.ConfigParser()
@@ -47,7 +46,8 @@ setup(name='geograpy3',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
-            'Programming Language :: Python :: 3.10'
+            'Programming Language :: Python :: 3.10',
+            'Programming Language :: Python :: 3.11'
       ],
       packages=['geograpy'],
       install_requires=install_requires,

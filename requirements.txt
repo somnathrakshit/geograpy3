@@ -1,20 +1,20 @@
-# libaries needed by geograpy3
+# libraries needed by geograpy3
 # https://github.com/codelucas/newspaper
 # https://pypi.org/project/newspaper/
 # https://pypi.org/project/newspaper3k/
-newspaper3k~=0.2.8
+newspaper3k>=0.2.8
 # https://pypi.org/project/nltk/
-nltk
+nltk>=3.7
 # https://pypi.org/project/jellyfish/
-jellyfish
+jellyfish>=0.9.0
 # https://pypi.org/project/numpy/
-numpy
+numpy>=1.23.1
 # Tabular storage e.g. SQL/SPARQL/JSON
 # https://pypi.org/project/pylodstorage/
 pylodstorage~=0.4.7
 # Documentation Read the docs Theme
 sphinx-rtd-theme
 # https://pypi.org/project/scikit-learn/
-scikit-learn
+scikit-learn>=1.2.0
 # https://pypi.org/project/pandas/
-pandas
+pandas>=1.4.3
