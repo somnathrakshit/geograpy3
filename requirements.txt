@@ -16,6 +16,7 @@ pylodstorage~=0.4.7
 # Documentation Read the docs Theme
 sphinx-rtd-theme
 # https://pypi.org/project/scikit-learn/
-scikit-learn>=1.2.0
+# python 3.7 compatible version
+scikit-learn>=1.0.2
 # https://pypi.org/project/pandas/
 pandas>=1.4.3
