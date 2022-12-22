@@ -8,7 +8,8 @@ nltk>=3.7
 # https://pypi.org/project/jellyfish/
 jellyfish>=0.9.0
 # https://pypi.org/project/numpy/
-numpy>=1.23.1
+# python 3.7 compatible version
+numpy>=1.21.4
 # Tabular storage e.g. SQL/SPARQL/JSON
 # https://pypi.org/project/pylodstorage/
 pylodstorage~=0.4.7
