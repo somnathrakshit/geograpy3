@@ -12,7 +12,7 @@ jellyfish>=0.9.0
 numpy>=1.21.4
 # Tabular storage e.g. SQL/SPARQL/JSON
 # https://pypi.org/project/pylodstorage/
-pylodstorage~=0.4.7
+pylodstorage>=0.4.7
 # Documentation Read the docs Theme
 sphinx-rtd-theme
 # https://pypi.org/project/scikit-learn/
