@@ -44,10 +44,17 @@ class TestGeopy(Geograpy3Test):
             "q": "Q656",
             # to get the russian one
             "expected": "Санкт-Петербург"
-        },{
-            "city":"Arlington, VA",
-            "q": "Q107126",
-            "expected": "Virginia"
+        },
+        # inconsistent results Q49279759 - 2023-09-29
+        #{
+        #    "city":"Arlington, VA",
+        #    "q": "Q107126",
+        #    "expected": "Virginia"
+        #}
+        {
+            "city":"Saint Petersburg, FL",
+            "q": "Q49236",
+            "expected": "Florida"
         }
         ]
         
