@@ -15,6 +15,8 @@ class TestGeopy(Geograpy3Test):
         '''
         test nominatim results - especially the extra tags
         '''
+        if self.inCI():
+            return
         examples=[{
             "city":"London",
             "q": "Q84",
