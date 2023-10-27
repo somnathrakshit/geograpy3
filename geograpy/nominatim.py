@@ -60,6 +60,4 @@ class NominatimWrapper(object):
                 if "wikidata" in extratags:
                     wikidataId=extratags["wikidata"]
         return wikidataId
-  
-        
         
