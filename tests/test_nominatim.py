@@ -22,7 +22,7 @@ class TestGeopy(Geograpy3Test):
         },{
             "city":"Dublin",
             "q": "Q1761",
-            "expected": "Éire"
+            "expected": "Ireland"
         },{
             "city":"Vienna Austria",
             "q": "Q1741",
