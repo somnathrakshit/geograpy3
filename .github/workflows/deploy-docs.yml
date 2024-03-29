@@ -19,8 +19,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
+        pip install .
+    - name: Install sphinx
+      run: |
         pip install sphinx sphinx-rtd-theme
-	pip install .
     - name: Build docs
       run: |
         scripts/doc
