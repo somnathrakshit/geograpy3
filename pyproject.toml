@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "geograpy3"
+description = "Extract countries, regions and cities from a URL or text"
+keywords = [ "geography", "locations", "extraction", "text analysis"]
+home-page = "https://github.com/somnathrakshit/geograpy3"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+authors = [
+  {name = "Somnath Rakshit", email = "somnath52@gmail.com"}
+]
+maintainers = [
+  { name = "Somnath Rakshit", email = "somnath52@gmail.com"},
+  { name = "Wolfgang Fahl", email = "wf@bitplan.com" },
+  { name = "Tim Holzheim", email = "tim.holzheim@rwth-aachen.de" }
+]
+classifiers=[
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"
+]
+dependencies = [
+  # https://pypi.org/project/newspaper3k/
+	"newspaper3k>=0.2.8",
+  # https://pypi.org/project/nltk/
+	"nltk>=3.8.1",
+  # https://pypi.org/project/jellyfish/
+	"jellyfish>=1.0.3",
+  # https://pypi.org/project/numpy/
+	"numpy>=1.26.4",
+  # https://pypi.org/project/pyLodStorage/
+	"pylodstorage>=0.10.3",
+  # https://pypi.org/project/sphinx-rtd-theme/
+	"sphinx-rtd-theme>=2.0.0",
+  # https://github.com/scikit-learn/scikit-learn
+	"scikit-learn>=1.4.1",
+  # https://pypi.org/project/pandas/
+	"pandas>=2.1.5",
+  # https://pypi.org/project/geopy/
+	"geopy>=2.4.1",
+  # https://pypi.org/project/OSMPythonTools/
+	"OSMPythonTools>=0.3.5"
+]
+
+requires-python = ">=3.7"
+dynamic = ["version"]
+
+[tool.hatch.version]
+path = "geograpy/__init__.py"
+
+[project.urls]
+Homepage = "https://github.com/somnathrakshit/geograpy3"
+Documentation = "https://geograpy3.readthedocs.io"
+Source = "https://github.com/somnathrakshit/geograpy3"
+Issues = "https://github.com/somnathrakshit/geograpy3/issues"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["geograpy"]
+
+[tool.hatch.build.targets.wheel.sources]
+"geograpy" = "geograpy"
+
+[project.optional-dependencies]
+docs = [
+  "sphinx",
+  "sphinx-rtd-theme",
+]
+test = [
+  "pytest",
+  "coverage",
+]
+
+[project.scripts]
+geograpy = "geograpy.locator:main"
+
+[project.data-files."geograpy/data"]
+include = ["*.csv"]

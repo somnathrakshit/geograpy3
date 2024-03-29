@@ -1,63 +1,66 @@
-'''
+"""
 main geograpy 3 module
-'''
+"""
+__version__ = "0.3.0"
 from geograpy.extraction import Extractor
-from geograpy.places import PlaceContext
-from geograpy.locator import Locator
 from geograpy.labels import Labels
+from geograpy.locator import Locator
+from geograpy.places import PlaceContext
 
-def get_geoPlace_context(url=None, text=None,debug=False):
-    '''
+
+def get_geoPlace_context(url=None, text=None, debug=False):
+    """
     Get a place context for a given text with information
     about country, region, city and other
     based on NLTK Named Entities having the Geographic(GPE) label.
-    
+
     Args:
         url(String): the url to read text from (if any)
         text(String): the text to analyze
         debug(boolean): if True show debug information
-    
+
     Returns:
-        places: 
+        places:
             PlaceContext: the place context
-    '''    
-    places=get_place_context(url, text, labels=Labels.geo, debug=debug)
+    """
+    places = get_place_context(url, text, labels=Labels.geo, debug=debug)
     return places
-    
-def get_place_context(url=None, text=None,labels=Labels.default, debug=False):
-    '''
+
+
+def get_place_context(url=None, text=None, labels=Labels.default, debug=False):
+    """
     Get a place context for a given text with information
     about country, region, city and other
-    based on NLTK Named Entities in the label set Geographic(GPE), 
+    based on NLTK Named Entities in the label set Geographic(GPE),
     Person(PERSON) and Organization(ORGANIZATION).
-    
+
     Args:
         url(String): the url to read text from (if any)
         text(String): the text to analyze
         debug(boolean): if True show debug information
-    
+
     Returns:
-        pc: 
+        pc:
             PlaceContext: the place context
-    '''
-    e = Extractor(url=url, text=text,debug=debug)
+    """
+    e = Extractor(url=url, text=text, debug=debug)
     e.find_entities(labels=labels)
-    places=e.places
+    places = e.places
     pc = PlaceContext(places)
     pc.setAll()
     return pc
 
-def locateCity(location,correctMisspelling=False,debug=False):
-    '''
+
+def locateCity(location, correctMisspelling=False, debug=False):
+    """
     locate the given location string
     Args:
         location(string): the description of the location
     Returns:
         Locator: the location
-    '''
-    e = Extractor(text=location,debug=debug)
+    """
+    e = Extractor(text=location, debug=debug)
     e.split()
-    loc=Locator.getInstance(correctMisspelling=correctMisspelling,debug=debug)
-    city=loc.locateCity(e.places)
+    loc = Locator.getInstance(correctMisspelling=correctMisspelling, debug=debug)
+    city = loc.locateCity(e.places)
     return city
-    
