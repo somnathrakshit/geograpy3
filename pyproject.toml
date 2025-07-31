@@ -18,23 +18,22 @@ maintainers = [
   { name = "Tim Holzheim", email = "tim.holzheim@rwth-aachen.de" }
 ]
 classifiers=[
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12"
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
   # https://pypi.org/project/newspaper3k/
-	"newspaper3k>=0.2.8",
+	"newspaper4k>=0.9.3.1",
   # https://pypi.org/project/nltk/
-	"nltk>=3.8.1",
+	"nltk>=3.9.1",
   # https://pypi.org/project/jellyfish/
 	"jellyfish>=1.0.3",
   # https://pypi.org/project/numpy/
 	"numpy>=1.26.4",
   # https://pypi.org/project/pyLodStorage/
-	"pylodstorage>=0.10.3",
+	"pylodstorage>=0.17.5",
   # https://pypi.org/project/sphinx-rtd-theme/
 	"sphinx-rtd-theme>=2.0.0",
   # https://github.com/scikit-learn/scikit-learn
@@ -47,7 +46,7 @@ dependencies = [
 	"OSMPythonTools>=0.3.5"
 ]
 
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 dynamic = ["version"]
 
 [tool.hatch.version]
