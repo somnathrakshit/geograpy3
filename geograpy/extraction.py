@@ -28,7 +28,7 @@ class Extractor(object):
         Extractor.provide_nltk_packages()
 
     @staticmethod
-    def provide_nltk_packages():
+    def provide_nltk_packages(quiet:bool=True):
         """
         Download required NLTK packages if not available
         """
@@ -45,7 +45,7 @@ class Extractor(object):
             try:
                 nltk.data.find(nltk_package)
             except LookupError:
-                nltk.download(nltk_package, quiet=True)
+                nltk.download(nltk_package, quiet=quiet)
 
     def set_text(self):
         """
@@ -100,7 +100,7 @@ class Extractor(object):
 
 def main():
     """Download essential NLTK datasets"""
-    Extractor.provide_nltk_packages()
+    Extractor.provide_nltk_packages(quiet=False)
 
 if __name__ == "__main__":
     main()
