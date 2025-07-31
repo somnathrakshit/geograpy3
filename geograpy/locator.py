@@ -1,6 +1,6 @@
 """
-The locator module allows to get detailed city 
-information including the region and country of a city from a 
+The locator module allows to get detailed city
+information including the region and country of a city from a
 location string.
 
 Examples for location strings are:
@@ -10,19 +10,19 @@ Examples for location strings are:
     Vienna, IL
     Paris - Texas
     Paris TX
-    
+
 the locator will lookup the cities and try to disambiguate the result based on the country or region information found.
 
 The results in string representationa are:
-    
+
     Amsterdam (NH(North Holland) - NL(Netherlands))
     Vienna (9(Vienna) - AT(Austria))
     Vienna (IL(Illinois) - US(United States))
-    Paris (TX(Texas) - US(United States)) 
     Paris (TX(Texas) - US(United States))
-    
+    Paris (TX(Texas) - US(United States))
+
 Each city returned has a city.region and city.country attribute with the details of the city.
-    
+
 
 Created on 2020-09-18
 
@@ -40,8 +40,6 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
 
-from lodstorage.entity import EntityManager
-from lodstorage.jsonable import JSONAble
 from lodstorage.sql import SQLDB
 from lodstorage.storageconfig import StorageConfig, StoreMode
 from sklearn.neighbors import BallTree
@@ -50,7 +48,7 @@ from geograpy.utils import Download, Profiler, remove_non_ascii
 from geograpy.wikidata import Wikidata
 from geograpy.version import Version
 
-class LocationManager(EntityManager):
+class LocationManager(object):
     """
     a list of locations
     """
@@ -389,7 +387,7 @@ class Earth:
     radius = 6371.000  # radius of earth in km
 
 
-class Location(JSONAble):
+class Location(object):
     """
     Represents a Location
     """
@@ -565,6 +563,11 @@ class Location(JSONAble):
         location = cls()
         location.fromDict(regionRecord)
         return location
+
+    def fromDict(cls, record: dict):
+        keys = record.keys()
+        for k in keys:
+            setattr(cls, k, record[k])
 
 
 class City(Location):
@@ -1261,7 +1264,7 @@ class Locator(object):
         else:
             if self.correctMisspelling:
                 name = self.correct_country_misspelling(name)
-            query = """SELECT * FROM countries 
+            query = """SELECT * FROM countries
 WHERE name LIKE (?)
 OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
             params = (
@@ -1453,12 +1456,12 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
             "DROP VIEW IF EXISTS CityLookup",
             """
 CREATE VIEW CityLookup AS
-SELECT 
+SELECT
    cl.label,
    ci.*,
    r.name as regionName ,r.iso as regionIso ,r.pop as regionPop,r.lat as regionLat, r.lon as regionLon,
    c.name as countryName,c.iso as countryIso,c.lat as CountryLat, c.lon as CountryLon
-FROM 
+FROM
 city_labels cl
 JOIN cities ci on ci.wikidataid=cl.wikidataid
 JOIN regions r on ci.regionId=r.wikidataid
@@ -1466,21 +1469,21 @@ JOIN countries c on ci.countryId=c.wikidataid
 """,
             "DROP VIEW IF EXISTS RegionLookup",
             """CREATE VIEW RegionLookup AS
-SELECT 
+SELECT
    rl.label,
    r.*,
    c.name as countryName,c.iso as countryIso,c.lat as CountryLat, c.lon as CountryLon
-FROM 
+FROM
 region_labels rl
 JOIN regions r on rl.wikidataid=r.wikidataid
 JOIN countries c on r.countryId=c.wikidataid
 """,
             "DROP VIEW IF EXISTS CountryLookup",
             """CREATE VIEW CountryLookup AS
-SELECT 
+SELECT
    cl.label,
    c.*
-FROM 
+FROM
 country_labels cl
 JOIN countries c on cl.wikidataid=c.wikidataid
 """,
@@ -1551,7 +1554,7 @@ class LocatorCmd:
     """
     command line handling for locator
     """
-    
+
     def __init__(self):
         self.version=Version()
 
