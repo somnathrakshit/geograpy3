@@ -2,3 +2,5 @@
 # WF 2020-03-25
 # update 2024-03-29
 pip install .
+# make sure the nltk downloads are available
+geograpy-nltk
