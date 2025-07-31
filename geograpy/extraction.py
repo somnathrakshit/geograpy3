@@ -34,10 +34,11 @@ class Extractor(object):
         """
         nltk_packages = [
             "maxent_ne_chunker",
+            "maxent_ne_chunker_tab", # Updated 2025-07
             "words",
             "treebank",
             "punkt",
-            "punkt_tab",
+            "punkt_tab", # Updated 2025-07
             "averaged_perceptron_tagger_eng",  # Updated: language-specific
         ]
 
