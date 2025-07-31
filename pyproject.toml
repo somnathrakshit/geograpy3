@@ -77,7 +77,7 @@ test = [
 
 [project.scripts]
 geograpy = "geograpy.locate:main"
-geograpy-nltk = "geograpy.geograpy_nltk:main"
+geograpy-nltk = "geograpy.extractor:main"
 
 [project.data-files."geograpy/data"]
 include = ["*.csv"]
