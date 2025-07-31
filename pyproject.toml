@@ -24,8 +24,9 @@ classifiers=[
     "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
-  # https://pypi.org/project/newspaper3k/
+  # https://pypi.org/project/newspaper4k/
 	"newspaper4k>=0.9.3.1",
+  "lxml[html_clean]",  # Fix for lxml.html.clean ImportError
   # https://pypi.org/project/nltk/
 	"nltk>=3.9.1",
   # https://pypi.org/project/jellyfish/

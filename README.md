@@ -135,7 +135,7 @@ is available after the corresponding `set_` method is called.
 geograpy3 uses the following excellent libraries:
 
 * [NLTK](http://www.nltk.org/) for entity recognition
-* [newspaper](https://github.com/codelucas/newspaper) for text extraction from HTML
+* [newspaper4k](https://github.com/AndyTheFactory/newspaper4k) for text extraction from HTML
 * [jellyfish](https://github.com/sunlightlabs/jellyfish) for fuzzy text match
 * [pylodstorage](https://pypi.org/project/pylodstorage/) for storage and retrieval of tabular data from SQL and SPARQL sources
 
