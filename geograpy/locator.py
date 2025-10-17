@@ -565,6 +565,7 @@ class Location(object):
         location.fromDict(regionRecord)
         return location
 
+    @classmethod
     def fromDict(cls, record: dict):
         keys = record.keys()
         for k in keys:
