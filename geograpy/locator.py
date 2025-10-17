@@ -41,6 +41,7 @@ from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
 
 from lodstorage.sql import SQLDB
+
 from lodstorage.storageconfig import StorageConfig, StoreMode
 from sklearn.neighbors import BallTree
 
