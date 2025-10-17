@@ -28,26 +28,26 @@ Created on 2020-09-18
 
 @author: wf
 """
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import csv
 import glob
 import json
+from math import asin, cos, radians, sin, sqrt
 import os
+from pathlib import Path
 import re
 import sys
 import traceback
+from typing import Dict, Any
 import urllib
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
-from math import asin, cos, radians, sin, sqrt
-from pathlib import Path
 
+from geograpy.utils import Download, Profiler, remove_non_ascii
+from geograpy.version import Version
+from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
-
 from lodstorage.storageconfig import StorageConfig, StoreMode
 from sklearn.neighbors import BallTree
 
-from geograpy.utils import Download, Profiler, remove_non_ascii
-from geograpy.wikidata import Wikidata
-from geograpy.version import Version
 
 class LocationManager(object):
     """
@@ -565,12 +565,12 @@ class Location(object):
         location.fromDict(regionRecord)
         return location
 
-    @classmethod
-    def fromDict(cls, record: dict):
-        keys = record.keys()
-        for k in keys:
-            setattr(cls, k, record[k])
-
+    def fromDict(self, record: dict):
+        """
+        set my attributes from the given record
+        """
+        for k in record:
+            setattr(self, k, record[k])
 
 class City(Location):
     """
