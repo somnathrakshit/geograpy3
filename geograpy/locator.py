@@ -47,9 +47,9 @@ from geograpy.wikidata import Wikidata
 from lodstorage.sql import SQLDB
 from lodstorage.storageconfig import StorageConfig, StoreMode
 from sklearn.neighbors import BallTree
+from lodentity.entity import EntityManager
 
-
-class LocationManager(object):
+class LocationManager(EntityManager):
     """
     a list of locations
     """
