@@ -12,17 +12,30 @@ from geograpy.utils import Profiler
 
 class Wikidata(object):
     """
-    Wikidata access
+    Wikidata access with proper User-Agent and rate limiting
     """
 
+    # Rate limiting constants for Wikidata
+    # see https://stackoverflow.com/questions/62396801/how-to-handle-too-many-requests-on-wikidata-using-sparqlwrapper
+    CALLS_PER_MINUTE = 30
+
     def __init__(
-        self, endpoint="https://query.wikidata.org/sparql", profile: bool = True
+        self,
+        endpoint="https://query.wikidata.org/sparql",
+        profile: bool = True,
+        calls_per_minute: int = None
     ):
         """
         Constructor
+
+        Args:
+            endpoint(str): the SPARQL endpoint URL
+            profile(bool): if True show profiling information
+            calls_per_minute(int): rate limit for API calls (default: 30)
         """
         self.endpoint = endpoint
         self.profile = profile
+        self.calls_per_minute = calls_per_minute or self.CALLS_PER_MINUTE
 
     def query(self, msg, queryString: str, limit=None) -> list:
         """
@@ -36,7 +49,8 @@ class Wikidata(object):
             list: the list of dicts with the result
         """
         profile = Profiler(msg, profile=self.profile)
-        wd = SPARQL(self.endpoint)
+        # Create SPARQL instance with rate limiting and proper User-Agent
+        wd = SPARQL(self.endpoint, calls_per_minute=self.calls_per_minute)
         limitedQuery = queryString
         if limit is not None:
             limitedQuery = f"{queryString} LIMIT {limit}"
