@@ -64,6 +64,27 @@ class Wikidata(object):
         queries_path = os.path.join(module_dir, "data", "queries.yaml")
         self.qm = QueryManager(lang="sparql", queriesPath=queries_path, with_default=False)
 
+    def testAvailability(self) -> bool:
+        """
+        test if the endpoint is available with a fast query
+
+        Returns:
+            bool: True if endpoint is available, False otherwise
+        """
+        try:
+            query = self.qm.queriesByName.get("EndpointAvailability")
+            if not query:
+                # Fallback simple query if EndpointAvailability not in queries.yaml
+                queryString = "SELECT ?item WHERE { BIND(<http://www.wikidata.org/entity/Q2> as ?item) } LIMIT 1"
+            else:
+                queryString = query.query
+            wd = SPARQL(self.endpoint, calls_per_minute=self.calls_per_minute)
+            wd.sparql.setTimeout(5.0)
+            results = wd.query(queryString)
+            return results is not None
+        except Exception:
+            return False
+
     def query(self, msg, queryString: str, limit=None) -> list:
         """
         get the query result

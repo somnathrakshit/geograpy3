@@ -8,6 +8,7 @@ import json
 import os
 import re
 import unittest
+from geograpy.action_stats import ActionStats
 
 from geograpy.locator import (
     City,
@@ -122,11 +123,46 @@ class TestCachingCitiesByRegion(Geograpy3Test):
         This test ensures that by querying for the cities of a region the city states include themself in the result
         (the result for cities in city-states often includes the municipalities)
         """
-        wd = Wikidata()
-        cityStateRecords = wd.getCityStates()
+
+        # Try multiple endpoints, accept 2 out of 4 working
+        endpoint_names = [
+            "wikidata-qlever",
+            "wikidata-qlever-dbis",
+            "wikidata-main",
+            "wikidata-dbis"
+        ]
+
+        stats = ActionStats()
+        cityStateRecords = None
+        working_wd = None
+
+        # Test each endpoint availability with fast query
+        for endpoint_name in endpoint_names:
+            try:
+                wd = Wikidata(endpoint_name=endpoint_name, profile=False)
+                is_available = wd.testAvailability()
+                stats.add(is_available)
+                if is_available and working_wd is None:
+                    working_wd = wd
+                if self.debug:
+                    print(f"{endpoint_name}: {'✅' if is_available else '❌'}")
+            except Exception as ex:
+                stats.add(False)
+                if self.debug:
+                    print(f"{endpoint_name}: ❌ {ex}")
+
+        if self.debug:
+            print(f"Endpoint availability: {stats}")
+
+        # Require at least 50% of endpoints to be available
+        self.assertTrue(stats.ratio >= 0.5, f"Not enough endpoints available: {stats}")
+        self.assertIsNotNone(working_wd, "No working endpoint found")
+
+        # Now run the actual test with the working endpoint
+        cityStateRecords = working_wd.getCityStates()
         for cityStateRecord in cityStateRecords:
             regionId = cityStateRecord.get("wikidataid")
-            regionCities = wd.getCitiesForRegion(
+            regionCities = working_wd.getCitiesForRegion(
                 regionId, msg=f"Query for cities in {cityStateRecord.get('name')}"
             )
             foundCities = [c.get("wikidataid") for c in regionCities]

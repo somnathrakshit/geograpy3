@@ -2,6 +2,14 @@
 # Pre-configured Queries for Geograpy3 location lookup database
 #
 # WF 2021-08-19
+'EndpointAvailability':
+    title: Test endpoint availability
+    description: Fast query to check if Wikidata endpoint is available
+    sparql: |
+        # Fast availability check for Wikidata endpoints
+        SELECT ?item WHERE {
+          BIND(wd:Q2 as ?item)
+        } LIMIT 1
 'LabelLookup example #1':
     sql: |
         SELECT  *
