@@ -40,6 +40,61 @@ care of this for you.
 geograpy-nltk
 ```
 
+## Command Line Usage
+
+geograpy3 provides a command-line interface for extracting geographic information from text, URLs, and for locating cities.
+
+### Extract places from text
+```bash
+geograpy -t "Paris is the capital of France. Berlin is in Germany."
+```
+
+Output:
+```
+Countries: ['Germany', 'France']
+Regions: []
+Cities: ['Paris', 'Berlin']
+Other: []
+```
+
+### Extract places from a URL
+```bash
+geograpy -u https://en.wikipedia.org/wiki/2012_Summer_Olympics_torch_relay
+```
+
+### Locate a city with disambiguation
+```bash
+geograpy -l "Paris, Texas"
+```
+
+Output:
+```
+Paris (US-TX(Texas) - US(United States of America))
+```
+
+The locator disambiguates between cities with the same name based on region and country context.
+
+### Recreate the database
+```bash
+geograpy -db
+```
+
+This downloads and recreates the location database from Wikidata.
+
+### All CLI options
+```bash
+geograpy -h
+```
+
+Options:
+* `-u URL, --url URL` - extract places from the given URL
+* `-t TEXT, --text TEXT` - extract places from the given text
+* `-l LOCATION, --location LOCATION` - locate a city (e.g. 'Paris, Texas')
+* `-db, --recreateDatabase` - recreate the database
+* `-cm, --correctSpelling` - correct typical misspellings
+* `-d, --debug` - show debug information
+* `-V, --version` - show program version
+
 ## Getting the source code
 ```bash
 git clone https://github.com/somnathrakshit/geograpy3
