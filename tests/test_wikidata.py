@@ -23,7 +23,9 @@ class TestWikidata(Geograpy3Test):
         """
         test getting country information from wikidata
         """
-        wikidata = Wikidata()
+        wikidata = self.getWorkingWikidataEndpoint()
+        if wikidata is None:
+            self.skipTest("No working Wikidata endpoint available")
         try:
             countryList = wikidata.getCountries()
             self.assertTrue(len(countryList) >= 200)
@@ -41,7 +43,9 @@ class TestWikidata(Geograpy3Test):
         """
         test getting region information from wikidata
         """
-        wikidata = Wikidata()
+        wikidata = self.getWorkingWikidataEndpoint()
+        if wikidata is None:
+            self.skipTest("No working Wikidata endpoint available")
         try:
             regionList = wikidata.getRegions()
             self.assertTrue(len(regionList) >= 3000)
@@ -96,7 +100,9 @@ class TestWikidata(Geograpy3Test):
         """
         test getting region information from wikidata
         """
-        wikidata = Wikidata()
+        wikidata = self.getWorkingWikidataEndpoint()
+        if wikidata is None:
+            self.skipTest("No working Wikidata endpoint available")
         try:
             regionList = wikidata.getCityStates()
             self.assertTrue(len(regionList) >= 2)

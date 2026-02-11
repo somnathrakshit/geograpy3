@@ -33,7 +33,10 @@ class TestCachingLocationLabels(Geograpy3Test):
         """
         testLocationLabelExtraction = False
         if testLocationLabelExtraction:
-            wd = Wikidata()
+            wd = self.getWorkingWikidataEndpoint()
+            if wd is None:
+                print("No working Wikidata endpoint available, skipping location label extraction")
+                return
             config = LocationContext.getDefaultConfig()
             countryManager = CountryManager(config=config)
             regionManager = RegionManager(config=config)
