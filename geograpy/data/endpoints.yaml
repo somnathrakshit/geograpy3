@@ -8,7 +8,7 @@ endpoints:
     database: qlever
     endpoint: https://qlever.dev/api/wikidata
     website: https://qlever.dev/wikidata
-    calls_per_minute: 60
+    calls_per_minute: 40
 
   wikidata-main:
     description: WDQS Graph Split — main (non-scholarly)
@@ -17,7 +17,7 @@ endpoints:
     website: https://query-main.wikidata.org/
     database: blazegraph
     method: POST
-    calls_per_minute: 30
+    calls_per_minute: 20
 
   wikidata-dbis:
     description: RWTH Aachen full Wikidata mirror
