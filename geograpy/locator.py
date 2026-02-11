@@ -48,8 +48,9 @@ from lodstorage.sql import SQLDB
 from lodstorage.storageconfig import StorageConfig, StoreMode
 from sklearn.neighbors import BallTree
 from lodentity.entity import EntityManager
+from lodentity.jsonable import JSONAbleList
 
-class LocationManager(EntityManager):
+class LocationManager(EntityManager, JSONAbleList):
     """
     a list of locations
     """
@@ -84,7 +85,23 @@ class LocationManager(EntityManager):
         """
         if config is None:
             config = LocationContext.getDefaultConfig()
-        super().__init__(
+        # Set default listName before initializing parents
+        if listName is None:
+            listName = entityPluralName
+        if tableName is None:
+            tableName = entityName
+        # Initialize JSONAbleList first
+        JSONAbleList.__init__(
+            self,
+            listName=listName,
+            clazz=clazz,
+            tableName=tableName,
+            handleInvalidListTypes=handleInvalidListTypes,
+            filterInvalidListTypes=filterInvalidListTypes,
+        )
+        # Initialize EntityManager
+        EntityManager.__init__(
+            self,
             name=name,
             entityName=entityName,
             entityPluralName=entityPluralName,
