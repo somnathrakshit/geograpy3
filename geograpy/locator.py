@@ -1612,6 +1612,24 @@ class LocatorCmd:
             action="store_true",
             help="recreate the database",
         )
+        parser.add_argument(
+            "-u",
+            "--url",
+            dest="url",
+            help="extract places from the given URL",
+        )
+        parser.add_argument(
+            "-t",
+            "--text",
+            dest="text",
+            help="extract places from the given text",
+        )
+        parser.add_argument(
+            "-l",
+            "--location",
+            dest="location",
+            help="locate the given location string (e.g. 'Paris, Texas')",
+        )
         parser.add_argument("-V", "--version", action="version", version=version_msg)
         return parser
 
@@ -1643,13 +1661,35 @@ class LocatorCmd:
         """
         handle the arguments
         """
-        loc = Locator.getInstance(
-            correctMisspelling=self.args.correctMisspelling, debug=self.args.debug
-        )
         if self.args.recreateDatabase:
+            loc = Locator.getInstance(
+                correctMisspelling=self.args.correctMisspelling, debug=self.args.debug
+            )
             loc.recreateDatabase()
+        elif self.args.url or self.args.text:
+            import geograpy
+            places = geograpy.get_geoPlace_context(
+                url=self.args.url,
+                text=self.args.text,
+                debug=self.args.debug
+            )
+            print(f"Countries: {places.countries}")
+            print(f"Regions: {places.regions}")
+            print(f"Cities: {places.cities}")
+            print(f"Other: {places.other}")
+        elif self.args.location:
+            import geograpy
+            city = geograpy.locateCity(
+                self.args.location,
+                correctMisspelling=self.args.correctMisspelling,
+                debug=self.args.debug
+            )
+            if city:
+                print(city)
+            else:
+                print(f"Could not locate: {self.args.location}")
         else:
-            print("no other functionality yet ...")
+            print("Please specify -u/--url, -t/--text, -l/--location, or -db to recreate database")
 
     def cmd_main(self, argv: None) -> int:
         """
@@ -1661,11 +1701,9 @@ class LocatorCmd:
         Returns:
             int: exit code - 0 of all went well 1 for keyboard interrupt and 2 for exceptions
         """
+        self.exit_code = 0
         try:
             self.cmd_parse(argv)
-            if len(self.argv) < 1:
-                self.parser.print_usage()
-                sys.exit(1)
             self.handle_args()
         except KeyboardInterrupt:
             ### handle keyboard interrupt ###
