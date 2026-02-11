@@ -3,16 +3,16 @@
 #
 # WF 2021-08-19
 'LabelLookup example #1':
-    sql: |  
-        SELECT  *  
-        FROM CityLookup 
+    sql: |
+        SELECT  *
+        FROM CityLookup
         WHERE label IN ('Berlin',',St. Petersburg','Singapore','Athens')
         ORDER BY pop DESC
 'LabelLookup example #2':
-    sql: |  
+    sql: |
         SELECT * from RegionLookup WHERE label IN ('CA')
 'LabelLookup example #3':
-    sql: |  
+    sql: |
         SELECT * from CountryLookup WHERE label IN ('CA')
 'Countries':
     title: Countries sorted by ISO code
@@ -30,37 +30,161 @@
         # get City details with Country
         SELECT DISTINCT ?wikidataid ?name ?iso ?pop ?coord
         WHERE {
-          BIND (?countryQ AS ?wikidataid)
-        
           # instance of Country
           # inverse path see https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/query_optimization#Inverse_property_paths
           wd:Q6256 ^wdt:P279*/^wdt:P31 ?countryQ .
-          
-          # VALUES ?country { wd:Q55}.
+
+          BIND (?countryQ AS ?wikidataid)
+
           # label for the country
           ?countryQ rdfs:label ?name filter (lang(?name) = "en").
-          # get the continent (s)
-          #OPTIONAL {
-          #  ?country wdt:P30 ?continent.
-          #  ?continent rdfs:label ?continentLabel filter (lang(?continentLabel) = "en").
-          #}
-          # get the coordinates
-          OPTIONAL { 
-              ?countryQ wdt:P625 ?coord.
-          } 
           # https://www.wikidata.org/wiki/Property:P297 ISO 3166-1 alpha-2 code
           ?countryQ wdt:P297 ?iso.
-          # population of country   
+          # get the coordinates
+          OPTIONAL {
+              ?countryQ wdt:P625 ?coord.
+          }
+          # population of country
           OPTIONAL
-          { 
+          {
             SELECT ?countryQ (max(?countryPopulationValue) as ?pop)
             WHERE {
               ?countryQ wdt:P1082 ?countryPopulationValue
             } group by ?countryQ
           }
-          # https://www.wikidata.org/wiki/Property:P2132
-          # nominal GDP per capita
-          # OPTIONAL { ?country wdt:P2132 ?countryGDP_perCapitaValue. }
         }
         ORDER BY ?iso
+'Regions':
+    title: Regions (first-order administrative units)
+    description: Regions with ISO codes, population and coordinates
+    sparql: |
+        # get a list of regions
+        # for geograpy3 library
+        # see https://github.com/somnathrakshit/geograpy3/issues/15
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX wd: <http://www.wikidata.org/entity/>
+        PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+        PREFIX wikibase: <http://wikiba.se/ontology#>
+        SELECT DISTINCT ?countryId (?regionQ as ?wikidataid) ?name ?iso ?pop ?coord
+        WHERE
+        {
+          # administrative unit of first order
+          ?regionQ wdt:P31/wdt:P279* wd:Q10864048.
+          OPTIONAL {
+             ?regionQ rdfs:label ?name filter (lang(?name) = "en").
+          }
+          # isocode state/province (mandatory - filters historic regions while at it ...)
+          {
+            SELECT ?regionQ (max(?regionAlpha2) as ?iso) (max(?regionPopulationValue) as ?pop) (max(?locationValue) as ?coord)
+            WHERE {
+              ?regionQ wdt:P300 ?regionAlpha2.
+              # get the population
+              # https://www.wikidata.org/wiki/Property:P1082
+              OPTIONAL {
+                ?regionQ wdt:P1082 ?regionPopulationValue
+              }
+              # get the location
+              # https://www.wikidata.org/wiki/Property:P625
+              OPTIONAL {
+                ?regionQ wdt:P625 ?locationValue.
+               }
+            } GROUP BY ?regionQ
+          }
+          # country this region belongs to
+          # https://www.wikidata.org/wiki/Property:P297
+          OPTIONAL {
+            ?regionQ wdt:P17 ?countryId.
+          }
+        } ORDER BY ?iso
+'CityStates':
+    title: City States
+    description: City states with ISO codes, population and coordinates
+    sparql: |
+        # get a list of city states
+        # for geograpy3 library
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX wd: <http://www.wikidata.org/entity/>
+        PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+        PREFIX wikibase: <http://wikiba.se/ontology#>
+        SELECT DISTINCT ?countryId (?cityStateQ as ?wikidataid) ?name ?iso ?pop ?coord
+        WHERE
+        {
+          # all city states
+          ?cityStateQ wdt:P31 wd:Q133442 .
+          ?cityStateQ rdfs:label ?name filter (lang(?name) = "en").
+          {
+            SELECT ?cityStateQ (max(?isoCode) as ?iso) (max(?populationValue) as ?pop) (max(?locationValue) as ?coord)
+            WHERE {
+              ?cityStateQ wdt:P300|wdt:P297 ?isoCode.
+              # get the population
+              # https://www.wikidata.org/wiki/Property:P1082
+              OPTIONAL {
+                ?cityStateQ wdt:P1082 ?populationValue
+              }
+              # get the location
+              # https://www.wikidata.org/wiki/Property:P625
+              OPTIONAL {
+                ?cityStateQ wdt:P625 ?locationValue.
+               }
+            } GROUP BY ?cityStateQ
+          }
+          OPTIONAL {
+            ?cityStateQ wdt:P17 ?countryId.
+          }
+        } ORDER BY ?iso
+'Cities':
+    title: Cities (human settlements)
+    description: All human settlements with names, geonames IDs, population and coordinates
+    sparql: |
+        # get all human settlements
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+        PREFIX wd: <http://www.wikidata.org/entity/>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+        SELECT DISTINCT (?cityQ as ?wikidataid) ?city ?altLabel ?geoNameId ?gndId ?cityPopulation ?cityCoord ?regionId ?countryId
+        WHERE {
+          # instance of human settlement https://www.wikidata.org/wiki/Q486972
+          wd:Q486972 ^wdt:P279*/^wdt:P31 ?cityQ .
+
+          # label of the City
+          ?cityQ rdfs:label ?city filter (lang(?city) = "en").
+
+          OPTIONAL {
+             ?cityQ skos:altLabel ?altLabel .
+             FILTER (lang(?altLabel) = "en")
+          }
+
+          # geoName Identifier
+          OPTIONAL {
+              ?cityQ wdt:P1566 ?geoNameId.
+          }
+
+          # GND-ID
+          OPTIONAL {
+              ?cityQ wdt:P227 ?gndId.
+          }
+
+          # population of city
+          OPTIONAL {
+            SELECT ?cityQ (max(?cityPopulationValue) as ?cityPopulation)
+            WHERE {
+              ?cityQ wdt:P1082 ?cityPopulationValue
+            } group by ?cityQ
+          }
+
+          OPTIONAL{
+             ?cityQ wdt:P625 ?cityCoord .
+          }
+
+          # region this city belongs to
+          OPTIONAL {
+            ?cityQ wdt:P131 ?regionId .
+          }
+
+          # country this city belongs to
+          OPTIONAL {
+              ?cityQ wdt:P17 ?countryId .
+          }
+        }
 
