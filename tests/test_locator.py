@@ -95,7 +95,7 @@ class TestLocator(Geograpy3Test):
 
         query = """
 select distinct iso from countries
-union 
+union
 select distinct iso from regions
 """
         loc.populate_db()
@@ -246,10 +246,10 @@ select distinct iso from regions
         test a proceedings title Example
         """
         examples = [
-            """Proceedings of the 
-IEEE 14th International Conference on 
-Semantic Computing, ICSC 2020, 
-San Diego, CA, USA, 
+            """Proceedings of the
+IEEE 14th International Conference on
+Semantic Computing, ICSC 2020,
+San Diego, CA, USA,
 February 3-5, 2020"""
         ]
         for example in examples:
@@ -389,6 +389,43 @@ February 3-5, 2020"""
             loc.sqlDB.execute("DROP TABLE countries")
             self.assertFalse(loc.db_has_data())
             downloadAndTestDB(config, loc=loc, forceUpdate=True)
+
+    def dumpCities(self, cities, limit: int = 5):
+        """dump cities with wikidataid"""
+        for i, city in enumerate(cities[:limit]):
+            wikidataid = city.wikidataid if hasattr(city, 'wikidataid') else '?'
+            country_iso = city.country.iso if city.country else '?'
+            region_iso = city.region.iso if city.region else '?'
+            print(f"{i+1}. {city.name} ({wikidataid}): pop={city.pop}, region={region_iso}, country={country_iso}")
+
+    def testIssue_52LocateCities(self):
+        """
+        test locating multiple cities with same name sorted by population
+        https://github.com/somnathrakshit/geograpy3/issues/52
+        API for Lookup
+        """
+        test_cases = [("Athens", "GR"), ("Paris", "FR")]
+        debug = self.debug
+        debug = True
+        loc = Locator.getInstance()
+
+        for cityname, expected_country in test_cases:
+            cities = loc.locateCities([cityname])
+            self.assertTrue(len(cities) > 0)
+
+            if debug:
+                print(f"\n{cityname} results:")
+                self.dumpCities(cities)
+
+            # First result should be from expected country (highest population)
+            if len(cities) > 0 and cities[0].country:
+                self.assertEqual(expected_country, cities[0].country.iso)
+
+            # Verify sorted by population
+            for i in range(len(cities) - 1):
+                pop1 = cities[i].pop if cities[i].pop else 0
+                pop2 = cities[i + 1].pop if cities[i + 1].pop else 0
+                self.assertTrue(pop1 >= pop2)
 
 
 if __name__ == "__main__":

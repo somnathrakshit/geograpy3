@@ -1141,6 +1141,47 @@ class Locator(object):
         foundCity = self.disambiguate(country, regions, cities)
         return foundCity
 
+    def dedupCities(self, cities: list) -> list:
+        """
+        remove duplicate cities by wikidataid
+
+        Args:
+            cities(list): list of City objects
+
+        Returns:
+            list: deduplicated list of City objects
+        """
+        seen = set()
+        unique = []
+        for city in cities:
+            wid = city.wikidataid if hasattr(city, 'wikidataid') else None
+            if wid:
+                if wid not in seen:
+                    seen.add(wid)
+                    unique.append(city)
+            else:
+                unique.append(city)
+        return unique
+
+    def locateCities(self, places: list) -> list:
+        """
+        locate all matching cities for the given places, sorted by population
+
+        Args:
+            places(list): a list of places
+
+        Returns:
+            list: all matching City objects sorted by population (highest first)
+        """
+        self.populate_db()
+        cities = []
+        places = self.normalizePlaces(places)
+        for place in places:
+            cities.extend(self.cities_for_name(place))
+        cities = self.dedupCities(cities)
+        cities.sort(key=lambda c: c.pop if c.pop else 0, reverse=True)
+        return cities
+
     @staticmethod
     def isISO(s):
         """
