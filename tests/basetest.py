@@ -99,7 +99,7 @@ class Geograpy3Test(TestCase):
         msg = str(ex)
         print(f"Wikidata test failed {msg}")
         # only raise exception for real problems
-        if "HTTP Error 500" in msg:
+        if "HTTP Error 500" in msg or "HTTP Error 503" in msg:
             print("test can not work if server has problems")
             return
         if isinstance(ex, json.decoder.JSONDecodeError):

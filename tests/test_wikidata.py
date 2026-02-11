@@ -79,12 +79,15 @@ class TestWikidata(Geograpy3Test):
             {"name": "Rome", "country": None, "region": "Q1282", "cities": 1242},
         ]
         limit = 1000000  # if self.inCI() else 100
-        cityList = wikidata.getCities(limit=limit)
-        sqlDB = SQLDB(config.cacheFile)
-        entityInfo = sqlDB.createTable(cityList, "hs", withDrop=True)
-        sqlDB.store(cityList, entityInfo, fixNone=True)
-        expected = 200000  # if self.inCI() else limit
-        self.assertTrue(len(cityList) >= expected)
+        try:
+            cityList = wikidata.getCities(limit=limit)
+            sqlDB = SQLDB(config.cacheFile)
+            entityInfo = sqlDB.createTable(cityList, "hs", withDrop=True)
+            sqlDB.store(cityList, entityInfo, fixNone=True)
+            expected = 200000  # if self.inCI() else limit
+            self.assertTrue(len(cityList) >= expected)
+        except Exception as ex:
+            self.handleWikidataException(ex)
         # for region in regions:
         #    starttime=time.time()
         #    regionName=region["name"]
