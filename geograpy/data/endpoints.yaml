@@ -1,0 +1,38 @@
+# SPARQL endpoints for geograpy3 Wikidata queries
+# Public reliable endpoints for geographic location data
+endpoints:
+  wikidata-qlever:
+    description: QLever Freiburg Wikidata - fast and reliable
+    lang: sparql
+    method: POST
+    database: qlever
+    endpoint: https://qlever.dev/api/wikidata
+    website: https://qlever.dev/wikidata
+    calls_per_minute: 60
+
+  wikidata-main:
+    description: WDQS Graph Split — main (non-scholarly)
+    lang: sparql
+    endpoint: https://query-main.wikidata.org/sparql
+    website: https://query-main.wikidata.org/
+    database: blazegraph
+    method: POST
+    calls_per_minute: 30
+
+  wikidata-dbis:
+    description: RWTH Aachen full Wikidata mirror
+    lang: sparql
+    endpoint: https://wdqs.wikidata.dbis.rwth-aachen.de/sparql
+    website: https://wdqs.wikidata.dbis.rwth-aachen.de/
+    database: blazegraph
+    method: POST
+    calls_per_minute: 30
+
+  wikidata-qlever-dbis:
+    description: QLever RWTH Wikidata
+    lang: sparql
+    method: POST
+    database: qlever
+    endpoint: https://qlever-api.wikidata.dbis.rwth-aachen.de/
+    website: https://qlever.wikidata.dbis.rwth-aachen.de/wikidata
+    calls_per_minute: 60

@@ -5,6 +5,7 @@ Created on 2020-09-23
 """
 import os
 import re
+import yaml
 
 from lodstorage.query import QueryManager
 from lodstorage.sparql import SPARQL
@@ -23,7 +24,8 @@ class Wikidata(object):
 
     def __init__(
         self,
-        endpoint="https://query.wikidata.org/sparql",
+        endpoint: str = None,
+        endpoint_name: str = "wikidata-qlever",
         profile: bool = True,
         calls_per_minute: int = None
     ):
@@ -31,15 +33,34 @@ class Wikidata(object):
         Constructor
 
         Args:
-            endpoint(str): the SPARQL endpoint URL
+            endpoint(str): the SPARQL endpoint URL (overrides endpoint_name if provided)
+            endpoint_name(str): name of endpoint from endpoints.yaml (default: wikidata-qlever)
             profile(bool): if True show profiling information
-            calls_per_minute(int): rate limit for API calls (default: 30)
+            calls_per_minute(int): rate limit for API calls (uses endpoint config if not specified)
         """
-        self.endpoint = endpoint
-        self.profile = profile
-        self.calls_per_minute = calls_per_minute or self.CALLS_PER_MINUTE
-        # Load queries from queries.yaml
         module_dir = os.path.dirname(__file__)
+
+        # Load endpoints configuration
+        endpoints_path = os.path.join(module_dir, "data", "endpoints.yaml")
+        with open(endpoints_path, 'r') as f:
+            endpoints_config = yaml.safe_load(f)
+
+        # If endpoint URL is provided directly, use it
+        if endpoint:
+            self.endpoint = endpoint
+            self.calls_per_minute = calls_per_minute or self.CALLS_PER_MINUTE
+        else:
+            # Use endpoint_name to lookup configuration
+            if endpoint_name not in endpoints_config['endpoints']:
+                raise ValueError(f"Endpoint '{endpoint_name}' not found in endpoints.yaml")
+
+            endpoint_cfg = endpoints_config['endpoints'][endpoint_name]
+            self.endpoint = endpoint_cfg['endpoint']
+            self.calls_per_minute = calls_per_minute or endpoint_cfg.get('calls_per_minute', self.CALLS_PER_MINUTE)
+
+        self.profile = profile
+
+        # Load queries from queries.yaml
         queries_path = os.path.join(module_dir, "data", "queries.yaml")
         self.qm = QueryManager(lang="sparql", queriesPath=queries_path, with_default=False)
 
