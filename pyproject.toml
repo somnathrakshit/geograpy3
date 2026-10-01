@@ -34,7 +34,7 @@ dependencies = [
   # https://pypi.org/project/numpy/
 	"numpy>=1.26.4",
   # https://pypi.org/project/pyLodStorage/
-	"pylodstorage>=0.17.5",
+	"pylodstorage>=0.19.9",
   # https://pypi.org/project/sphinx-rtd-theme/
 	"sphinx-rtd-theme>=2.0.0",
   # https://github.com/scikit-learn/scikit-learn

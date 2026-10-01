@@ -5,9 +5,9 @@ Created on 2020-09-23
 """
 import os
 import re
-import yaml
+from typing import Dict
 
-from lodstorage.query import QueryManager
+from lodstorage.query import Endpoint, EndpointManager, QueryManager
 from lodstorage.sparql import SPARQL
 
 from geograpy.utils import Profiler
@@ -40,29 +40,38 @@ class Wikidata(object):
         """
         module_dir = os.path.dirname(__file__)
 
-        # Load endpoints configuration
-        endpoints_path = os.path.join(module_dir, "data", "endpoints.yaml")
-        with open(endpoints_path, 'r') as f:
-            endpoints_config = yaml.safe_load(f)
-
         # If endpoint URL is provided directly, use it
         if endpoint:
             self.endpoint = endpoint
             self.calls_per_minute = calls_per_minute or self.CALLS_PER_MINUTE
         else:
             # Use endpoint_name to lookup configuration
-            if endpoint_name not in endpoints_config['endpoints']:
+            endpoints = self.get_endpoints()
+            if endpoint_name not in endpoints:
                 raise ValueError(f"Endpoint '{endpoint_name}' not found in endpoints.yaml")
 
-            endpoint_cfg = endpoints_config['endpoints'][endpoint_name]
-            self.endpoint = endpoint_cfg['endpoint']
-            self.calls_per_minute = calls_per_minute or endpoint_cfg.get('calls_per_minute', self.CALLS_PER_MINUTE)
+            endpoint_conf = endpoints[endpoint_name]
+            self.endpoint = endpoint_conf.endpoint
+            self.calls_per_minute = calls_per_minute or endpoint_conf.calls_per_minute or self.CALLS_PER_MINUTE
 
         self.profile = profile
 
         # Load queries from queries.yaml
         queries_path = os.path.join(module_dir, "data", "queries.yaml")
         self.qm = QueryManager(lang="sparql", queriesPath=queries_path, with_default=False)
+
+    @classmethod
+    def get_endpoints(cls) -> Dict[str, Endpoint]:
+        """
+        get the SPARQL endpoints of the packaged endpoints.yaml
+        merged with the local ~/.pylodstorage layer, aliases resolved
+
+        Returns:
+            Dict[str, Endpoint]: the endpoints by name
+        """
+        endpoints_path = os.path.join(os.path.dirname(__file__), "data", "endpoints.yaml")
+        endpoints = EndpointManager.getEndpoints(endpointPath=endpoints_path, lang="sparql", with_default=True)
+        return endpoints
 
     def testAvailability(self) -> bool:
         """
@@ -71,19 +80,9 @@ class Wikidata(object):
         Returns:
             bool: True if endpoint is available, False otherwise
         """
-        try:
-            query = self.qm.queriesByName.get("EndpointAvailability")
-            if not query:
-                # Fallback simple query if EndpointAvailability not in queries.yaml
-                queryString = "SELECT ?item WHERE { BIND(<http://www.wikidata.org/entity/Q2> as ?item) } LIMIT 1"
-            else:
-                queryString = query.query
-            wd = SPARQL(self.endpoint, calls_per_minute=self.calls_per_minute)
-            wd.sparql.setTimeout(5.0)
-            results = wd.query(queryString)
-            return results is not None
-        except Exception:
-            return False
+        endpoint_conf = Endpoint(name=self.endpoint, endpoint=self.endpoint, calls_per_minute=self.calls_per_minute)
+        is_available = endpoint_conf.test_availability()
+        return is_available
 
     def query(self, msg, queryString: str, limit=None) -> list:
         """

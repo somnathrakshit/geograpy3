@@ -8,7 +8,8 @@ import json
 import os
 from unittest import TestCase
 
-from geograpy.action_stats import ActionStats
+from lodstorage.query import EndpointManager
+
 from geograpy.locator import Locator
 from geograpy.utils import Profiler
 from geograpy.wikidata import Wikidata
@@ -63,31 +64,15 @@ class Geograpy3Test(TestCase):
         Returns:
             Wikidata: a working Wikidata instance or None if none available
         """
-        stats = ActionStats()
+        endpoint = EndpointManager.get_working_endpoint(
+            self.WIKIDATA_ENDPOINTS,
+            endpoints=Wikidata.get_endpoints(),
+            min_ratio=min_success_ratio,
+            debug=self.debug,
+        )
         working_wd = None
-
-        for endpoint_name in self.WIKIDATA_ENDPOINTS:
-            try:
-                wd = Wikidata(endpoint_name=endpoint_name, profile=False)
-                is_available = wd.testAvailability()
-                stats.add(is_available)
-                if is_available and working_wd is None:
-                    working_wd = wd
-                if self.debug:
-                    print(f"{endpoint_name}: {'✅' if is_available else '❌'}")
-            except Exception as ex:
-                stats.add(False)
-                if self.debug:
-                    print(f"{endpoint_name}: ❌ {ex}")
-
-        if self.debug:
-            print(f"Endpoint availability: {stats}")
-
-        # Check if we have enough working endpoints
-        if stats.ratio < min_success_ratio:
-            print(f"Not enough endpoints available: {stats}")
-            return None
-
+        if endpoint is not None:
+            working_wd = Wikidata(endpoint_name=endpoint.name, profile=False)
         return working_wd
 
     def handleWikidataException(self, ex):

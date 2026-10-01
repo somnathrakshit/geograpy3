@@ -65,12 +65,9 @@ class TestWikidata(Geograpy3Test):
         config.cacheRootDir = "/tmp/wdhs"
         cachedir = config.getCachePath()
         config.cacheFile = f"{cachedir}/hs.db"
-        # use 2018 wikidata copy
-        # wikidata.endpoint="http://blazegraph.bitplan.com/sparql"
-        # use 2020 wikidata copy
-        wikidata = Wikidata()
-        wikidata.endpoint = "https://confident.dbis.rwth-aachen.de/jena/wdhs/sparql"
-        # wikidata.endpoint="http://jena.bitplan.com/wdhs/sparql"
+        wikidata = self.getWorkingWikidataEndpoint()
+        if wikidata is None:
+            self.skipTest("No working Wikidata endpoint available")
         regions = [
             {"name": "Singapore", "country": "Q334", "region": None, "cities": 46},
             {"name": "Beijing", "country": None, "region": "Q956", "cities": 25},
