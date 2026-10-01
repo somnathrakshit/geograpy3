@@ -189,9 +189,11 @@ WHERE c.name=(?)"""
         query = "SELECT * FROM CityLookup WHERE name IN (" + params + ")"
         cityLookupRecords = self.sqlDB.query(query, list(placesWithoutDuplicates))
         cityLookupRecords.sort(
-            key=lambda cityRecord: float(cityRecord.get("pop"))
-            if cityRecord.get("pop") is not None
-            else 0.0,
+            key=lambda cityRecord: (
+                float(cityRecord.get("pop"))
+                if cityRecord.get("pop") is not None
+                else 0.0
+            ),
             reverse=True,
         )
         for cityLookupRecord in cityLookupRecords:

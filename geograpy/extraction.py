@@ -2,8 +2,10 @@
 # geograpy-nltk converted to python script 2024-03-29
 # using Extractor as the single point of truth since 2025-07-31
 import re
+
 import nltk
 from newspaper import Article
+
 from geograpy.labels import Labels
 
 
@@ -11,6 +13,7 @@ class Extractor(object):
     """
     Extract geo context for text or from url
     """
+
     def __init__(self, text=None, url=None, debug=False):
         """
         Constructor
@@ -28,17 +31,17 @@ class Extractor(object):
         Extractor.provide_nltk_packages()
 
     @staticmethod
-    def provide_nltk_packages(quiet:bool=True):
+    def provide_nltk_packages(quiet: bool = True):
         """
         Download required NLTK packages if not available
         """
         nltk_packages = [
             "maxent_ne_chunker",
-            "maxent_ne_chunker_tab", # Updated 2025-07
+            "maxent_ne_chunker_tab",  # Updated 2025-07
             "words",
             "treebank",
             "punkt",
-            "punkt_tab", # Updated 2025-07
+            "punkt_tab",  # Updated 2025-07
             "averaged_perceptron_tagger_eng",  # Updated: language-specific
         ]
 
@@ -99,9 +102,11 @@ class Extractor(object):
                     self.places.append(" ".join([i[0] for i in leaves]))
         return self.places
 
+
 def main():
     """Download essential NLTK datasets"""
     Extractor.provide_nltk_packages(quiet=False)
+
 
 if __name__ == "__main__":
     main()

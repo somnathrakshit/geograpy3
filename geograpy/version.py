@@ -3,6 +3,7 @@ Created on 2024-03-29
 
 @author: wf
 """
+
 from dataclasses import dataclass
 
 import geograpy

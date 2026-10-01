@@ -3,6 +3,7 @@ Created on 2021-08-19
 
 @author: wf
 """
+
 import os
 import re
 import unittest
@@ -42,13 +43,13 @@ class TestQueries(Geograpy3Test):
                     if isinstance(value, str):
                         if re.match(r"Q[0-9]+", value):
                             if tablefmt == "github":
-                                record[
-                                    key
-                                ] = f"[{value}](https://www.wikidata.org/wiki/{value})"
+                                record[key] = (
+                                    f"[{value}](https://www.wikidata.org/wiki/{value})"
+                                )
                             elif tablefmt == "mediawiki":
-                                record[
-                                    key
-                                ] = f"[https://www.wikidata.org/wiki/{value} {value}]"
+                                record[key] = (
+                                    f"[https://www.wikidata.org/wiki/{value} {value}]"
+                                )
         doc = query.documentQueryResult(lod, tablefmt=tablefmt, floatfmt=".0f")
         if show:
             print(doc)

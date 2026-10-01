@@ -3,6 +3,7 @@ Created on 2021-08-17
 
 @author: th
 """
+
 import math
 import unittest
 
@@ -35,7 +36,9 @@ class TestCachingLocationLabels(Geograpy3Test):
         if testLocationLabelExtraction:
             wd = self.getWorkingWikidataEndpoint()
             if wd is None:
-                print("No working Wikidata endpoint available, skipping location label extraction")
+                print(
+                    "No working Wikidata endpoint available, skipping location label extraction"
+                )
                 return
             config = LocationContext.getDefaultConfig()
             countryManager = CountryManager(config=config)

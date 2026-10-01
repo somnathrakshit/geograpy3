@@ -28,27 +28,30 @@ Created on 2020-09-18
 
 @author: wf
 """
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
+
 import csv
 import glob
 import json
-from math import asin, cos, radians, sin, sqrt
 import os
-from pathlib import Path
 import re
 import sys
 import traceback
-from typing import Dict, Any
 import urllib
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from math import asin, cos, radians, sin, sqrt
+from pathlib import Path
+from typing import Any, Dict
+
+from lodentity.entity import EntityManager
+from lodentity.jsonable import JSONAbleList
+from lodstorage.sql import SQLDB
+from lodstorage.storageconfig import StorageConfig, StoreMode
+from sklearn.neighbors import BallTree
 
 from geograpy.utils import Download, Profiler, remove_non_ascii
 from geograpy.version import Version
 from geograpy.wikidata import Wikidata
-from lodstorage.sql import SQLDB
-from lodstorage.storageconfig import StorageConfig, StoreMode
-from sklearn.neighbors import BallTree
-from lodentity.entity import EntityManager
-from lodentity.jsonable import JSONAbleList
+
 
 class LocationManager(EntityManager, JSONAbleList):
     """
@@ -589,6 +592,7 @@ class Location(object):
         for k in record:
             setattr(self, k, record[k])
 
+
 class City(Location):
     """
     a single city as an object
@@ -1026,9 +1030,9 @@ class LocationContext(object):
 
         # build final result in the order city→region→country
         cities.sort(
-            key=lambda c: int(getattr(c, "pop", 0))
-            if getattr(c, "pop") is not None
-            else 0,
+            key=lambda c: (
+                int(getattr(c, "pop", 0)) if getattr(c, "pop") is not None else 0
+            ),
             reverse=True,
         )
         res = [*cities, *regions, *countries]
@@ -1154,7 +1158,7 @@ class Locator(object):
         seen = set()
         unique = []
         for city in cities:
-            wid = city.wikidataid if hasattr(city, 'wikidataid') else None
+            wid = city.wikidataid if hasattr(city, "wikidataid") else None
             if wid:
                 if wid not in seen:
                     seen.add(wid)
@@ -1363,9 +1367,11 @@ OR wikidataid in (SELECT wikidataid FROM country_labels WHERE label LIKE (?))"""
         params = (placeName,)
         cityLookupRecords = self.sqlDB.query(query, params)
         cityLookupRecords.sort(
-            key=lambda cityRecord: float(cityRecord.get("pop"))
-            if cityRecord.get("pop") is not None
-            else 0.0,
+            key=lambda cityRecord: (
+                float(cityRecord.get("pop"))
+                if cityRecord.get("pop") is not None
+                else 0.0
+            ),
             reverse=True,
         )
         return cityLookupRecords
@@ -1616,7 +1622,7 @@ class LocatorCmd:
     """
 
     def __init__(self):
-        self.version=Version()
+        self.version = Version()
 
     def getArgParser(self, description: str, version_msg: str) -> ArgumentParser:
         """
@@ -1709,10 +1715,9 @@ class LocatorCmd:
             loc.recreateDatabase()
         elif self.args.url or self.args.text:
             import geograpy
+
             places = geograpy.get_geoPlace_context(
-                url=self.args.url,
-                text=self.args.text,
-                debug=self.args.debug
+                url=self.args.url, text=self.args.text, debug=self.args.debug
             )
             print(f"Countries: {places.countries}")
             print(f"Regions: {places.regions}")
@@ -1720,17 +1725,20 @@ class LocatorCmd:
             print(f"Other: {places.other}")
         elif self.args.location:
             import geograpy
+
             city = geograpy.locateCity(
                 self.args.location,
                 correctMisspelling=self.args.correctMisspelling,
-                debug=self.args.debug
+                debug=self.args.debug,
             )
             if city:
                 print(city)
             else:
                 print(f"Could not locate: {self.args.location}")
         else:
-            print("Please specify -u/--url, -t/--text, -l/--location, or -db to recreate database")
+            print(
+                "Please specify -u/--url, -t/--text, -l/--location, or -db to recreate database"
+            )
 
     def cmd_main(self, argv: None) -> int:
         """

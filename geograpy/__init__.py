@@ -1,6 +1,7 @@
 """
 main geograpy 3 module
 """
+
 __version__ = "0.3.0"
 from geograpy.extraction import Extractor
 from geograpy.labels import Labels

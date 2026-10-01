@@ -3,6 +3,7 @@ Created on 2020-09-19
 
 @author: wf
 """
+
 import getpass
 import os.path
 import re
@@ -393,10 +394,12 @@ February 3-5, 2020"""
     def dumpCities(self, cities, limit: int = 5):
         """dump cities with wikidataid"""
         for i, city in enumerate(cities[:limit]):
-            wikidataid = city.wikidataid if hasattr(city, 'wikidataid') else '?'
-            country_iso = city.country.iso if city.country else '?'
-            region_iso = city.region.iso if city.region else '?'
-            print(f"{i+1}. {city.name} ({wikidataid}): pop={city.pop}, region={region_iso}, country={country_iso}")
+            wikidataid = city.wikidataid if hasattr(city, "wikidataid") else "?"
+            country_iso = city.country.iso if city.country else "?"
+            region_iso = city.region.iso if city.region else "?"
+            print(
+                f"{i+1}. {city.name} ({wikidataid}): pop={city.pop}, region={region_iso}, country={country_iso}"
+            )
 
     def testIssue_52LocateCities(self):
         """

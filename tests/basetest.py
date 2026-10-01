@@ -3,6 +3,7 @@ Created on 2021-08-13
 
 @author: wf
 """
+
 import getpass
 import json
 import os
@@ -25,7 +26,7 @@ class Geograpy3Test(TestCase):
         "wikidata-qlever",
         "wikidata-qlever-dbis",
         "wikidata-main",
-        "wikidata-dbis"
+        "wikidata-dbis",
     ]
 
     def setUp(self, debug=False):

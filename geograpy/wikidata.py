@@ -3,6 +3,7 @@ Created on 2020-09-23
 
 @author: wf
 """
+
 import os
 import re
 from typing import Dict
@@ -27,7 +28,7 @@ class Wikidata(object):
         endpoint: str = None,
         endpoint_name: str = "wikidata-qlever",
         profile: bool = True,
-        calls_per_minute: int = None
+        calls_per_minute: int = None,
     ):
         """
         Constructor
@@ -48,17 +49,25 @@ class Wikidata(object):
             # Use endpoint_name to lookup configuration
             endpoints = self.get_endpoints()
             if endpoint_name not in endpoints:
-                raise ValueError(f"Endpoint '{endpoint_name}' not found in endpoints.yaml")
+                raise ValueError(
+                    f"Endpoint '{endpoint_name}' not found in endpoints.yaml"
+                )
 
             endpoint_conf = endpoints[endpoint_name]
             self.endpoint = endpoint_conf.endpoint
-            self.calls_per_minute = calls_per_minute or endpoint_conf.calls_per_minute or self.CALLS_PER_MINUTE
+            self.calls_per_minute = (
+                calls_per_minute
+                or endpoint_conf.calls_per_minute
+                or self.CALLS_PER_MINUTE
+            )
 
         self.profile = profile
 
         # Load queries from queries.yaml
         queries_path = os.path.join(module_dir, "data", "queries.yaml")
-        self.qm = QueryManager(lang="sparql", queriesPath=queries_path, with_default=False)
+        self.qm = QueryManager(
+            lang="sparql", queriesPath=queries_path, with_default=False
+        )
 
     @classmethod
     def get_endpoints(cls) -> Dict[str, Endpoint]:
@@ -69,8 +78,12 @@ class Wikidata(object):
         Returns:
             Dict[str, Endpoint]: the endpoints by name
         """
-        endpoints_path = os.path.join(os.path.dirname(__file__), "data", "endpoints.yaml")
-        endpoints = EndpointManager.getEndpoints(endpointPath=endpoints_path, lang="sparql", with_default=True)
+        endpoints_path = os.path.join(
+            os.path.dirname(__file__), "data", "endpoints.yaml"
+        )
+        endpoints = EndpointManager.getEndpoints(
+            endpointPath=endpoints_path, lang="sparql", with_default=True
+        )
         return endpoints
 
     def testAvailability(self) -> bool:
@@ -80,7 +93,11 @@ class Wikidata(object):
         Returns:
             bool: True if endpoint is available, False otherwise
         """
-        endpoint_conf = Endpoint(name=self.endpoint, endpoint=self.endpoint, calls_per_minute=self.calls_per_minute)
+        endpoint_conf = Endpoint(
+            name=self.endpoint,
+            endpoint=self.endpoint,
+            calls_per_minute=self.calls_per_minute,
+        )
         is_available = endpoint_conf.test_availability()
         return is_available
 
